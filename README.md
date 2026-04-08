@@ -9,7 +9,7 @@ Smart Academic Schedule & Room Change System (SARS) adalah sistem manajemen jadw
 | **Revan Alifian Zhafran** | L0124154 | Project Manager & Tech Lead |
 | **Bagas Aditama Suryo Nugroho** | L0124137 | Frontend Developer |
 | **Mufti Faris Murtadho** | L0124133 | Backend Developer |
-| **Zendina Okbah Hasan** | L0124126 | Backend Developer / QA |
+| **Zendinan Okbah Hasan** | L0124126 | Backend Developer / QA |
 
 ## Fitur Utama
 1. **Import Jadwal Kampus**: Admin memasukkan jadwal resmi Prodi Informatika per semester yang menjadi baseline sistem dengan fitur conflict check otomatis.
