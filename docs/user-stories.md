@@ -32,3 +32,25 @@
 * **Acceptance Criteria:**
     * Sistem menyediakan fitur AI yang dapat menghasilkan teks permintaan perubahan berdasarkan parameter mata kuliah dan alasan yang diberikan dosen.
     * Output AI harus dalam format pesan formal yang siap dikirim melalui kanal komunikasi resmi.
+
+### **Kelompok Asisten Lab / Asisten Dosen**
+
+**US-06: Validasi Awal & Filtrasi**
+* **User Story:** Sebagai **Asisten Lab (Aslab)**, saya ingin **menjadi gatekeeper dengan memfilter request mahasiswa sebelum diteruskan ke Admin**, sehingga **Admin hanya menerima pengajuan yang valid dan memiliki alasan yang masuk akal.**
+* **Acceptance Criteria:**
+    * Aslab dapat mengubah status pengajuan menjadi `FORWARDED` dengan kewajiban mengisi catatan validasi minimal 10 karakter.
+    * Sistem memblokir Admin dari menyetujui request yang belum melewati tahap pemeriksaan (checked_by_aslab = TRUE) oleh Aslab.
+
+**US-07: Penolakan Request Tidak Valid**
+* **User Story:** Sebagai **Asisten Lab (Aslab)**, saya ingin **menolak langsung pengajuan yang tidak relevan atau bersifat "troll"**, sehingga **beban kerja Admin berkurang dan sistem tidak dipenuhi data sampah.**
+* **Acceptance Criteria:**
+    * Saat menolak, status pengajuan berubah menjadi `REJECTED_ASLAB` dan tidak akan diteruskan ke dashboard Admin.
+    * Sistem harus mengirimkan notifikasi beserta teks alasan penolakan dari Aslab langsung kepada mahasiswa pemohon.
+
+### **Kelompok Admin Fakultas**
+
+**US-08: Manajemen Baseline & Perubahan Permanen (Admin)**
+* **User Story:** Sebagai **Admin Fakultas**, saya ingin **menyetujui perubahan jadwal Permanent yang secara otomatis memperbarui template jadwal semester**, sehingga **seluruh data akademik di Prodi Informatika tetap konsisten hingga akhir semester.**
+* **Acceptance Criteria:**
+    * Saat perubahan permanen disetujui, sistem harus menyimpan snapshot jadwal lama ke dalam tabel `schedule_history` sebagai audit trail.
+    * Sistem harus melakukan update pada tabel utama (`schedules`) sesuai data baru dan menyinkronkan tampilan di semua platform (Web & Android) dalam < 5 detik.
