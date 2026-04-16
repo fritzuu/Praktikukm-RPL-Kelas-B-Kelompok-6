@@ -82,3 +82,10 @@ Batasan dari sistem SARS berdasarkan kesepakatan spesifikasi saat ini adalah:
 * NFR-04 (Reliability): Aplikasi Mobile Android (Kotlin) harus mencapai tingkat bebas dari penghentian paksa (crash-free rate) minimal 99% dari total seluruh sesi pengguna harian menurut log pemantauan.
 
 ---
+
+## 5. Catatan dan Asumsi
+
+1. **Infrastruktur Jaringan dan Server:** Diasumsikan bahwa server *backend* dan *database* memiliki ketersediaan (*uptime*) stabil dan terhubung ke jaringan internet publik sehingga dapat diakses secara langsung oleh aplikasi klien tanpa ada pemblokiran *firewall* internal kampus.
+2. **Dependensi Pihak Ketiga (FCM):** Pengiriman *push notification* ke aplikasi Android sepenuhnya bergantung pada keandalan layanan Firebase Cloud Messaging (FCM). Keterlambatan atau kegagalan penerimaan notifikasi akibat gangguan dari *server* Google berada di luar kendali dan tanggung jawab sistem ini.
+3. **Keterbatasan Perangkat Klien (Android):** Pengguna aplikasi Android diasumsikan menggunakan perangkat dengan sistem operasi yang mendukung pembaruan notifikasi modern (minimal Android 8.0) dan diwajibkan mengaktifkan Google Play Services agar fitur notifikasi *real-time* dapat berjalan sesuai desain.
+4. **Dependensi Layanan AI:** Fitur AI Assistant bergantung pada ketersediaan API pihak ketiga (misalnya OpenAI/Gemini). Kegagalan atau pembatasan limit akses (*rate limit*) pada API tersebut akan membuat fungsi pembuatan draf pesan sementara tidak tersedia, namun tidak akan mengganggu fungsi utama sistem (seperti *request* jadwal).
