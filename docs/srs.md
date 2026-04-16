@@ -27,6 +27,16 @@ Sistem ini mencakup:
 Sistem ini **tidak** mencakup pengelolaan nilai, absensi, atau modul akademik lainnya di luar manajemen jadwal dan ruangan.
 
 ### 1.3 Definisi dan Singkatan
+| Istilah / Akronim | Definisi |
+| --- | --- |
+| **SARS** | Smart Academic Schedule & Room Change System, nama produk perangkat lunak ini. |
+| **Baseline** | Jadwal perkuliahan resmi dan rutin per semester yang menjadi acuan dasar sistem. |
+| **Override** | Perubahan jadwal yang sedang aktif dan menimpa jadwal baseline pada waktu/ruangan tertentu. |
+| **Temporary Change** | Pengajuan perubahan jadwal yang bersifat sementara (hanya berlaku untuk 1 pertemuan spesifik). |
+| **Permanent Change** | Pengajuan perubahan jadwal yang bersifat permanen (mengubah template jadwal rutin ke depannya). |
+| **Aslab** | Asisten Laboratorium / Asisten Dosen, bertindak sebagai validator tingkat pertama (*gatekeeper*). |
+| **FCM** | Firebase Cloud Messaging, layanan untuk mengirimkan *push notification* ke perangkat Android. |
+
 
 ### 1.4 Referensi
 
@@ -56,3 +66,19 @@ Sistem ini merupakan aplikasi berbasis **Web dan Android** yang terintegrasi dal
 - Data jadwal baseline awal dimasukkan oleh Admin pada awal setiap semester.
 - Perangkat Android pengguna mendukung penerimaan notifikasi push (Firebase Cloud Messaging atau setara).
 - Sistem AI Assistant terhubung melalui API eksternal yang telah dikonfigurasi.
+
+### 2.4 Batasan
+Batasan dari sistem SARS berdasarkan kesepakatan spesifikasi saat ini adalah:
+*   **Tidak Ada Offline Mode**: Aplikasi Android sangat bergantung pada koneksi internet *real-time*. Tidak disediakan fitur *caching* data agar mahasiswa dapat melihat jadwal tanpa koneksi internet (masuk kategori *Won't-Have*).
+*   **Platform Dashboard Admin**: Dashboard untuk manajemen secara utuh (statistik, log, penyetujuan akhir) dikhususkan melalui Frontend Web, sementara platform Android difokuskan bagi alur pengajuan, notifikasi, dan validasi awal.
+
+---
+
+## 4. Kebutuhan Non-Fungsional
+
+* NFR-01 (Performance): Waktu respons (response time) dari endpoint API (Laravel) saat mengambil dan memproses data jadwal tidak boleh melebihi 2000 milidetik pada kondisi pengujian 100 concurrent users.
+* NFR-02 (Security): Seluruh sesi autentikasi pada platform Web dan Android diamankan menggunakan token JWT (JSON Web Token) dengan batas kedaluwarsa (expiration time) maksimal 24 jam.
+* NFR-03 (Usability): Antarmuka Web Dashboard (React/Next.js) harus mendukung rendering responsif tanpa memecah struktur layout komponen hingga batas ukuran viewport minimum 768px (resolusi standar tablet).
+* NFR-04 (Reliability): Aplikasi Mobile Android (Kotlin) harus mencapai tingkat bebas dari penghentian paksa (crash-free rate) minimal 99% dari total seluruh sesi pengguna harian menurut log pemantauan.
+
+---
