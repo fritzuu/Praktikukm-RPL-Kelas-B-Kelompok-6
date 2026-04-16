@@ -74,6 +74,26 @@ Batasan dari sistem SARS berdasarkan kesepakatan spesifikasi saat ini adalah:
 
 ---
 
+## 3. Kebutuhan Fungsional
+
+| ID | Deskripsi | Prioritas | Referensi |
+| :--- | :--- | :--- | :--- |
+| FR-01 | Sistem menyediakan formulir pengajuan perubahan jadwal sementara dengan validasi isian alasan minimal 20 karakter sebelum pengajuan dapat dikirim. | High | US-01 |
+| FR-02 | Sistem secara otomatis mengubah status pengajuan menjadi menunggu asisten lab dan mengirimkan notifikasi kepada asisten lab setelah form pengajuan dikirim. | High | US-01 |
+| FR-03 | Sistem menyediakan halaman dashboard bagi pengguna untuk memantau riwayat dan tahapan status pengajuannya secara berurutan. | High | US-03 |
+| FR-04 | Sistem mengirimkan notifikasi instan kepada pengguna ketika status pengajuannya telah mendapatkan keputusan final dari admin. | High | US-03 |
+| FR-05 | Sistem menampilkan jadwal mengajar dosen yang dapat membedakan secara visual antara jadwal rutin dengan jadwal yang sedang mengalami perubahan. | High | US-04 |
+| FR-06 | Sistem mengirimkan notifikasi segera kepada dosen pengampu ketika terdapat perubahan status pada jadwal mata kuliahnya. | High | US-04 |
+| FR-07 | Sistem mengizinkan asisten lab untuk meneruskan pengajuan kepada admin dengan mewajibkan pengisian catatan validasi minimal 10 karakter. | High | US-06 |
+| FR-08 | Sistem memblokir admin dari menyetujui pengajuan yang belum melalui tahap pemeriksaan dan persetujuan oleh asisten lab. | High | US-06 |
+| FR-09 | Sistem memungkinkan asisten lab untuk menolak pengajuan secara langsung agar pengajuan tersebut tidak diteruskan ke halaman admin. | High | US-07 |
+| FR-10 | Sistem mengirimkan notifikasi penolakan beserta teks alasan dari asisten lab secara langsung kepada mahasiswa yang mengajukan. | High | US-07 |
+| FR-11 | Sistem secara otomatis memperbarui jadwal utama pada semester berjalan ketika admin menyetujui pengajuan perubahan jadwal permanen. | High | US-08 |
+| FR-12 | Sistem menyimpan rekam jejak jadwal sebelumnya sebagai riwayat audit setiap kali terjadi persetujuan perubahan jadwal permanen. | High | US-08 |
+| FR-13 | Sistem menyinkronkan tampilan data jadwal terbaru di semua platform pengguna dalam waktu kurang dari 5 detik setelah persetujuan pembaruan permanen. | High | US-08 |
+
+---
+
 ## 4. Kebutuhan Non-Fungsional
 
 * NFR-01 (Performance): Waktu respons (response time) dari endpoint API (Laravel) saat mengambil dan memproses data jadwal tidak boleh melebihi 2000 milidetik pada kondisi pengujian 100 concurrent users.
