@@ -1,0 +1,233 @@
+import { useForm, usePage } from '@inertiajs/react';
+
+const ROLES = [
+    { key: 'mahasiswa', label: 'STUDENT',  placeholder: 'mahasiswa@student.university.ac.id' },
+    { key: 'dosen',     label: 'LECTURER', placeholder: 'dosen@university.ac.id' },
+    { key: 'aslab',     label: 'ASLAB',    placeholder: 'aslab@university.ac.id' },
+    { key: 'admin',     label: 'ADMIN',    placeholder: 'admin@university.ac.id' },
+];
+
+export default function Login() {
+    const { errors: pageErrors } = usePage().props;
+
+    const { data, setData, post, processing, errors } = useForm({
+        email:    '',
+        password: '',
+        remember: false,
+        role:     'mahasiswa',
+    });
+
+    function handleRoleChange(key) {
+        setData('role', key);
+    }
+
+    function handleSubmit(e) {
+        e.preventDefault();
+        post(route('login.submit'));
+    }
+
+    const activePlaceholder = ROLES.find(r => r.key === data.role)?.placeholder ?? '';
+
+    return (
+        <div className="min-h-screen bg-[#f0f2f8] flex items-center justify-center px-4 font-[Inter,sans-serif]">
+            <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center gap-10">
+
+                {/* ── Left Column: Branding ── */}
+                <div className="flex-1 hidden lg:flex flex-col justify-center gap-6 pr-8">
+                    {/* Logo */}
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center shadow-md">
+                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 5.523-4.477 10-9 10S3 18.523 3 13a12.083 12.083 0 012.84-7.578L12 14z" />
+                            </svg>
+                        </div>
+                        <span className="text-[#1e3a8a] font-bold text-xl tracking-tight">SARS</span>
+                    </div>
+
+                    {/* Headline */}
+                    <div>
+                        <h1 className="text-4xl font-extrabold text-gray-900 leading-tight">
+                            Manage your academic<br />ecosystem with precision.
+                        </h1>
+                        <p className="mt-4 text-gray-500 text-base leading-relaxed max-w-sm">
+                            Platform terintegrasi untuk mahasiswa, dosen, asisten lab, dan administrator dalam mengelola jadwal perkuliahan.
+                        </p>
+                    </div>
+
+                    {/* Hero Image Placeholder */}
+                    <div className="rounded-2xl overflow-hidden shadow-xl w-full max-w-md aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                        <div className="text-center text-gray-400 space-y-2">
+                            <svg className="w-16 h-16 mx-auto opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <p className="text-sm font-medium">Universitas</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Right Column: Form Card ── */}
+                <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 lg:p-10">
+
+                    {/* Mobile logo */}
+                    <div className="flex items-center gap-2 mb-6 lg:hidden">
+                        <div className="w-8 h-8 bg-[#1e3a8a] rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                            </svg>
+                        </div>
+                        <span className="text-[#1e3a8a] font-bold text-lg">SARS</span>
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-gray-900">Sign In</h2>
+                    <p className="text-sm text-gray-400 mt-1 mb-6">Akses portal Anda sesuai peran</p>
+
+                    {/* ── Role Tabs ── */}
+                    <div className="flex gap-2 mb-6 flex-wrap">
+                        {ROLES.map(role => (
+                            <button
+                                key={role.key}
+                                type="button"
+                                onClick={() => handleRoleChange(role.key)}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-full border tracking-wider transition-all duration-200 cursor-pointer ${
+                                    data.role === role.key
+                                        ? 'bg-[#1e3a8a] text-white border-[#1e3a8a] shadow-sm'
+                                        : 'bg-white text-gray-500 border-gray-300 hover:border-[#1e3a8a] hover:text-[#1e3a8a]'
+                                }`}
+                            >
+                                {role.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* ── General error flash ── */}
+                    {(errors.role || pageErrors?.role) && (
+                        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                            <svg className="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <p className="text-xs text-red-600 font-medium">{errors.role || pageErrors?.role}</p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Email */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                                Email Address
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                autoComplete="email"
+                                placeholder={activePlaceholder}
+                                value={data.email}
+                                onChange={e => setData('email', e.target.value)}
+                                className={`w-full px-4 py-3 bg-gray-100 rounded-xl text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1e3a8a]/30 focus:bg-white transition-all duration-200 ${
+                                    errors.email ? 'ring-2 ring-red-400 bg-red-50' : ''
+                                }`}
+                            />
+                            {errors.email && (
+                                <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>
+                            )}
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    Password
+                                </label>
+                                <a href="#" className="text-xs font-semibold text-[#1e3a8a] hover:underline">
+                                    Forgot password?
+                                </a>
+                            </div>
+                            <input
+                                id="password"
+                                type="password"
+                                autoComplete="current-password"
+                                placeholder="••••••••"
+                                value={data.password}
+                                onChange={e => setData('password', e.target.value)}
+                                className={`w-full px-4 py-3 bg-gray-100 rounded-xl text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1e3a8a]/30 focus:bg-white transition-all duration-200 ${
+                                    errors.password ? 'ring-2 ring-red-400 bg-red-50' : ''
+                                }`}
+                            />
+                            {errors.password && (
+                                <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>
+                            )}
+                        </div>
+
+                        {/* Remember me */}
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="remember"
+                                type="checkbox"
+                                checked={data.remember}
+                                onChange={e => setData('remember', e.target.checked)}
+                                className="w-4 h-4 accent-[#1e3a8a] cursor-pointer"
+                            />
+                            <label htmlFor="remember" className="text-sm text-gray-500 cursor-pointer select-none">
+                                Ingat saya
+                            </label>
+                        </div>
+
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full bg-[#1e3a8a] hover:bg-[#1e40af] active:scale-[.98] text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+                        >
+                            {processing ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                    </svg>
+                                    Signing in...
+                                </span>
+                            ) : 'Sign In'}
+                        </button>
+                    </form>
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-3 my-5">
+                        <hr className="flex-1 border-gray-200" />
+                        <span className="text-xs text-gray-400 font-medium">OR LOGIN WITH</span>
+                        <hr className="flex-1 border-gray-200" />
+                    </div>
+
+                    {/* Social buttons */}
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                        >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Google
+                        </button>
+                        <button
+                            type="button"
+                            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                        >
+                            <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                            SSO
+                        </button>
+                    </div>
+
+                    {/* Footer */}
+                    <p className="text-center text-xs text-gray-400 mt-8">
+                        © {new Date().getFullYear()} SARS. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
