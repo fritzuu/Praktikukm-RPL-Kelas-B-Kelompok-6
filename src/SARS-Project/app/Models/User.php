@@ -2,20 +2,31 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'nim_nip',
+        'avatar_url',
+        'fcm_token',
+        'is_active',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -26,7 +37,44 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
+    }
+
+    /**
+     * Roles belonging to this user (many-to-many via user_roles).
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'user_roles')
+            ->withPivot(['assigned_at', 'assigned_by']);
+    }
+
+    /**
+     * Check if user has a specific role slug.
+     */
+    public function hasRole(string $slug): bool
+    {
+        return $this->roles()->where('slug', $slug)->exists();
+    }
+
+    /**
+     * Get the primary role slug for redirect logic.
+     * Priority: admin > aslab > dosen > mahasiswa
+     */
+    public function primaryRole(): ?string
+    {
+        $priority = ['admin', 'aslab', 'dosen', 'mahasiswa'];
+
+        $userSlugs = $this->roles()->pluck('slug')->toArray();
+
+        foreach ($priority as $slug) {
+            if (in_array($slug, $userSlugs)) {
+                return $slug;
+            }
+        }
+
+        return null;
     }
 }

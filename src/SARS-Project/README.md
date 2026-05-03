@@ -1,58 +1,84 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SARS (Sistem Akademik & Ruang Studi) Project
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Project ini adalah platform terintegrasi untuk mahasiswa, dosen, asisten lab, dan administrator dalam mengelola jadwal perkuliahan. Dibangun menggunakan Laravel (Backend), React/Inertia.js (Frontend), dan Supabase PostgreSQL (Database).
 
-## About Laravel
+## Panduan Setup untuk Developer Baru
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Ikuti langkah-langkah di bawah ini untuk menjalankan project ini di laptop/komputer kamu.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1. Prasyarat (Prerequisites)
+Pastikan kamu sudah menginstal perangkat lunak berikut:
+- **PHP** (Minimal versi 8.2 ke atas)
+- **Composer** (Package manager untuk PHP / Laravel)
+- **Node.js** (Minimal versi 18 ke atas, sudah termasuk **npm**)
+- **Git** (Untuk mengambil *source code* dari repositori)
+- **Teks Editor** (VS Code disarankan)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+*(Catatan: Project ini menggunakan database Supabase secara online yang dikonfigurasi melalui `.env`, jadi kamu **tidak perlu** menginstal database lokal seperti XAMPP/MySQL/PostgreSQL, kecuali kamu ingin setup database lokal sendiri).*
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 2. Langkah-Langkah Setup
+Buka Terminal / Command Prompt dan jalankan langkah-langkah berikut secara berurutan:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
+**Langkah 1: Clone Project**
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone <url-repository-github>
+cd SARS-Project
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+**Langkah 2: Install Dependencies Backend (PHP/Laravel)**
+```bash
+composer install
+```
 
-## Contributing
+**Langkah 3: Install Dependencies Frontend (Node/React)**
+```bash
+npm install
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**Langkah 4: Setup File Environment (.env)**
+File konfigurasi database tidak diunggah ke GitHub karena berisi kredensial rahasia.
+1. Salin file `.env.example` menjadi `.env`.
+   ```bash
+   cp .env.example .env
+   ```
+2. Buka file `.env` tersebut.
+3. Minta detail konfigurasi database (terutama bagian `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, dll) kepada teman satu timmu yang sudah memilikinya, dan masukkan ke file `.env` kamu.
 
-## Code of Conduct
+**Langkah 5: Generate Application Key**
+```bash
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+*(Penting: Jika kalian menggunakan Supabase yang sama secara bersama-sama, kamu **tidak perlu** menjalankan perintah migrasi database `php artisan migrate:fresh --seed`. Tabel dan data uji (seperti akun dummy) sudah tersedia. Menjalankan perintah tersebut akan mereset database tim kalian).*
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. Cara Menjalankan Project (Development Mode)
+Setiap kali kamu ingin mengerjakan atau melihat preview aplikasi, kamu perlu membuka **2 tab Terminal** dan menjalankan kedua perintah ini secara bersamaan:
 
-## License
+**Terminal 1 (Server Backend Laravel):**
+```bash
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Terminal 2 (Server Frontend React/Vite):**
+```bash
+npm run dev
+```
+
+Setelah keduanya berjalan tanpa error, buka browser dan akses URL:
+[http://localhost:8000](http://localhost:8000)
+
+---
+
+### 4. Akun Uji Coba (Dummy Accounts)
+Gunakan akun berikut untuk menguji fitur login dan dashboard (Password untuk semua akun: `password123`):
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@university.ac.id` | `password123` |
+| Dosen | `siti.rahayu@university.ac.id` | `password123` |
+| Asisten Lab | `reza.pratama@university.ac.id` | `password123` |
+| Mahasiswa | `andi.wijaya@student.university.ac.id` | `password123` |
