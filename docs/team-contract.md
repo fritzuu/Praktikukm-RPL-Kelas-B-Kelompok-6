@@ -29,7 +29,7 @@ Mengingat proyek ini berskala besar (Cross-platform: Web & Mobile), pembagian tu
 
 ## 3. Jadwal Pertemuan Rutin
 * **Daily Standup (Asynchronous):** Setiap hari pukul 20.00 WIB via chat Discord. Setiap anggota wajib memberikan *update*: (1) Apa yang dikerjakan hari ini, (2) Apa yang dikerjakan besok, (3) Blocker/Kendala.
-* **Weekly Sync (Synchronous):** Setiap hari **[Isi Hari, misal: Sabtu]** pukul **[Isi Jam, misal: 19.30 WIB]** via Discord Voice/Google Meet untuk *review sprint* mingguan dan merencanakan tugas minggu depan.
+* **Weekly Sync** (Synchronous): **Sabtu: 19.30 WIB** via Discord Voice/Google Meet untuk *review sprint* mingguan dan merencanakan tugas minggu depan.
 
 ## 4. Aturan Respons (Service Level Agreement / SLA)
 * Pesan terkait proyek di grup (WA/Discord) **wajib dibalas maksimal dalam 12 jam** pada hari kerja/kuliah.
