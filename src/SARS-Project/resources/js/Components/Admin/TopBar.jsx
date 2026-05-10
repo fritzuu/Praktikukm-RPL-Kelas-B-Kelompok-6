@@ -50,54 +50,57 @@ export default function TopBar({ user, onUploadClick, sidebarCollapsed }) {
                 />
             </div>
 
-            {/* ── Upload Button ─────────────────────────────────────── */}
-            <button
-                onClick={onUploadClick}
-                className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600
-                           text-white text-sm font-medium px-4 py-2 rounded-lg
-                           transition-colors duration-150 shrink-0"
-            >
-                <Upload size={16} />
-                <span className="hidden sm:inline">Unggah Jadwal</span>
-            </button>
-
-            {/* ── Notification Bell ──────────────────────────────────── */}
-            <div className="relative" ref={notifRef}>
+            {/* ── Right Section ──────────────────────────────────────── */}
+            <div className="flex items-center gap-4 ml-auto">
+                {/* ── Upload Button ─────────────────────────────────────── */}
                 <button
-                    onClick={() => setNotifOpen(!notifOpen)}
-                    className="relative p-2 rounded-lg text-text-secondary hover:bg-surface
-                               hover:text-text-primary transition-colors"
+                    onClick={onUploadClick}
+                    className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600
+                               text-white text-sm font-medium px-4 py-2 rounded-lg
+                               transition-colors duration-150 shrink-0"
                 >
-                    <Bell size={20} />
-                    <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
-                                     text-[9px] font-bold rounded-full flex items-center justify-center">
-                        3
-                    </span>
+                    <Upload size={16} />
+                    <span className="hidden sm:inline">Unggah Jadwal</span>
                 </button>
-                {notifOpen && (
-                    <NotificationDropdown onClose={() => setNotifOpen(false)} />
-                )}
-            </div>
 
-            {/* ── Help Icon ─────────────────────────────────────────── */}
-            <button className="p-2 rounded-lg text-text-secondary hover:bg-surface
-                               hover:text-text-primary transition-colors">
-                <HelpCircle size={20} />
-            </button>
-
-            {/* ── Profile ───────────────────────────────────────────── */}
-            <div className="flex items-center gap-3 pl-3 border-l border-border">
-                <div className="text-right hidden md:block">
-                    <p className="text-sm font-semibold text-text-primary leading-tight">
-                        {user?.name || 'Admin'}
-                    </p>
-                    <p className="text-[11px] text-text-muted uppercase tracking-wide">
-                        Admin Fakultas
-                    </p>
+                {/* ── Notification Bell ──────────────────────────────────── */}
+                <div className="relative" ref={notifRef}>
+                    <button
+                        onClick={() => setNotifOpen(!notifOpen)}
+                        className="relative p-2 rounded-lg text-text-secondary hover:bg-surface
+                                   hover:text-text-primary transition-colors"
+                    >
+                        <Bell size={20} />
+                        <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
+                                         text-[9px] font-bold rounded-full flex items-center justify-center">
+                            3
+                        </span>
+                    </button>
+                    {notifOpen && (
+                        <NotificationDropdown onClose={() => setNotifOpen(false)} />
+                    )}
                 </div>
-                <div className="w-9 h-9 rounded-full bg-primary-500 text-white
-                                flex items-center justify-center font-bold text-sm shrink-0">
-                    {initial}
+
+                {/* ── Help Icon ─────────────────────────────────────────── */}
+                <button className="p-2 rounded-lg text-text-secondary hover:bg-surface
+                                   hover:text-text-primary transition-colors">
+                    <HelpCircle size={20} />
+                </button>
+
+                {/* ── Profile ───────────────────────────────────────────── */}
+                <div className="flex items-center gap-3 pl-3 border-l border-border">
+                    <div className="text-right hidden md:block">
+                        <p className="text-sm font-semibold text-text-primary leading-tight">
+                            {user?.name || 'Admin'}
+                        </p>
+                        <p className="text-[11px] text-text-muted uppercase tracking-wide">
+                            Admin Fakultas
+                        </p>
+                    </div>
+                    <div className="w-9 h-9 rounded-full bg-primary-500 text-white
+                                    flex items-center justify-center font-bold text-sm shrink-0">
+                        {initial}
+                    </div>
                 </div>
             </div>
         </header>
