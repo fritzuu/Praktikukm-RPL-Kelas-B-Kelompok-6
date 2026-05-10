@@ -48,11 +48,20 @@ export default function Sidebar({ isCollapsed, onToggle, onAiToggle }) {
     return (
         <aside
             className={`
-                sidebar-transition flex flex-col bg-sidebar text-white
+                group sidebar-transition flex flex-col bg-sidebar text-white
                 fixed top-0 left-0 h-screen z-40
                 ${isCollapsed ? 'w-16' : 'w-60'}
             `}
         >
+            {/* ── Collapse Toggle (Floating on border) ─────────────── */}
+            <button
+                onClick={onToggle}
+                title={isCollapsed ? 'Perbesar' : 'Perkecil'}
+                className="opacity-0 scale-50 invisible group-hover:scale-100 group-hover:opacity-100 group-hover:visible absolute top-1/2 -translate-y-1/2 -right-3.5 z-50 w-7 h-7 bg-primary-500 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-primary-600 hover:!scale-110 shadow-lg transition-all duration-300"
+            >
+                {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
+
             {/* ── Branding ─────────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-4 pt-6 pb-4">
                 <div className="w-9 h-9 rounded-xl bg-primary-500 flex items-center justify-center font-bold text-sm shrink-0">
@@ -135,14 +144,6 @@ export default function Sidebar({ isCollapsed, onToggle, onAiToggle }) {
                 >
                     <LogOut size={20} className="shrink-0" />
                     {!isCollapsed && <span>Keluar</span>}
-                </button>
-
-                {/* Collapse toggle */}
-                <button
-                    onClick={onToggle}
-                    className="w-full flex items-center justify-center py-2 text-white/30 hover:text-white/60 transition-colors"
-                >
-                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                 </button>
             </div>
         </aside>
