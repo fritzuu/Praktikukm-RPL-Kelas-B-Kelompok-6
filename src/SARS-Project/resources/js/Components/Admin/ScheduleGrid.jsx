@@ -1,53 +1,26 @@
-import { CalendarDays, ExternalLink, Download } from 'lucide-react';
-import { MOCK_JADWAL } from '../../data/mockData';
+import React, { useState } from 'react';
+import { Download, CalendarDays, AlertTriangle } from 'lucide-react';
+import { MOCK_JADWAL, MOCK_ROOMS } from '../../data/mockData';
 
 const HARI_LIST = [
-    { key: 'senin', label: 'Sen' },
-    { key: 'selasa', label: 'Sel' },
-    { key: 'rabu', label: 'Rab' },
-    { key: 'kamis', label: 'Kam' },
-    { key: 'jumat', label: 'Jum' },
-];
-
-const TIME_SLOTS = [
-    { label: '08:00 – 10:00', mulai: '08:00', selesai: '10:00' },
-    { label: '10:00 – 12:00', mulai: '10:00', selesai: '12:00' },
-    { label: '13:00 – 15:00', mulai: '13:00', selesai: '15:00' },
-    { label: '15:00 – 17:00', mulai: '15:00', selesai: '17:00' },
+    { key: 'senin', label: 'Senin' },
+    { key: 'selasa', label: 'Selasa' },
+    { key: 'rabu', label: 'Rabu' },
+    { key: 'kamis', label: 'Kamis' },
+    { key: 'jumat', label: 'Jumat' },
 ];
 
 const TIPE_STYLES = {
-    resmi: 'bg-danger/5 border-danger/30 text-danger/80',
-    override: 'bg-warning/5 border-warning/30 text-warning/80',
-    konflik: 'bg-danger/10 border-danger/50 border-dashed text-danger',
-};
-
-const TIPE_LABELS = {
-    resmi: null,
-    override: 'Override',
-    konflik: 'Konflik',
+    resmi: 'bg-primary-500/5 border-primary-500/30 text-primary-600',
+    override: 'bg-warning/10 border-warning/50 text-warning-800',
+    konflik: 'bg-danger/10 border-danger/50 text-danger-800 border-dashed',
 };
 
 export default function ScheduleGrid({ jadwalItems = MOCK_JADWAL }) {
-    function getJadwalForSlot(hari, mulai, selesai) {
-        return jadwalItems.filter(
-            (j) => j.hari === hari && j.jamMulai === mulai && j.jamSelesai === selesai
-        );
-    }
+    const [selectedDay, setSelectedDay] = useState('senin');
 
-    // Tanggal header mock (mengikuti desain mockup)
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ...
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
-
-    function getDateLabel(idx) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + idx);
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        return `${dd}/${mm}`;
-    }
+    // Filter jadwal based on selected day
+    const dayJadwal = jadwalItems.filter(j => j.hari === selectedDay);
 
     return (
         <section className="mb-6">
@@ -56,90 +29,116 @@ export default function ScheduleGrid({ jadwalItems = MOCK_JADWAL }) {
                 <div className="flex items-center gap-2">
                     <CalendarDays size={20} className="text-text-primary" />
                     <h2 className="text-lg font-bold text-text-primary">
-                        Jadwal Prodi Informatika
+                        Jadwal & Ketersediaan Ruangan
                     </h2>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => console.log('Downloading jadwal...')}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-card text-text-secondary border-border hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:shadow-lg hover:shadow-primary-500/40 transition-all duration-300 flex items-center gap-1.5"
-                    >
-                        <Download size={14} />
-                        Download Jadwal
-                    </button>
-                </div>
+                <button
+                    onClick={() => console.log('Exporting jadwal...')}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-card text-text-secondary border-border hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:shadow-lg transition-all duration-300 flex items-center gap-1.5"
+                >
+                    <Download size={14} />
+                    Export Jadwal
+                </button>
             </div>
 
-            {/* Grid Table */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-border">
-                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-text-muted w-28">
-                                    Waktu
-                                </th>
-                                {HARI_LIST.map((h, idx) => (
-                                    <th
-                                        key={h.key}
-                                        className="text-left px-3 py-3 text-[10px] font-bold uppercase tracking-widest text-text-muted"
-                                    >
-                                        {h.label} ({getDateLabel(idx)})
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {TIME_SLOTS.map((slot) => (
-                                <tr key={slot.label} className="border-b border-border last:border-b-0">
-                                    <td className="px-4 py-3 text-xs font-semibold text-primary-500 whitespace-nowrap align-top">
-                                        {slot.label}
-                                    </td>
-                                    {HARI_LIST.map((h) => {
-                                        const items = getJadwalForSlot(h.key, slot.mulai, slot.selesai);
+            {/* Day Selector Tabs */}
+            <div className="flex space-x-1 border-b border-border mb-4">
+                {HARI_LIST.map((hari) => (
+                    <button
+                        key={hari.key}
+                        onClick={() => setSelectedDay(hari.key)}
+                        className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                            selectedDay === hari.key
+                                ? 'border-primary-500 text-primary-500'
+                                : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
+                        }`}
+                    >
+                        {hari.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Matrix Grid */}
+            <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm">
+                <div className="min-w-[1200px]">
+                    {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
+                    <div className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-card">
+                        <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                            RUANGAN
+                        </div>
+                        {Array.from({ length: 11 }, (_, i) => (
+                            <div key={i} className="p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0">
+                                SESI {i + 1}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Rows: Each Room */}
+                    {MOCK_ROOMS.map(room => {
+                        // Find classes for this room on the selected day
+                        const roomClasses = dayJadwal.filter(j => j.ruangan === room);
+                        
+                        return (
+                            <div key={room} className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors">
+                                {/* Room Label - Sticky */}
+                                <div className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-20 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors">
+                                    <span className="truncate">{room}</span>
+                                </div>
+
+                                {/* Sessions Grid Container */}
+                                <div className="col-span-11 grid grid-cols-11 relative py-1.5 gap-y-1.5 min-h-[64px]">
+                                    {/* Background Grid Lines for visual separation */}
+                                    <div className="absolute inset-0 grid grid-cols-11 pointer-events-none">
+                                        {Array.from({ length: 11 }, (_, i) => (
+                                            <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
+                                        ))}
+                                    </div>
+
+                                    {/* Render Classes */}
+                                    {roomClasses.map(item => {
+                                        // A conflict occurs if there are overlapping sessions.
+                                        const isConflict = roomClasses.some(other => 
+                                            other.id !== item.id &&
+                                            ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                            (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                        );
+
+                                        // Ensure styles reflect conflicts even if marked as resmi
+                                        const appliedStyle = isConflict || item.tipe === 'konflik' 
+                                            ? TIPE_STYLES.konflik 
+                                            : (TIPE_STYLES[item.tipe] || TIPE_STYLES.resmi);
+
                                         return (
-                                            <td key={h.key} className="px-2 py-2 align-top">
-                                                {items.length > 0 ? (
-                                                    items.map((item) => (
-                                                        <div
-                                                            key={item.id}
-                                                            className={`
-                                                                rounded-lg border px-3 py-2 mb-1 last:mb-0
-                                                                ${TIPE_STYLES[item.tipe] || TIPE_STYLES.resmi}
-                                                            `}
-                                                        >
-                                                            <p className="font-semibold text-xs leading-tight">
-                                                                {item.kode} ({item.nama})
-                                                            </p>
-                                                            <p className="text-[11px] mt-0.5 opacity-70">
-                                                                {item.ruangan} • {item.dosen}
-                                                            </p>
-                                                            {TIPE_LABELS[item.tipe] && (
-                                                                <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-current/10">
-                                                                    {TIPE_LABELS[item.tipe]}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="h-12 rounded-lg bg-success/5 border border-success/20" />
-                                                )}
-                                            </td>
+                                            <div
+                                                key={item.id}
+                                                className={`relative z-10 mx-1 rounded-md border p-2 flex flex-col justify-center overflow-hidden transition-all hover:z-20 hover:shadow-md ${appliedStyle} ${isConflict ? 'ring-2 ring-danger/30' : ''}`}
+                                                style={{
+                                                    gridColumnStart: item.sesiMulai,
+                                                    gridColumnEnd: `span ${item.durasi}`
+                                                }}
+                                            >
+                                                {/* Header Row of Card */}
+                                                <div className="flex items-start justify-between gap-1 mb-1">
+                                                    <span className="font-bold text-[10px] leading-none truncate">
+                                                        {item.kode}
+                                                    </span>
+                                                    {(isConflict || item.tipe === 'konflik') && (
+                                                        <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] leading-tight font-semibold opacity-90 truncate">
+                                                    {item.nama}
+                                                </p>
+                                                <p className="text-[10px] mt-0.5 opacity-70 truncate">
+                                                    {item.dosen}
+                                                </p>
+                                            </div>
                                         );
                                     })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Footer link */}
-                <div className="text-center py-3 border-t border-border">
-                    <button className="text-xs font-semibold text-primary-500 hover:text-primary-600
-                                       inline-flex items-center gap-1 transition-colors">
-                        <span>Buka Antarmuka Penjadwalan</span>
-                        <ExternalLink size={12} />
-                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </section>
