@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { CalendarDays, ExternalLink } from 'lucide-react';
+import { CalendarDays, ExternalLink, Download } from 'lucide-react';
 import { MOCK_JADWAL } from '../../data/mockData';
 
 const HARI_LIST = [
@@ -30,8 +29,6 @@ const TIPE_LABELS = {
 };
 
 export default function ScheduleGrid({ jadwalItems = MOCK_JADWAL }) {
-    const [viewMode, setViewMode] = useState('mingguan');
-
     function getJadwalForSlot(hari, mulai, selesai) {
         return jadwalItems.filter(
             (j) => j.hari === hari && j.jamMulai === mulai && j.jamSelesai === selesai
@@ -62,26 +59,13 @@ export default function ScheduleGrid({ jadwalItems = MOCK_JADWAL }) {
                         Jadwal Prodi Informatika
                     </h2>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                     <button
-                        onClick={() => setViewMode('mingguan')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
-                            ${viewMode === 'mingguan'
-                                ? 'bg-primary-500 text-white border-primary-500'
-                                : 'bg-card text-text-secondary border-border hover:bg-surface'
-                            }`}
+                        onClick={() => console.log('Downloading jadwal...')}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-card text-text-secondary border-border hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:shadow-lg hover:shadow-primary-500/40 transition-all duration-300 flex items-center gap-1.5"
                     >
-                        Tampilan Mingguan
-                    </button>
-                    <button
-                        onClick={() => setViewMode('jurusan')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
-                            ${viewMode === 'jurusan'
-                                ? 'bg-primary-500 text-white border-primary-500'
-                                : 'bg-card text-text-secondary border-border hover:bg-surface'
-                            }`}
-                    >
-                        Tampilan Jurusan
+                        <Download size={14} />
+                        Download Jadwal
                     </button>
                 </div>
             </div>
