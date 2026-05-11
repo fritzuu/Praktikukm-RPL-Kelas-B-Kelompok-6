@@ -6,7 +6,7 @@ import AiAssistantPanel from '../Components/Dosen/AiAssistantPanel';
 import AiAssistantFab from '../Components/Dosen/AiAssistantFab';
 
 export default function DosenLayout({ children }) {
-    const { auth } = usePage().props;
+    const { auth, notifikasi } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -46,6 +46,7 @@ export default function DosenLayout({ children }) {
             <TopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
+                notifikasi={notifikasi}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}

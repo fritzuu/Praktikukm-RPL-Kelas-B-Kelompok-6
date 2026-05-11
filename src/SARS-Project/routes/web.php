@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Dosen\DosenDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -39,13 +40,17 @@ Route::middleware('auth')->group(function () {
         ->get('/aslab/dashboard', fn () => Inertia::render('Dashboard/Aslab'))
         ->name('aslab.dashboard');
 
-    // Dosen dashboard
-    Route::middleware('role:dosen')
-        ->get('/dosen/dashboard', fn () => Inertia::render('Dashboard/Dosen'))
-        ->name('dosen.dashboard');
+    // ── Dosen routes ─────────────────────────────────────────────────────────
+    Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
+        Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/jadwal',    fn () => Inertia::render('Dashboard/Dosen'))->name('jadwal');
+        Route::get('/notifikasi', fn () => Inertia::render('Dashboard/Dosen'))->name('notifikasi');
+        Route::get('/pengaturan', fn () => Inertia::render('Dashboard/Dosen'))->name('pengaturan');
+    });
 
     // Mahasiswa dashboard
     Route::middleware('role:mahasiswa')
         ->get('/mahasiswa/dashboard', fn () => Inertia::render('Dashboard/Mahasiswa'))
         ->name('mahasiswa.dashboard');
 });
+

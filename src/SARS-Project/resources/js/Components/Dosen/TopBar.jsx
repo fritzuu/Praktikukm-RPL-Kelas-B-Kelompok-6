@@ -15,7 +15,7 @@ const ICON_MAP = {
     info: AlertTriangle,
 };
 
-export default function TopBar({ user, sidebarCollapsed }) {
+export default function TopBar({ user, sidebarCollapsed, notifikasi = MOCK_DOSEN_NOTIFIKASI }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef(null);
 
@@ -30,7 +30,7 @@ export default function TopBar({ user, sidebarCollapsed }) {
     }, []);
 
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'D';
-    const unreadCount = MOCK_DOSEN_NOTIFIKASI.filter(n => !n.dibaca).length;
+    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
 
     return (
         <header
@@ -89,7 +89,7 @@ export default function TopBar({ user, sidebarCollapsed }) {
 
                             {/* Items */}
                             <div className="max-h-64 overflow-y-auto">
-                                {MOCK_DOSEN_NOTIFIKASI.map((notif) => {
+                                {notifikasi.map((notif) => {
                                     const Icon = ICON_MAP[notif.tipe] || Calendar;
                                     return (
                                         <div
