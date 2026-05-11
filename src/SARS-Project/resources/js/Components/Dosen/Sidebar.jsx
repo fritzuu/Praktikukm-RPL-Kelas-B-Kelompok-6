@@ -12,12 +12,14 @@ import {
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: LayoutDashboard, route: 'dosen.dashboard' },
     { label: 'Jadwal', icon: Calendar, route: 'dosen.jadwal' },
-    { label: 'Notifikasi', icon: Bell, route: 'dosen.notifikasi', badge: 3 },
+    { label: 'Notifikasi', icon: Bell, route: 'dosen.notifikasi' },
     { label: 'Pengaturan', icon: Settings, route: 'dosen.pengaturan' },
 ];
 
 export default function Sidebar({ isCollapsed, onToggle }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const notifikasi = props.notifikasi || [];
+    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
 
     function isActive(routeName) {
         try {
@@ -77,6 +79,8 @@ export default function Sidebar({ isCollapsed, onToggle }) {
                 {NAV_ITEMS.map((item) => {
                     const active = isActive(item.route);
                     const Icon = item.icon;
+                    const displayBadge = item.label === 'Notifikasi' && unreadCount > 0 ? unreadCount : item.badge;
+
                     return (
                         <button
                             key={item.route}
@@ -94,14 +98,14 @@ export default function Sidebar({ isCollapsed, onToggle }) {
                         >
                             <Icon size={20} className="shrink-0" />
                             {!isCollapsed && <span>{item.label}</span>}
-                            {item.badge && !isCollapsed && (
+                            {displayBadge && !isCollapsed && (
                                 <span className="ml-auto bg-danger text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                                    {item.badge}
+                                    {displayBadge}
                                 </span>
                             )}
-                            {item.badge && isCollapsed && (
+                            {displayBadge && isCollapsed && (
                                 <span className="absolute -top-1 -right-1 bg-danger text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                                    {item.badge}
+                                    {displayBadge}
                                 </span>
                             )}
                         </button>
