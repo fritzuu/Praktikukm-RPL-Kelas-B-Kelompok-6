@@ -60,3 +60,15 @@
 .panel-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(148, 163, 184, 0.5);
 }
+
+/* Force pointer cursor on all interactive elements */
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+select,
+summary,
+.cursor-pointer {
+    cursor: pointer;
+}
