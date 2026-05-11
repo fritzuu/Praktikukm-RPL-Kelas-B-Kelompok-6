@@ -3,13 +3,14 @@ import AdminLayout from '../../Layouts/AdminLayout';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
 import ActivityTable from '../../Components/Shared/ActivityTable';
 import AdminStatCards from '../../Components/Admin/AdminStatCards';
-import ScheduleGrid from '../../Components/Admin/ScheduleGrid';
+import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import ConflictAlerts from '../../Components/Admin/ConflictAlerts';
 import {
     MOCK_JADWAL,
     MOCK_KONFLIK,
     MOCK_AKTIVITAS,
     MOCK_SYNC_STATUS,
+    MOCK_ROOMS,
 } from '../../data/mockData';
 
 const STATUS_STYLES = {
@@ -82,7 +83,12 @@ export default function AdminDashboard({
                 <AdminStatCards syncStatus={syncStatus} />
             </WelcomeHeader>
 
-            <ScheduleGrid jadwalItems={jadwal} />
+            <ScheduleGrid 
+                jadwalItems={jadwal} 
+                rooms={MOCK_ROOMS} 
+                showConflicts={true} 
+                onExport={(jadwal) => console.log('Exporting jadwal...', jadwal)}
+            />
 
             <ConflictAlerts conflicts={konflik} />
 
