@@ -86,19 +86,41 @@ export default function DosenNotifikasi({ notifikasi = MOCK_NOTIFIKASI_PAGE }) {
         sistem: items.filter((n) => n.tipe === 'sistem').length,
     }), [items]);
 
-    // ── Actions ──────────────────────────────────────────────────────
+    // ── Actions (optimistic UI + API call) ─────────────────────────────
     function markAsRead(id) {
         setItems((prev) =>
             prev.map((n) => (n.id === id ? { ...n, dibaca: true } : n))
         );
+        // Fire-and-forget API call
+        fetch(`/dosen/notifikasi/${id}/read`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                'Accept': 'application/json',
+            },
+        }).catch(() => {}); // silent fail, UI already updated
     }
 
     function markAllAsRead() {
         setItems((prev) => prev.map((n) => ({ ...n, dibaca: true })));
+        fetch('/dosen/notifikasi/read-all', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                'Accept': 'application/json',
+            },
+        }).catch(() => {});
     }
 
     function deleteNotif(id) {
         setItems((prev) => prev.filter((n) => n.id !== id));
+        fetch(`/dosen/notifikasi/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                'Accept': 'application/json',
+            },
+        }).catch(() => {});
     }
 
     // ── Group by date ────────────────────────────────────────────────

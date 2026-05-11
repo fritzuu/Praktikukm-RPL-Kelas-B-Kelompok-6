@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dosen\DosenDashboardController;
+use App\Http\Controllers\Dosen\DosenNotifikasiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -44,8 +45,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
         Route::get('/jadwal',    fn () => Inertia::render('Dashboard/Dosen'))->name('jadwal');
-        Route::get('/notifikasi', fn () => Inertia::render('Dosen/Notifikasi'))->name('notifikasi');
         Route::get('/pengaturan', fn () => Inertia::render('Dashboard/Dosen'))->name('pengaturan');
+
+        // ── Notifikasi ───────────────────────────────────────────────────────
+        Route::get('/notifikasi',                        [DosenNotifikasiController::class, 'index'])->name('notifikasi');
+        Route::post('/notifikasi/{id}/read',             [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
+        Route::post('/notifikasi/read-all',              [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{id}',                [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
     });
 
     // Mahasiswa dashboard
