@@ -17,6 +17,7 @@ const ICON_MAP = {
 
 export default function TopBar({ user, sidebarCollapsed, notifikasi = MOCK_DOSEN_NOTIFIKASI }) {
     const [notifOpen, setNotifOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const notifRef = useRef(null);
 
     useEffect(() => {
@@ -49,12 +50,13 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = MOCK_DOSEN
                 />
                 <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cari jadwal, mata kuliah, atau ruangan..."
                     className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg
                                text-sm text-text-primary placeholder:text-text-muted
                                focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
                                transition-all"
-                    readOnly
                 />
             </div>
 
