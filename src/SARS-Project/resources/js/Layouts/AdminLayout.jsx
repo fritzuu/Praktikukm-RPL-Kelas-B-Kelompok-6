@@ -1,88 +1,37 @@
-import { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
-import Sidebar from '../Components/Admin/Sidebar';
-import TopBar from '../Components/Admin/TopBar';
-import AiAssistantPanel from '../Components/Admin/AiAssistantPanel';
-import AiAssistantFab from '../Components/Admin/AiAssistantFab';
-import UploadModal from '../Components/Admin/UploadModal';
+import { useState } from 'react';
+import { Upload } from 'lucide-react';
+import AppLayout from './AppLayout';
+import FileUploadModal from '../Components/Shared/FileUploadModal';
+import { ADMIN_NAV_ITEMS, ADMIN_BRANDING } from '../Components/Admin/AdminNavConfig';
 
 export default function AdminLayout({ children }) {
-    const { auth } = usePage().props;
-    const user = auth?.user;
-
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [aiPanelOpen, setAiPanelOpen] = useState(true);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
-    // Auto-collapse berdasarkan breakpoint
-    useEffect(() => {
-        const mediaLg = window.matchMedia('(max-width: 1024px)');
-        const mediaMd = window.matchMedia('(max-width: 768px)');
-
-        function handleResize() {
-            if (mediaMd.matches) {
-                setSidebarCollapsed(true);
-                setAiPanelOpen(false);
-            } else if (mediaLg.matches) {
-                setSidebarCollapsed(false);
-                setAiPanelOpen(false);
-            } else {
-                setAiPanelOpen(true);
-            }
-        }
-
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const topBarActions = (
+        <button
+            onClick={() => setUploadModalOpen(true)}
+            className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600
+                       text-white text-sm font-medium px-4 py-2 rounded-lg
+                       transition-colors duration-150 shrink-0"
+        >
+            <Upload size={16} />
+            <span className="hidden sm:inline">Unggah Jadwal</span>
+        </button>
+    );
 
     return (
-        <div className="min-h-screen bg-surface font-sans">
-            {/* ── Left Sidebar ────────────────────────────────────── */}
-            <Sidebar
-                isCollapsed={sidebarCollapsed}
-                onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                onAiToggle={() => setAiPanelOpen(!aiPanelOpen)}
-            />
+        <AppLayout
+            navItems={ADMIN_NAV_ITEMS}
+            branding={ADMIN_BRANDING}
+            topBarActions={topBarActions}
+        >
+            {children}
 
-            {/* ── Top Bar ─────────────────────────────────────────── */}
-            <TopBar
-                user={user}
-                sidebarCollapsed={sidebarCollapsed}
-                onUploadClick={() => setUploadModalOpen(true)}
-            />
-
-            {/* ── Main Content + AI Panel ─────────────────────────── */}
-            <div
-                className={`
-                    flex transition-all duration-250
-                    ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
-                `}
-            >
-                {/* Main content area */}
-                <main className="flex-1 min-w-0 p-6">
-                    {children}
-                </main>
-
-                {/* Right AI Panel */}
-                {aiPanelOpen && (
-                    <AiAssistantPanel
-                        isOpen={aiPanelOpen}
-                        onClose={() => setAiPanelOpen(false)}
-                    />
-                )}
-            </div>
-
-            {/* FAB saat AI panel tertutup */}
-            {!aiPanelOpen && (
-                <AiAssistantFab onClick={() => setAiPanelOpen(true)} />
-            )}
-
-            {/* Upload Modal */}
-            <UploadModal
+            {/* Admin-specific: Upload Modal */}
+            <FileUploadModal
                 isOpen={uploadModalOpen}
                 onClose={() => setUploadModalOpen(false)}
             />
-        </div>
+        </AppLayout>
     );
 }

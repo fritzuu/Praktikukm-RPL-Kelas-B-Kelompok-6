@@ -1,26 +1,14 @@
 import { router, usePage } from '@inertiajs/react';
 import {
-    LayoutDashboard,
-    Calendar,
-    ClipboardCheck,
-    BarChart3,
-    Settings,
-    Bot,
     LogOut,
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
 
-const NAV_ITEMS = [
-    { label: 'Dashboard', icon: LayoutDashboard, route: 'admin.dashboard' },
-    { label: 'Jadwal', icon: Calendar, route: 'admin.jadwal' },
-    { label: 'Persetujuan', icon: ClipboardCheck, route: 'admin.persetujuan', badge: 12 },
-    { label: 'Statistik', icon: BarChart3, route: 'admin.statistik' },
-    { label: 'Pengaturan', icon: Settings, route: 'admin.pengaturan' },
-];
-
-export default function Sidebar({ isCollapsed, onToggle, onAiToggle }) {
+export default function Sidebar({ navItems = [], branding = {}, isCollapsed, onToggle }) {
     const { url } = usePage();
+
+    const { initial = 'S', title = 'SARS', subtitle = '' } = branding;
 
     function isActive(routeName) {
         try {
@@ -28,7 +16,9 @@ export default function Sidebar({ isCollapsed, onToggle, onAiToggle }) {
             return url.startsWith(new URL(routePath).pathname);
         } catch {
             // Route belum terdaftar — fallback cek string
-            return url.includes(routeName.replace('admin.', '/admin/'));
+            const parts = routeName.split('.');
+            const path = '/' + parts.join('/');
+            return url.includes(path);
         }
     }
 
@@ -65,21 +55,23 @@ export default function Sidebar({ isCollapsed, onToggle, onAiToggle }) {
             {/* ── Branding ─────────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-4 pt-6 pb-4">
                 <div className="w-9 h-9 rounded-xl bg-primary-500 flex items-center justify-center font-bold text-sm shrink-0">
-                    S
+                    {initial}
                 </div>
                 {!isCollapsed && (
                     <div className="overflow-hidden">
-                        <p className="font-bold text-sm tracking-wide leading-tight">SARS</p>
-                        <p className="text-[10px] text-white/50 uppercase tracking-widest">
-                            Academic Admin
-                        </p>
+                        <p className="font-bold text-sm tracking-wide leading-tight">{title}</p>
+                        {subtitle && (
+                            <p className="text-[10px] text-white/50 uppercase tracking-widest">
+                                {subtitle}
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* ── Navigation ───────────────────────────────────────── */}
             <nav className="flex-1 px-2 mt-2 space-y-1">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                     const active = isActive(item.route);
                     const Icon = item.icon;
                     return (
@@ -116,7 +108,6 @@ export default function Sidebar({ isCollapsed, onToggle, onAiToggle }) {
 
             {/* ── Bottom Section ────────────────────────────────────── */}
             <div className="px-2 pb-4 space-y-1">
-
                 {/* Logout */}
                 <button
                     onClick={handleLogout}

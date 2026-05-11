@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-    Search,
-    Upload,
-    Bell,
-    HelpCircle,
-} from 'lucide-react';
+import { Search, Bell, HelpCircle } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
 
-export default function TopBar({ user, onUploadClick, sidebarCollapsed }) {
+const ROLE_LABELS = {
+    admin: 'Admin Fakultas',
+    dosen: 'Dosen Mata Kuliah',
+    aslab: 'Asisten Lab',
+    mahasiswa: 'Mahasiswa',
+};
+
+export default function TopBar({ user, sidebarCollapsed, actions }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef(null);
 
@@ -22,7 +24,8 @@ export default function TopBar({ user, onUploadClick, sidebarCollapsed }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const initial = user?.name?.charAt(0)?.toUpperCase() || 'A';
+    const initial = user?.name?.charAt(0)?.toUpperCase() || 'U';
+    const roleLabel = ROLE_LABELS[user?.role] || user?.role || 'User';
 
     return (
         <header
@@ -35,10 +38,7 @@ export default function TopBar({ user, onUploadClick, sidebarCollapsed }) {
         >
             {/* ── Search ───────────────────────────────────────────── */}
             <div className="relative flex-1 max-w-md">
-                <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-                />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input
                     type="text"
                     placeholder="Cari jadwal, ruangan, atau dosen..."
@@ -52,16 +52,8 @@ export default function TopBar({ user, onUploadClick, sidebarCollapsed }) {
 
             {/* ── Right Section ──────────────────────────────────────── */}
             <div className="flex items-center gap-4 ml-auto">
-                {/* ── Upload Button ─────────────────────────────────────── */}
-                <button
-                    onClick={onUploadClick}
-                    className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600
-                               text-white text-sm font-medium px-4 py-2 rounded-lg
-                               transition-colors duration-150 shrink-0"
-                >
-                    <Upload size={16} />
-                    <span className="hidden sm:inline">Unggah Jadwal</span>
-                </button>
+                {/* ── Role-specific action buttons ──────────────────────── */}
+                {actions}
 
                 {/* ── Notification Bell ──────────────────────────────────── */}
                 <div className="relative" ref={notifRef}>
@@ -91,10 +83,10 @@ export default function TopBar({ user, onUploadClick, sidebarCollapsed }) {
                 <div className="flex items-center gap-3 pl-3 border-l border-border">
                     <div className="text-right hidden md:block">
                         <p className="text-sm font-semibold text-text-primary leading-tight">
-                            {user?.name || 'Admin'}
+                            {user?.name || 'User'}
                         </p>
                         <p className="text-[11px] text-text-muted uppercase tracking-wide">
-                            Admin Fakultas
+                            {roleLabel}
                         </p>
                     </div>
                     <div className="w-9 h-9 rounded-full bg-primary-500 text-white
