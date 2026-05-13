@@ -57,6 +57,9 @@
     --color-text-primary: #f8fafc;
     --color-text-secondary: #cbd5e1;
     --color-text-muted: #94a3b8;
+
+    /* Vibrant Cyan for Hover */
+    --color-accent-cyan: #22d3ee;
 }
 
 /* Global Transitions */
