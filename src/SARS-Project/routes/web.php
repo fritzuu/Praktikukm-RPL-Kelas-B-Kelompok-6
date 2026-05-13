@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dosen\DosenDashboardController;
 use App\Http\Controllers\Dosen\DosenJadwalController;
 use App\Http\Controllers\Dosen\DosenNotificationController;
+use App\Http\Controllers\Dosen\DosenSettingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -50,7 +51,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/notification', [DosenNotificationController::class, 'index'])->name('notification');
         Route::post('/notification/{notification}/read', [DosenNotificationController::class, 'markAsRead'])->name('notification.read');
         Route::delete('/notification/{notification}', [DosenNotificationController::class, 'destroy'])->name('notification.destroy');
-        Route::get('/pengaturan', fn () => Inertia::render('Dosen/Setting'))->name('pengaturan');
+        Route::get('/pengaturan', [DosenSettingController::class, 'index'])->name('pengaturan');
+        Route::post('/pengaturan', [DosenSettingController::class, 'updateProfile'])->name('pengaturan.update');
     });
 
     // Mahasiswa dashboard
