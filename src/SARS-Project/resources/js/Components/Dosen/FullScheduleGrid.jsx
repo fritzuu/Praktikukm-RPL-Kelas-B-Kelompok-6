@@ -31,13 +31,6 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
                         Jadwal & Ketersediaan Ruangan
                     </h2>
                 </div>
-                <button
-                    onClick={() => window.print()}
-                    className="px-4 py-2 text-xs font-bold rounded-lg border bg-white text-text-secondary border-border hover:bg-surface transition-all flex items-center gap-2 shadow-sm"
-                >
-                    <Download size={14} />
-                    Export Jadwal
-                </button>
             </div>
 
             {/* Day Selector Tabs */}
