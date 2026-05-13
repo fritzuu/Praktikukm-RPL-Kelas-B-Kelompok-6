@@ -5,6 +5,7 @@ use App\Http\Controllers\Dosen\DosenDashboardController;
 use App\Http\Controllers\Dosen\DosenJadwalController;
 use App\Http\Controllers\Dosen\DosenNotificationController;
 use App\Http\Controllers\Dosen\DosenNotifikasiController;
+use App\Http\Controllers\Dosen\DosenSettingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -48,7 +49,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
         Route::get('/jadwal',    [DosenJadwalController::class, 'index'])->name('jadwal');
         Route::post('/jadwal/request', [DosenJadwalController::class, 'storeRequest'])->name('jadwal.request');
-        Route::get('/pengaturan', fn () => Inertia::render('Dosen/Setting'))->name('pengaturan');
+        Route::get('/pengaturan', [DosenSettingController::class, 'index'])->name('pengaturan');
+        Route::post('/pengaturan', [DosenSettingController::class, 'updateProfile'])->name('pengaturan.update');
 
         // ── Notifications (Jadwal Branch) ────────────────────────────────────
         Route::get('/notification', [DosenNotificationController::class, 'index'])->name('notification');
