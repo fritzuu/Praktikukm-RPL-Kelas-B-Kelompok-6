@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Schedule;
 use App\Models\Semester;
 use App\Models\TeachingAssignment;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +24,8 @@ class DosenJadwalController extends Controller
         if (!$semester) {
             return Inertia::render('Dosen/Jadwal', [
                 'jadwal' => [],
+                'allSchedules' => [],
+                'rooms' => [],
                 'stats' => $this->emptyStats(),
                 'semester' => null,
             ]);
@@ -55,6 +58,25 @@ class DosenJadwalController extends Controller
             'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
         ])->values();
 
+        // Ambil SEMUA jadwal di semester aktif untuk grid ketersediaan (Full Schedule)
+        $allSchedules = Schedule::where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->with(['course', 'room', 'teachingAssignments.user'])
+            ->get()
+            ->map(fn (Schedule $s) => [
+                'id'        => (string) $s->id,
+                'kode'      => $s->course->code,
+                'nama'      => $s->course->name,
+                'dosen'     => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->first()?->user->name ?? '-',
+                'ruangan_id'=> $s->room_id,
+                'hari'      => strtolower($s->day_of_week),
+                'sesiMulai' => $s->session_start,
+                'durasi'    => $s->session_duration,
+                'isOwn'     => $assignedScheduleIds->contains($s->id), // Tandai jika ini jadwal milik dosen yg login
+            ]);
+
+        $rooms = Room::all(['id', 'code', 'name']);
+
         // Stats summary
         $stats = [
             'totalMataKuliah' => $schedules->pluck('course_id')->unique()->count(),
@@ -63,9 +85,11 @@ class DosenJadwalController extends Controller
         ];
 
         return Inertia::render('Dosen/Jadwal', [
-            'jadwal'   => $jadwal,
-            'stats'    => $stats,
-            'semester' => [
+            'jadwal'       => $jadwal,
+            'allSchedules' => $allSchedules,
+            'rooms'        => $rooms,
+            'stats'        => $stats,
+            'semester'     => [
                 'nama' => $semester->name,
                 'tahun' => $semester->academic_year,
             ],
