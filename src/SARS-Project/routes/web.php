@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dosen\DosenDashboardController;
 use App\Http\Controllers\Dosen\DosenJadwalController;
+use App\Http\Controllers\Dosen\DosenNotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
         Route::get('/jadwal',    [DosenJadwalController::class, 'index'])->name('jadwal');
+        Route::get('/notification', [DosenNotificationController::class, 'index'])->name('notification');
+        Route::post('/notification/{notification}/read', [DosenNotificationController::class, 'markAsRead'])->name('notification.read');
+        Route::delete('/notification/{notification}', [DosenNotificationController::class, 'destroy'])->name('notification.destroy');
         Route::get('/pengaturan', fn () => Inertia::render('Dosen/Setting'))->name('pengaturan');
     });
 
