@@ -6,14 +6,13 @@ import {
     CalendarDays, 
     Clock, 
     MapPin, 
-    Users,
-    ChevronRight,
     Download,
     Filter,
     Search,
     AlertCircle,
     CheckCircle2,
-    ArrowRight
+    ArrowRight,
+    Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DosenLayout from '../../Layouts/DosenLayout';
@@ -31,7 +30,7 @@ const HARI_LIST = [
 export default function DosenJadwal({ 
     jadwal = [], 
     stats = { totalMataKuliah: 0, totalSks: 0, totalJadwal: 0 },
-    semester = { nama: 'Ganjil', tahun: '2025/2026' }
+    semester = { nama: 'Ganjil', tahun: '2024/2025' }
 }) {
     const getTodayKey = () => {
         const jsDay = new Date().getDay();
@@ -86,155 +85,105 @@ export default function DosenJadwal({
             value: stats.totalMataKuliah,
             suffix: 'MK',
             icon: BookOpen,
-            bgGradient: 'from-blue-500/20 to-blue-600/20',
-            textColor: 'text-blue-400',
-            borderColor: 'border-blue-500/30',
+            color: 'bg-primary-500/10 text-primary-500',
         },
         {
             label: 'Beban Mengajar',
             value: stats.totalSks,
             suffix: 'SKS',
             icon: TrendingUp,
-            bgGradient: 'from-green-500/20 to-green-600/20',
-            textColor: 'text-green-400',
-            borderColor: 'border-green-500/30',
+            color: 'bg-success/10 text-success',
         },
         {
             label: 'Total Pertemuan',
             value: stats.totalJadwal,
             suffix: 'Minggu',
             icon: Calendar,
-            bgGradient: 'from-orange-500/20 to-orange-600/20',
-            textColor: 'text-orange-400',
-            borderColor: 'border-orange-500/30',
+            color: 'bg-warning/10 text-warning',
         }
     ];
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1
-        }
-    };
-
     return (
-        <>
+        <div className="space-y-6">
             {/* ── Header Section ────────────────────────────────────── */}
-            <motion.div 
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="mb-8"
-            >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                            <CalendarDays className="text-white" size={28} />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-white tracking-tight">
-                                Jadwal Mengajar
-                            </h1>
-                            <p className="text-white/60 mt-1">
-                                Semester {semester?.nama || 'Ganjil'} TA {semester?.tahun || '2025/2026'}
-                            </p>
-                        </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
+                        <CalendarDays className="text-white" size={24} />
                     </div>
-
-                    <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-all duration-200 hover:shadow-md">
-                            <Download size={16} />
-                            <span className="hidden sm:inline">Export</span>
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-all duration-200 hover:shadow-md">
-                            <Filter size={16} />
-                            <span className="hidden sm:inline">Filter</span>
-                        </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+                            Jadwal Mengajar
+                        </h1>
+                        <p className="text-text-secondary text-sm">
+                            Semester {semester?.nama || 'Ganjil'} TA {semester?.tahun || '2024/2025'}
+                        </p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {statCards.map((card, idx) => {
-                        const Icon = card.icon;
-                        return (
-                            <motion.div 
-                                key={idx}
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: idx * 0.1 }}
-                                className={`bg-gradient-to-br ${card.bgGradient} border ${card.borderColor} rounded-2xl p-5 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-current/5 group relative overflow-hidden`}
-                            >
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-500" />
-                                <div className="flex items-center justify-between relative z-10">
-                                    <div>
-                                        <p className="text-white/60 text-sm font-medium mb-2">{card.label}</p>
-                                        <p className="text-3xl font-bold text-white">
-                                            {card.value}
-                                            <span className="text-sm font-medium text-white/60 ml-2">{card.suffix}</span>
-                                        </p>
-                                    </div>
-                                    <div className={`w-12 h-12 rounded-xl ${card.bgGradient} border ${card.borderColor} flex items-center justify-center group-hover:rotate-12 transition-transform`}>
-                                        <Icon className={`${card.textColor}`} size={24} />
-                                    </div>
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border text-text-secondary text-sm font-medium hover:bg-surface transition-all">
+                        <Download size={16} />
+                        <span className="hidden sm:inline">Export</span>
+                    </button>
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border text-text-secondary text-sm font-medium hover:bg-surface transition-all">
+                        <Filter size={16} />
+                        <span className="hidden sm:inline">Filter</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* ── Stats Area ────────────────────────────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {statCards.map((card, idx) => {
+                    const Icon = card.icon;
+                    return (
+                        <div key={idx} className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.color}`}>
+                                    <Icon size={20} />
                                 </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            </motion.div>
+                            </div>
+                            <p className="text-2xl font-bold text-text-primary">
+                                {card.value}
+                                <span className="text-sm font-medium text-text-muted ml-1">{card.suffix}</span>
+                            </p>
+                            <p className="text-xs text-text-muted mt-0.5">{card.label}</p>
+                        </div>
+                    );
+                })}
+            </div>
 
-            {/* ── Search Bar ────────────────────────────────────── */}
-            <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="mb-6"
-            >
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+            {/* ── Search & Filter ───────────────────────────────────── */}
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
                     <input
                         type="text"
                         placeholder="Cari mata kuliah atau kode..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 focus:bg-white/10 transition-all shadow-inner"
+                        className="w-full pl-12 pr-4 py-2.5 bg-card border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500/50 transition-all"
                     />
                 </div>
-            </motion.div>
+            </div>
 
-            {/* ── Main Schedule Area ────────────────────────────── */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
-                <div className="flex items-center gap-1 bg-white/5 p-2 border-b border-white/10 overflow-x-auto no-scrollbar">
+            {/* ── Main Schedule Grid ────────────────────────────────── */}
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="flex items-center gap-1 bg-surface p-1.5 border-b border-border overflow-x-auto no-scrollbar">
                     {HARI_LIST.map((hari) => (
                         <button
                             key={hari.key}
                             onClick={() => setSelectedDay(hari.key)}
                             className={`
-                                flex-1 min-w-[100px] px-4 py-3 rounded-xl text-sm font-bold transition-all relative
+                                flex-1 min-w-[100px] px-4 py-2.5 rounded-lg text-sm font-bold transition-all relative
                                 ${selectedDay === hari.key
-                                    ? 'text-white'
-                                    : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                                    ? 'bg-primary-500 text-white shadow-md'
+                                    : 'text-text-secondary hover:bg-white/50 hover:text-text-primary'
                                 }
                             `}
                         >
-                            {selectedDay === hari.key && (
-                                <motion.div 
-                                    layoutId="activeTab"
-                                    className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-lg shadow-orange-500/20"
-                                    transition={{ type: 'spring', duration: 0.5 }}
-                                />
-                            )}
-                            <span className="relative z-10">{hari.label}</span>
+                            {hari.label}
                         </button>
                     ))}
                 </div>
@@ -247,68 +196,60 @@ export default function DosenJadwal({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="py-24 text-center"
+                                className="py-20 text-center"
                             >
-                                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-                                    <Calendar size={32} className="text-white/20" />
+                                <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Calendar size={24} className="text-text-muted" />
                                 </div>
-                                <h3 className="text-xl font-bold text-white">
+                                <h3 className="text-lg font-bold text-text-primary">
                                     Tidak ada jadwal hari {HARI_LIST.find(h => h.key === selectedDay)?.label}
                                 </h3>
-                                <p className="text-white/40 mt-2 max-w-xs mx-auto">
-                                    Anda bebas dari kegiatan mengajar pada hari ini. Nikmati waktu istirahat Anda!
+                                <p className="text-text-muted text-sm mt-1">
+                                    Anda bebas dari kegiatan mengajar pada hari ini.
                                 </p>
                             </motion.div>
                         ) : (
                             <motion.div 
                                 key="list"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
                             >
                                 {dayJadwal.map((item) => (
-                                    <motion.div 
+                                    <div 
                                         key={item.id}
-                                        variants={itemVariants}
-                                        className="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-orange-500/40 hover:shadow-2xl hover:shadow-orange-500/10 hover:bg-white/10 transition-all duration-300 relative overflow-hidden"
+                                        className="group bg-white border border-border rounded-xl p-5 hover:border-primary-500/40 hover:shadow-lg transition-all duration-300"
                                     >
-                                        <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-                                                <ArrowRight size={14} className="text-orange-300" />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-2 mb-6">
-                                            <span className="text-[10px] font-black bg-orange-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-widest w-fit shadow-lg shadow-orange-500/20">
+                                        <div className="flex flex-col gap-1.5 mb-5">
+                                            <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2 py-0.5 rounded-md uppercase tracking-wider w-fit">
                                                 {item.kode}
                                             </span>
-                                            <h3 className="text-lg font-bold text-white leading-snug group-hover:text-orange-300 transition-colors">
+                                            <h3 className="text-base font-bold text-text-primary line-clamp-2 leading-tight">
                                                 {item.nama}
                                             </h3>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-orange-500/20 group-hover:border-orange-500/30 transition-colors">
-                                                    <Clock size={16} className="text-white/40 group-hover:text-orange-300" />
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary">
+                                                    <Clock size={14} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-0.5">Waktu & Sesi</p>
-                                                    <p className="text-sm font-bold text-white">
-                                                        {item.waktu} <span className="text-orange-300/60 ml-1">(Sesi {item.sesiMulai})</span>
+                                                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Waktu</p>
+                                                    <p className="text-xs font-semibold text-text-primary">
+                                                        {item.waktu} <span className="text-text-muted font-medium">(Sesi {item.sesiMulai})</span>
                                                     </p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-orange-500/20 group-hover:border-orange-500/30 transition-colors">
-                                                    <MapPin size={16} className="text-white/40 group-hover:text-orange-300" />
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary">
+                                                    <MapPin size={14} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-0.5">Ruangan & Kelas</p>
-                                                    <p className="text-sm font-bold text-white">
-                                                        {item.ruangan} {item.kelas !== '-' && <span className="text-white/40 font-medium ml-1">• Kelas {item.kelas}</span>}
+                                                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Ruangan</p>
+                                                    <p className="text-xs font-semibold text-text-primary">
+                                                        {item.ruangan} {item.kelas !== '-' && <span className="text-text-muted font-medium ml-1">• Kelas {item.kelas}</span>}
                                                     </p>
                                                 </div>
                                             </div>
@@ -316,11 +257,11 @@ export default function DosenJadwal({
 
                                         <button 
                                             onClick={() => handleOpenDetail(item)}
-                                            className="w-full mt-8 py-3 rounded-xl bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-white/70 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all shadow-sm group-hover:shadow-orange-500/20"
+                                            className="w-full mt-6 py-2.5 rounded-lg bg-surface text-[11px] font-bold uppercase tracking-wider text-text-secondary hover:bg-primary-500 hover:text-white transition-all shadow-sm"
                                         >
                                             Lihat Detail
                                         </button>
-                                    </motion.div>
+                                    </div>
                                 ))}
                             </motion.div>
                         )}
@@ -332,148 +273,136 @@ export default function DosenJadwal({
             <Modal
                 isOpen={!!selectedJadwal}
                 onClose={handleCloseModal}
-                title={isRequesting ? 'Pengajuan Perubahan Jadwal' : 'Detail Mata Kuliah'}
-                maxWidth={isRequesting ? '3xl' : 'lg'}
+                title={isRequesting ? 'Pengajuan Perubahan' : 'Detail Mata Kuliah'}
+                maxWidth={isRequesting ? '2xl' : 'lg'}
             >
                 {selectedJadwal && (
-                    <div className="space-y-6">
+                    <div className="space-y-6 text-text-primary">
                         {!isRequesting ? (
                             <>
-                                {/* Detail View */}
-                                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400">
-                                            <BookOpen size={32} />
+                                <div className="bg-surface rounded-xl p-5 border border-border">
+                                    <div className="flex items-center gap-4 mb-5">
+                                        <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                                            <BookOpen size={28} />
                                         </div>
                                         <div>
-                                            <h4 className="text-2xl font-bold text-white">{selectedJadwal.nama}</h4>
-                                            <p className="text-orange-400 font-bold uppercase tracking-widest text-xs">{selectedJadwal.kode}</p>
+                                            <h4 className="text-xl font-bold">{selectedJadwal.nama}</h4>
+                                            <p className="text-primary-500 font-bold text-xs">{selectedJadwal.kode}</p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-[10px] text-white/40 font-bold uppercase mb-1">Ruangan</p>
-                                            <p className="text-white font-bold">{selectedJadwal.ruangan}</p>
-                                        </div>
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-[10px] text-white/40 font-bold uppercase mb-1">Kelas</p>
-                                            <p className="text-white font-bold">{selectedJadwal.kelas}</p>
-                                        </div>
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-[10px] text-white/40 font-bold uppercase mb-1">Waktu</p>
-                                            <p className="text-white font-bold">{selectedJadwal.waktu}</p>
-                                        </div>
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-[10px] text-white/40 font-bold uppercase mb-1">Kapasitas</p>
-                                            <p className="text-white font-bold">{selectedJadwal.mahasiswa} MHS</p>
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { label: 'Ruangan', value: selectedJadwal.ruangan },
+                                            { label: 'Kelas', value: selectedJadwal.kelas },
+                                            { label: 'Waktu', value: selectedJadwal.waktu },
+                                            { label: 'Kapasitas', value: `${selectedJadwal.mahasiswa} MHS` },
+                                        ].map(detail => (
+                                            <div key={detail.label} className="p-3 bg-white rounded-lg border border-border">
+                                                <p className="text-[10px] text-text-muted font-bold uppercase mb-0.5">{detail.label}</p>
+                                                <p className="text-sm font-bold">{detail.value}</p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-3">
+                                <div className="flex flex-col gap-2">
                                     <button 
                                         onClick={() => setIsRequesting(true)}
-                                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                        className="w-full py-3 rounded-xl bg-primary-500 text-white font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <AlertCircle size={20} />
+                                        <AlertCircle size={18} />
                                         Ajukan Perubahan Jadwal
                                     </button>
                                     <button 
                                         onClick={handleCloseModal}
-                                        className="w-full py-4 rounded-2xl bg-white/5 text-white/60 font-bold hover:text-white transition-colors"
+                                        className="w-full py-3 rounded-xl bg-surface text-text-secondary font-bold hover:text-text-primary transition-colors"
                                     >
                                         Tutup
                                     </button>
                                 </div>
                             </>
                         ) : (
-                            /* Request Form */
-                            <form onSubmit={handleSubmitRequest} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-white/60 uppercase tracking-widest ml-1">Hari Baru</label>
+                            <form onSubmit={handleSubmitRequest} className="space-y-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Hari Baru</label>
                                         <select 
                                             value={data.proposed_day}
                                             onChange={e => setData('proposed_day', e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                                             required
                                         >
-                                            <option value="" className="bg-[#1a1f2e]">Pilih Hari</option>
+                                            <option value="">Pilih Hari</option>
                                             {HARI_LIST.map(h => (
-                                                <option key={h.key} value={h.key} className="bg-[#1a1f2e]">{h.label}</option>
+                                                <option key={h.key} value={h.key}>{h.label}</option>
                                             ))}
                                         </select>
-                                        {errors.proposed_day && <p className="text-red-400 text-xs mt-1">{errors.proposed_day}</p>}
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-white/60 uppercase tracking-widest ml-1">Tipe Perubahan</label>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Tipe Perubahan</label>
                                         <select 
                                             value={data.request_type}
                                             onChange={e => setData('request_type', e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                                         >
-                                            <option value="RESCHEDULE" className="bg-[#1a1f2e]">Pindah Jadwal (Permanen)</option>
-                                            <option value="EXCHANGE" className="bg-[#1a1f2e]">Tukar Jadwal</option>
-                                            <option value="MAKEUP" className="bg-[#1a1f2e]">Jadwal Pengganti</option>
+                                            <option value="RESCHEDULE">Pindah Jadwal (Permanen)</option>
+                                            <option value="EXCHANGE">Tukar Jadwal</option>
+                                            <option value="MAKEUP">Jadwal Pengganti</option>
                                         </select>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-white/60 uppercase tracking-widest ml-1">Jam Mulai</label>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Jam Mulai</label>
                                         <input 
                                             type="time" 
                                             value={data.proposed_start_time}
                                             onChange={e => setData('proposed_start_time', e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm"
                                             required
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-white/60 uppercase tracking-widest ml-1">Jam Selesai</label>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Jam Selesai</label>
                                         <input 
                                             type="time" 
                                             value={data.proposed_end_time}
                                             onChange={e => setData('proposed_end_time', e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50"
+                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm"
                                             required
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-white/60 uppercase tracking-widest ml-1">Alasan Perubahan</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Alasan Perubahan</label>
                                     <textarea 
-                                        rows="4"
+                                        rows="3"
                                         value={data.reason}
                                         onChange={e => setData('reason', e.target.value)}
-                                        placeholder="Berikan alasan yang jelas untuk pengajuan ini..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 resize-none"
+                                        placeholder="Berikan alasan yang jelas..."
+                                        className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm resize-none"
                                         required
                                     ></textarea>
                                 </div>
 
-                                <div className="flex items-center gap-4 pt-4">
+                                <div className="flex items-center gap-3 pt-2">
                                     <button 
                                         type="button"
                                         onClick={() => setIsRequesting(false)}
-                                        className="flex-1 py-4 rounded-2xl bg-white/5 text-white font-bold hover:bg-white/10 transition-all"
+                                        className="flex-1 py-3 rounded-xl bg-surface text-text-primary font-bold hover:bg-border transition-all"
                                     >
                                         Kembali
                                     </button>
                                     <button 
                                         type="submit"
                                         disabled={processing}
-                                        className="flex-[2] py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+                                        className="flex-[2] py-3 rounded-xl bg-primary-500 text-white font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all flex items-center justify-center gap-2"
                                     >
-                                        {processing ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        ) : (
-                                            <CheckCircle2 size={20} />
-                                        )}
-                                        Kirim Pengajuan
+                                        {processing ? 'Mengirim...' : 'Kirim Pengajuan'}
+                                        {!processing && <CheckCircle2 size={18} />}
                                     </button>
                                 </div>
                             </form>
@@ -481,7 +410,7 @@ export default function DosenJadwal({
                     </div>
                 )}
             </Modal>
-        </>
+        </div>
     );
 }
 
