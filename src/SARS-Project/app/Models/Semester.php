@@ -25,27 +25,21 @@ class Semester extends Model
         'end_date' => 'date',
     ];
 
-    /**
-     * Relasi ke Course
-     */
     public function courses(): HasMany
     {
         return $this->hasMany(Course::class);
     }
 
-    /**
-     * Relasi ke Schedule
-     */
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class);
     }
 
     /**
-     * Scope untuk semester aktif
+     * Get the currently active semester.
      */
-    public static function active()
+    public static function active(): ?self
     {
-        return self::where('is_active', true)->first();
+        return static::where('is_active', true)->first();
     }
 }

@@ -11,31 +11,31 @@ class Notification extends Model
 {
     use HasFactory;
 
+    public $timestamps = true;
+
     protected $fillable = [
-        'user_id',
+        'user_id', // Fallback for single-user notifications
         'request_id',
         'triggered_by',
+        'type',
+        'category',
         'title',
         'message',
         'body',
-        'type',
-        'category',
         'action_url',
         'data_payload',
         'read_at',
+        'created_at',
     ];
 
     protected $casts = [
-        'read_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
         'data_payload' => 'array',
+        'read_at'      => 'datetime',
+        'created_at'   => 'datetime',
     ];
 
-    public $timestamps = true;
-
     /**
-     * Relasi ke User (untuk dosen yang menerima notifikasi)
+     * Relasi ke User (untuk dosen yang menerima notifikasi - legacy/simple mode)
      */
     public function user(): BelongsTo
     {
@@ -51,7 +51,15 @@ class Notification extends Model
     }
 
     /**
-     * Scope untuk notifikasi belum dibaca
+     * Multi-recipient support (from notification branch)
+     */
+    public function recipients(): HasMany
+    {
+        return $this->hasMany(NotificationRecipient::class);
+    }
+
+    /**
+     * Scope untuk notifikasi belum dibaca (legacy)
      */
     public function scopeUnread($query)
     {
@@ -59,15 +67,7 @@ class Notification extends Model
     }
 
     /**
-     * Scope untuk notifikasi berdasarkan tipe
-     */
-    public function scopeByType($query, $type)
-    {
-        return $query->where('type', $type);
-    }
-
-    /**
-     * Scope untuk user tertentu
+     * Scope untuk user tertentu (legacy)
      */
     public function scopeForUser($query, $userId)
     {

@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import Sidebar from '../Components/Dosen/Sidebar';
-import TopBar from '../Components/Dosen/TopBar';
-import AiAssistantPanel from '../Components/Dosen/AiAssistantPanel';
-import AiAssistantFab from '../Components/Dosen/AiAssistantFab';
+import Sidebar from '../Components/Admin/Sidebar';
+import TopBar from '../Components/Admin/TopBar';
+import AiAssistantPanel from '../Components/Admin/AiAssistantPanel';
+import AiAssistantFab from '../Components/Admin/AiAssistantFab';
+import UploadModal from '../Components/Admin/UploadModal';
 
-export default function DosenLayout({ children }) {
-    const { auth, notifikasi } = usePage().props;
+export default function AdminLayout({ children }) {
+    const { auth } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [aiPanelOpen, setAiPanelOpen] = useState(true);
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
-    // Auto-collapse based on breakpoint
+    // Auto-collapse berdasarkan breakpoint
     useEffect(() => {
         const mediaLg = window.matchMedia('(max-width: 1024px)');
         const mediaMd = window.matchMedia('(max-width: 768px)');
@@ -40,13 +42,14 @@ export default function DosenLayout({ children }) {
             <Sidebar
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                onAiToggle={() => setAiPanelOpen(!aiPanelOpen)}
             />
 
             {/* ── Top Bar ─────────────────────────────────────────── */}
             <TopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
-                notifikasi={notifikasi}
+                onUploadClick={() => setUploadModalOpen(true)}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}
@@ -57,7 +60,7 @@ export default function DosenLayout({ children }) {
                 `}
             >
                 {/* Main content area */}
-                <main className="flex-1 min-w-0 p-6 pt-20">
+                <main className="flex-1 min-w-0 p-6">
                     {children}
                 </main>
 
@@ -70,13 +73,16 @@ export default function DosenLayout({ children }) {
                 )}
             </div>
 
-            {/* FAB when AI panel is closed */}
+            {/* FAB saat AI panel tertutup */}
             {!aiPanelOpen && (
                 <AiAssistantFab onClick={() => setAiPanelOpen(true)} />
             )}
-        </div>
-    );
-}
+
+            {/* Upload Modal */}
+            <UploadModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+            />
         </div>
     );
 }

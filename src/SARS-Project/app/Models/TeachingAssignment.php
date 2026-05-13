@@ -10,29 +10,24 @@ class TeachingAssignment extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'schedule_id',
         'user_id',
         'role_in_class',
+        'assigned_at',
     ];
-
-    public $timestamps = false;
 
     protected $casts = [
         'assigned_at' => 'datetime',
     ];
 
-    /**
-     * Relasi ke Schedule
-     */
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(Schedule::class);
     }
 
-    /**
-     * Relasi ke User
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

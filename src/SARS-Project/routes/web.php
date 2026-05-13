@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dosen\DosenDashboardController;
 use App\Http\Controllers\Dosen\DosenJadwalController;
 use App\Http\Controllers\Dosen\DosenNotificationController;
+use App\Http\Controllers\Dosen\DosenNotifikasiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -47,10 +48,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
         Route::get('/jadwal',    [DosenJadwalController::class, 'index'])->name('jadwal');
         Route::post('/jadwal/request', [DosenJadwalController::class, 'storeRequest'])->name('jadwal.request');
+        Route::get('/pengaturan', fn () => Inertia::render('Dosen/Setting'))->name('pengaturan');
+
+        // ── Notifications (Jadwal Branch) ────────────────────────────────────
         Route::get('/notification', [DosenNotificationController::class, 'index'])->name('notification');
         Route::post('/notification/{notification}/read', [DosenNotificationController::class, 'markAsRead'])->name('notification.read');
         Route::delete('/notification/{notification}', [DosenNotificationController::class, 'destroy'])->name('notification.destroy');
-        Route::get('/pengaturan', fn () => Inertia::render('Dosen/Setting'))->name('pengaturan');
+
+        // ── Notifikasi (Notification Branch) ──────────────────────────────────
+        Route::get('/notifikasi',                        [DosenNotifikasiController::class, 'index'])->name('notifikasi');
+        Route::post('/notifikasi/{id}/read',             [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
+        Route::post('/notifikasi/read-all',              [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{id}',                [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
     });
 
     // Mahasiswa dashboard
