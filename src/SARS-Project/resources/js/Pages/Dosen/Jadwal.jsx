@@ -237,7 +237,7 @@ export default function DosenJadwal({
                                                 <div>
                                                     <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Waktu</p>
                                                     <p className="text-xs font-semibold text-text-primary">
-                                                        {item.waktu} <span className="text-text-muted font-medium">(Sesi {item.sesiMulai})</span>
+                                                        {item.waktu} <span className="text-text-muted font-medium">({item.sesiMulai} Sesi)</span>
                                                     </p>
                                                 </div>
                                             </div>
