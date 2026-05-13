@@ -64,7 +64,7 @@ export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
                     {dayJadwal.map((item) => (
                         <div
                             key={item.id}
-                            className="bg-card border border-border rounded-2xl p-6 hover:border-primary-500/30 hover:shadow-xl hover:shadow-primary-500/5 transition-all duration-300 group flex flex-col"
+                            className="bg-card border border-border rounded-2xl p-6 hover:border-primary-500 hover:shadow-xl transition-all duration-300 group flex flex-col"
                         >
                             {/* Course Badge */}
                             <div className="mb-3">
