@@ -98,7 +98,7 @@ export default function DosenNotification({ notifications = [] }) {
                         return (
                             <div
                                 key={notif.id}
-                                className={`group bg-card border border-border hover:border-primary-500/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/5 ${!notif.read ? 'border-primary-500/40 ring-1 ring-primary-500/5' : ''}`}
+                                className={`group bg-card border border-border hover:border-primary-500 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl ${!notif.read ? 'border-primary-500/40 ring-1 ring-primary-500/10 bg-primary-500/[0.02]' : ''}`}
                             >
                                 <div className="flex items-start gap-5">
                                     {/* Icon */}
