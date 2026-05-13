@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import { 
     User, 
@@ -18,6 +18,9 @@ import DosenLayout from '../../Layouts/DosenLayout';
 export default function DosenSetting({ user }) {
     const { flash } = usePage().props;
     const [previewUrl, setPreviewUrl] = useState(user.avatar_url);
+    const [activeTheme, setActiveTheme] = useState(() => {
+        return localStorage.getItem('theme') || 'light';
+    });
     const fileInputRef = useRef();
 
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
@@ -49,10 +52,34 @@ export default function DosenSetting({ user }) {
         });
     };
 
+    const handleThemeChange = (theme) => {
+        setActiveTheme(theme);
+        localStorage.setItem('theme', theme);
+        
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            // System
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Apply theme on mount
+        const theme = localStorage.getItem('theme') || 'light';
+        handleThemeChange(theme);
+    }, []);
+
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-12">
             {/* ── Header ─────────────────────────────────────────── */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 px-1">
                 <div className="w-12 h-12 rounded-2xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
                     <User className="text-white" size={24} />
                 </div>
@@ -85,6 +112,7 @@ export default function DosenSetting({ user }) {
                                 )}
                             </div>
                             <button 
+                                type="button"
                                 onClick={() => fileInputRef.current.click()}
                                 className="absolute bottom-0 right-0 w-10 h-10 bg-primary-500 text-white rounded-full flex items-center justify-center border-4 border-white shadow-lg hover:bg-primary-600 transition-all scale-90 group-hover:scale-100"
                             >
@@ -99,7 +127,7 @@ export default function DosenSetting({ user }) {
                             />
                         </div>
                         <h3 className="text-lg font-bold text-text-primary">{user.name}</h3>
-                        <p className="text-text-muted text-xs font-medium uppercase tracking-widest mt-1">Dosen Pengampu</p>
+                        <p className="text-text-muted text-[10px] font-black uppercase tracking-widest mt-1">Dosen Pengampu</p>
                         
                         <div className="mt-6 pt-6 border-t border-border space-y-3">
                             <div className="flex items-center gap-3 text-left">
@@ -117,7 +145,7 @@ export default function DosenSetting({ user }) {
                     <div className="bg-primary-500/5 border border-primary-500/10 rounded-2xl p-5">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="text-primary-500 shrink-0" size={18} />
-                            <p className="text-xs text-primary-700 leading-relaxed font-medium">
+                            <p className="text-[11px] text-primary-700 leading-relaxed font-semibold">
                                 Akun Anda terhubung melalui sistem SSO. Password hanya dapat diubah melalui portal pusat universitas.
                             </p>
                         </div>
@@ -131,10 +159,15 @@ export default function DosenSetting({ user }) {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         onSubmit={handleSubmit}
-                        className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-6"
+                        className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-8"
                     >
-                        <div className="flex items-center justify-between mb-2">
-                            <h2 className="text-lg font-bold text-text-primary">Informasi Umum</h2>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-500">
+                                    <ImageIcon size={18} />
+                                </div>
+                                <h2 className="text-lg font-bold text-text-primary">Informasi Umum</h2>
+                            </div>
                             <AnimatePresence>
                                 {recentlySuccessful && (
                                     <motion.div 
@@ -152,35 +185,37 @@ export default function DosenSetting({ user }) {
 
                         <div className="grid grid-cols-1 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-text-muted uppercase tracking-widest px-1">Nama Lengkap</label>
+                                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">Nama Lengkap</label>
                                 <input 
                                     type="text" 
                                     value={data.name}
                                     onChange={e => setData('name', e.target.value)}
-                                    className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500/50 transition-all"
+                                    className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500/50 transition-all font-medium"
                                     placeholder="Masukkan nama lengkap..."
                                 />
-                                {errors.name && <p className="text-xs text-red-500 font-medium px-1">{errors.name}</p>}
+                                {errors.name && <p className="text-xs text-red-500 font-medium px-1 mt-1">{errors.name}</p>}
                             </div>
 
-                            <div className="space-y-2 opacity-60">
-                                <label className="text-xs font-bold text-text-muted uppercase tracking-widest px-1">Email (Read Only)</label>
-                                <input 
-                                    type="email" 
-                                    value={user.email}
-                                    disabled
-                                    className="w-full px-4 py-3 bg-surface/50 border border-border rounded-xl text-text-muted cursor-not-allowed"
-                                />
-                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2 opacity-70">
+                                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">Email</label>
+                                    <input 
+                                        type="email" 
+                                        value={user.email}
+                                        disabled
+                                        className="w-full px-4 py-3 bg-surface/50 border border-border rounded-xl text-text-muted cursor-not-allowed font-medium"
+                                    />
+                                </div>
 
-                            <div className="space-y-2 opacity-60">
-                                <label className="text-xs font-bold text-text-muted uppercase tracking-widest px-1">NIP (Read Only)</label>
-                                <input 
-                                    type="text" 
-                                    value={user.nim_nip}
-                                    disabled
-                                    className="w-full px-4 py-3 bg-surface/50 border border-border rounded-xl text-text-muted cursor-not-allowed"
-                                />
+                                <div className="space-y-2 opacity-70">
+                                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">NIP / Identitas</label>
+                                    <input 
+                                        type="text" 
+                                        value={user.nim_nip}
+                                        disabled
+                                        className="w-full px-4 py-3 bg-surface/50 border border-border rounded-xl text-text-muted cursor-not-allowed font-medium"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -190,7 +225,11 @@ export default function DosenSetting({ user }) {
                                 disabled={processing}
                                 className="flex items-center gap-2 px-8 py-3 bg-primary-500 text-white rounded-xl font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all disabled:opacity-50"
                             >
-                                <Save size={18} />
+                                {processing ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Save size={18} />
+                                )}
                                 {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
                             </button>
                         </div>
@@ -203,7 +242,12 @@ export default function DosenSetting({ user }) {
                         transition={{ delay: 0.1 }}
                         className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-6"
                     >
-                        <h2 className="text-lg font-bold text-text-primary mb-2">Tampilan</h2>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-500">
+                                <Monitor size={18} />
+                            </div>
+                            <h2 className="text-lg font-bold text-text-primary">Tampilan</h2>
+                        </div>
                         
                         <div className="grid grid-cols-3 gap-4">
                             {[
@@ -213,23 +257,25 @@ export default function DosenSetting({ user }) {
                             ].map((theme) => (
                                 <button
                                     key={theme.id}
+                                    type="button"
+                                    onClick={() => handleThemeChange(theme.id)}
                                     className={`
-                                        flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all
-                                        ${theme.id === 'light' 
-                                            ? 'bg-primary-500/10 border-primary-500/30 text-primary-500 shadow-sm' 
-                                            : 'bg-surface border-border text-text-muted hover:border-primary-500/30 hover:text-text-primary'
+                                        flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all duration-300
+                                        ${activeTheme === theme.id 
+                                            ? 'bg-primary-500/10 border-primary-500/40 text-primary-500 shadow-md scale-[1.02]' 
+                                            : 'bg-surface border-border text-text-muted hover:border-primary-500/20 hover:text-text-primary'
                                         }
                                     `}
                                 >
-                                    <theme.icon size={24} />
-                                    <span className="text-xs font-bold uppercase tracking-widest">{theme.label}</span>
+                                    <theme.icon size={28} strokeWidth={activeTheme === theme.id ? 2.5 : 2} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.1em]">{theme.label}</span>
                                 </button>
                             ))}
                         </div>
 
-                        <div className="pt-2">
-                            <p className="text-xs text-text-muted font-medium italic">
-                                * Fitur tema saat ini masih dalam tahap pengembangan.
+                        <div className="pt-2 bg-surface/50 p-4 rounded-xl border border-border/50">
+                            <p className="text-[11px] text-text-muted font-medium italic leading-relaxed">
+                                Fitur tema menyesuaikan kenyamanan mata Anda saat bekerja. Pilihan "Sistem" akan mengikuti pengaturan default perangkat Anda.
                             </p>
                         </div>
                     </motion.div>

@@ -34,6 +34,16 @@ export default function DosenLayout({ children }) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Handle Theme Persistence
+    useEffect(() => {
+        const theme = localStorage.getItem('theme') || 'light';
+        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, []);
+
     return (
         <div className="min-h-screen bg-surface font-sans">
             {/* ── Left Sidebar ────────────────────────────────────── */}
