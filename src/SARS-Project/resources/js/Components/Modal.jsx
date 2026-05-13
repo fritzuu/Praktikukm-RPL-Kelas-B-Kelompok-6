@@ -39,7 +39,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '2x
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
                     />
 
                     {/* Modal Content */}
@@ -50,16 +50,16 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '2x
                         transition={{ type: 'spring', duration: 0.5, bounce: 0.3 }}
                         className={`
                             relative w-full ${maxWidthClasses[maxWidth]} 
-                            bg-[#1a1f2e] border border-white/10 
+                            bg-white border border-border 
                             rounded-3xl shadow-2xl overflow-hidden
                         `}
                     >
                         {/* Header */}
-                        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
-                            <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+                        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface/50">
+                            <h3 className="text-xl font-bold text-text-primary tracking-tight">{title}</h3>
                             <button
                                 onClick={onClose}
-                                className="p-2 hover:bg-white/10 rounded-xl text-white/50 hover:text-white transition-all"
+                                className="p-2 hover:bg-surface rounded-xl text-text-muted hover:text-text-primary transition-all"
                             >
                                 <X size={20} />
                             </button>

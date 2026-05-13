@@ -1,23 +1,17 @@
 import { useState } from 'react';
 import { 
     Calendar, 
-    BookOpen, 
-    TrendingUp, 
     CalendarDays, 
     Clock, 
     MapPin, 
     Download,
     Filter,
     Search,
-    AlertCircle,
-    CheckCircle2,
-    ArrowRight,
-    Users
+    BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DosenLayout from '../../Layouts/DosenLayout';
 import Modal from '../../Components/Modal';
-import { useForm } from '@inertiajs/react';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -29,7 +23,6 @@ const HARI_LIST = [
 
 export default function DosenJadwal({ 
     jadwal = [], 
-    stats = { totalMataKuliah: 0, totalSks: 0, totalJadwal: 0 },
     semester = { nama: 'Ganjil', tahun: '2024/2025' }
 }) {
     const getTodayKey = () => {
@@ -41,7 +34,6 @@ export default function DosenJadwal({
     const [selectedDay, setSelectedDay] = useState(getTodayKey());
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedJadwal, setSelectedJadwal] = useState(null);
-    const [isRequesting, setIsRequesting] = useState(false);
 
     const dayJadwal = jadwal.filter(j => 
         j.hari === selectedDay && 
@@ -49,59 +41,13 @@ export default function DosenJadwal({
          j.kode.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const { data, setData, post, processing, errors, reset } = useForm({
-        schedule_id: '',
-        request_type: 'RESCHEDULE',
-        proposed_day: '',
-        proposed_start_time: '',
-        proposed_end_time: '',
-        reason: '',
-    });
-
     const handleOpenDetail = (item) => {
         setSelectedJadwal(item);
-        setData('schedule_id', item.id);
-        setIsRequesting(false);
     };
 
     const handleCloseModal = () => {
         setSelectedJadwal(null);
-        setIsRequesting(false);
-        reset();
     };
-
-    const handleSubmitRequest = (e) => {
-        e.preventDefault();
-        post(route('dosen.jadwal.request'), {
-            onSuccess: () => {
-                handleCloseModal();
-            },
-        });
-    };
-
-    const statCards = [
-        {
-            label: 'Total Mata Kuliah',
-            value: stats.totalMataKuliah,
-            suffix: 'MK',
-            icon: BookOpen,
-            color: 'bg-primary-500/10 text-primary-500',
-        },
-        {
-            label: 'Beban Mengajar',
-            value: stats.totalSks,
-            suffix: 'SKS',
-            icon: TrendingUp,
-            color: 'bg-success/10 text-success',
-        },
-        {
-            label: 'Total Pertemuan',
-            value: stats.totalJadwal,
-            suffix: 'Minggu',
-            icon: Calendar,
-            color: 'bg-warning/10 text-warning',
-        }
-    ];
 
     return (
         <div className="space-y-6">
@@ -122,36 +68,15 @@ export default function DosenJadwal({
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border text-text-secondary text-sm font-medium hover:bg-surface transition-all">
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border text-text-secondary text-sm font-medium hover:bg-surface transition-all shadow-sm">
                         <Download size={16} />
                         <span className="hidden sm:inline">Export</span>
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border text-text-secondary text-sm font-medium hover:bg-surface transition-all">
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border text-text-secondary text-sm font-medium hover:bg-surface transition-all shadow-sm">
                         <Filter size={16} />
                         <span className="hidden sm:inline">Filter</span>
                     </button>
                 </div>
-            </div>
-
-            {/* ── Stats Area ────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {statCards.map((card, idx) => {
-                    const Icon = card.icon;
-                    return (
-                        <div key={idx} className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.color}`}>
-                                    <Icon size={20} />
-                                </div>
-                            </div>
-                            <p className="text-2xl font-bold text-text-primary">
-                                {card.value}
-                                <span className="text-sm font-medium text-text-muted ml-1">{card.suffix}</span>
-                            </p>
-                            <p className="text-xs text-text-muted mt-0.5">{card.label}</p>
-                        </div>
-                    );
-                })}
             </div>
 
             {/* ── Search & Filter ───────────────────────────────────── */}
@@ -163,7 +88,7 @@ export default function DosenJadwal({
                         placeholder="Cari mata kuliah atau kode..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-2.5 bg-card border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500/50 transition-all"
+                        className="w-full pl-12 pr-4 py-2.5 bg-card border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500/50 transition-all shadow-sm"
                     />
                 </div>
             </div>
@@ -218,32 +143,33 @@ export default function DosenJadwal({
                                 {dayJadwal.map((item) => (
                                     <div 
                                         key={item.id}
-                                        className="group bg-white border border-border rounded-xl p-5 hover:border-primary-500/40 hover:shadow-lg transition-all duration-300"
+                                        onClick={() => handleOpenDetail(item)}
+                                        className="group bg-white border border-border rounded-xl p-5 hover:border-primary-500/40 hover:shadow-lg transition-all duration-300 cursor-pointer"
                                     >
                                         <div className="flex flex-col gap-1.5 mb-5">
                                             <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2 py-0.5 rounded-md uppercase tracking-wider w-fit">
                                                 {item.kode}
                                             </span>
-                                            <h3 className="text-base font-bold text-text-primary line-clamp-2 leading-tight">
+                                            <h3 className="text-base font-bold text-text-primary line-clamp-2 leading-tight group-hover:text-primary-500 transition-colors">
                                                 {item.nama}
                                             </h3>
                                         </div>
 
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary">
+                                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary group-hover:bg-primary-500/10 group-hover:text-primary-500 transition-colors">
                                                     <Clock size={14} />
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Waktu</p>
                                                     <p className="text-xs font-semibold text-text-primary">
-                                                        {item.waktu} <span className="text-text-muted font-medium">({item.sesiMulai} Sesi)</span>
+                                                        {item.waktu} <span className="text-text-muted font-medium">(Sesi {item.sesiMulai})</span>
                                                     </p>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary">
+                                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary group-hover:bg-primary-500/10 group-hover:text-primary-500 transition-colors">
                                                     <MapPin size={14} />
                                                 </div>
                                                 <div>
@@ -254,13 +180,6 @@ export default function DosenJadwal({
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <button 
-                                            onClick={() => handleOpenDetail(item)}
-                                            className="w-full mt-6 py-2.5 rounded-lg bg-surface text-[11px] font-bold uppercase tracking-wider text-text-secondary hover:bg-primary-500 hover:text-white transition-all shadow-sm"
-                                        >
-                                            Lihat Detail
-                                        </button>
                                     </div>
                                 ))}
                             </motion.div>
@@ -269,144 +188,47 @@ export default function DosenJadwal({
                 </div>
             </div>
 
-            {/* ── Detail & Request Modal ────────────────────────── */}
+            {/* ── Detail Modal ────────────────────────── */}
             <Modal
                 isOpen={!!selectedJadwal}
                 onClose={handleCloseModal}
-                title={isRequesting ? 'Pengajuan Perubahan' : 'Detail Mata Kuliah'}
-                maxWidth={isRequesting ? '2xl' : 'lg'}
+                title="Detail Mata Kuliah"
+                maxWidth="lg"
             >
                 {selectedJadwal && (
                     <div className="space-y-6 text-text-primary">
-                        {!isRequesting ? (
-                            <>
-                                <div className="bg-surface rounded-xl p-5 border border-border">
-                                    <div className="flex items-center gap-4 mb-5">
-                                        <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
-                                            <BookOpen size={28} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-xl font-bold">{selectedJadwal.nama}</h4>
-                                            <p className="text-primary-500 font-bold text-xs">{selectedJadwal.kode}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {[
-                                            { label: 'Ruangan', value: selectedJadwal.ruangan },
-                                            { label: 'Kelas', value: selectedJadwal.kelas },
-                                            { label: 'Waktu', value: selectedJadwal.waktu },
-                                            { label: 'Kapasitas', value: `${selectedJadwal.mahasiswa} MHS` },
-                                        ].map(detail => (
-                                            <div key={detail.label} className="p-3 bg-white rounded-lg border border-border">
-                                                <p className="text-[10px] text-text-muted font-bold uppercase mb-0.5">{detail.label}</p>
-                                                <p className="text-sm font-bold">{detail.value}</p>
-                                            </div>
-                                        ))}
-                                    </div>
+                        <div className="bg-surface/50 rounded-2xl p-6 border border-border">
+                            <div className="flex items-center gap-5 mb-6">
+                                <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                                    <BookOpen size={32} />
                                 </div>
-
-                                <div className="flex flex-col gap-2">
-                                    <button 
-                                        onClick={() => setIsRequesting(true)}
-                                        className="w-full py-3 rounded-xl bg-primary-500 text-white font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <AlertCircle size={18} />
-                                        Ajukan Perubahan Jadwal
-                                    </button>
-                                    <button 
-                                        onClick={handleCloseModal}
-                                        className="w-full py-3 rounded-xl bg-surface text-text-secondary font-bold hover:text-text-primary transition-colors"
-                                    >
-                                        Tutup
-                                    </button>
+                                <div>
+                                    <h4 className="text-xl font-bold leading-tight">{selectedJadwal.nama}</h4>
+                                    <p className="text-primary-500 font-bold text-xs mt-1 uppercase tracking-wider">{selectedJadwal.kode}</p>
                                 </div>
-                            </>
-                        ) : (
-                            <form onSubmit={handleSubmitRequest} className="space-y-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Hari Baru</label>
-                                        <select 
-                                            value={data.proposed_day}
-                                            onChange={e => setData('proposed_day', e.target.value)}
-                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                                            required
-                                        >
-                                            <option value="">Pilih Hari</option>
-                                            {HARI_LIST.map(h => (
-                                                <option key={h.key} value={h.key}>{h.label}</option>
-                                            ))}
-                                        </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { label: 'Ruangan', value: selectedJadwal.ruangan },
+                                    { label: 'Kelas', value: selectedJadwal.kelas },
+                                    { label: 'Waktu', value: selectedJadwal.waktu },
+                                    { label: 'Kapasitas', value: `${selectedJadwal.mahasiswa} MHS` },
+                                ].map(detail => (
+                                    <div key={detail.label} className="p-4 bg-white rounded-xl border border-border shadow-sm">
+                                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-1">{detail.label}</p>
+                                        <p className="text-sm font-bold text-text-primary">{detail.value}</p>
                                     </div>
+                                ))}
+                            </div>
+                        </div>
 
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Tipe Perubahan</label>
-                                        <select 
-                                            value={data.request_type}
-                                            onChange={e => setData('request_type', e.target.value)}
-                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                                        >
-                                            <option value="RESCHEDULE">Pindah Jadwal (Permanen)</option>
-                                            <option value="EXCHANGE">Tukar Jadwal</option>
-                                            <option value="MAKEUP">Jadwal Pengganti</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Jam Mulai</label>
-                                        <input 
-                                            type="time" 
-                                            value={data.proposed_start_time}
-                                            onChange={e => setData('proposed_start_time', e.target.value)}
-                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm"
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Jam Selesai</label>
-                                        <input 
-                                            type="time" 
-                                            value={data.proposed_end_time}
-                                            onChange={e => setData('proposed_end_time', e.target.value)}
-                                            className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Alasan Perubahan</label>
-                                    <textarea 
-                                        rows="3"
-                                        value={data.reason}
-                                        onChange={e => setData('reason', e.target.value)}
-                                        placeholder="Berikan alasan yang jelas..."
-                                        className="w-full bg-white border border-border rounded-lg px-4 py-2.5 text-sm resize-none"
-                                        required
-                                    ></textarea>
-                                </div>
-
-                                <div className="flex items-center gap-3 pt-2">
-                                    <button 
-                                        type="button"
-                                        onClick={() => setIsRequesting(false)}
-                                        className="flex-1 py-3 rounded-xl bg-surface text-text-primary font-bold hover:bg-border transition-all"
-                                    >
-                                        Kembali
-                                    </button>
-                                    <button 
-                                        type="submit"
-                                        disabled={processing}
-                                        className="flex-[2] py-3 rounded-xl bg-primary-500 text-white font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        {processing ? 'Mengirim...' : 'Kirim Pengajuan'}
-                                        {!processing && <CheckCircle2 size={18} />}
-                                    </button>
-                                </div>
-                            </form>
-                        )}
+                        <button 
+                            onClick={handleCloseModal}
+                            className="w-full py-4 rounded-2xl bg-primary-500 text-white font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all"
+                        >
+                            Tutup
+                        </button>
                     </div>
                 )}
             </Modal>

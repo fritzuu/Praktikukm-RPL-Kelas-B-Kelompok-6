@@ -87,7 +87,7 @@ export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
                                     <div>
                                         <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-0.5">Waktu</p>
                                         <p className="text-sm font-bold text-text-primary">
-                                            {item.waktu} <span className="text-text-muted font-medium ml-1">({item.sesiMulai} Sesi)</span>
+                                            {item.waktu} <span className="text-text-muted font-medium ml-1">(Sesi {item.sesiMulai})</span>
                                         </p>
                                     </div>
                                 </div>
