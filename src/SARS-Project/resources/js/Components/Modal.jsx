@@ -50,7 +50,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '2x
                         transition={{ type: 'spring', duration: 0.5, bounce: 0.3 }}
                         className={`
                             relative w-full ${maxWidthClasses[maxWidth]} 
-                            bg-white border border-border 
+                            bg-card border border-border 
                             rounded-3xl shadow-2xl overflow-hidden
                         `}
                     >
