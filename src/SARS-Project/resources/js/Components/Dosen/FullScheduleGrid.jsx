@@ -10,7 +10,7 @@ const HARI_LIST = [
 ];
 
 const TIPE_STYLES = {
-    resmi: 'bg-primary-500/5 border-primary-500/20 text-primary-600',
+    resmi: 'bg-primary-500/5 border-primary-500/30 text-primary-600',
     override: 'bg-warning/10 border-warning/50 text-warning-800',
     konflik: 'bg-danger/5 border-danger/40 text-danger-800 border-dashed',
 };
@@ -31,6 +31,13 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
                         Jadwal & Ketersediaan Ruangan
                     </h2>
                 </div>
+                <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2 text-xs font-bold rounded-lg border bg-card text-text-secondary border-border hover:bg-surface transition-all flex items-center gap-2 shadow-sm"
+                >
+                    <Download size={14} />
+                    Export Jadwal
+                </button>
             </div>
 
             {/* Day Selector Tabs */}
@@ -51,11 +58,11 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
             </div>
 
             {/* Matrix Grid */}
-            <div className="bg-white border border-border rounded-2xl overflow-hidden overflow-x-auto shadow-sm no-scrollbar">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto shadow-sm no-scrollbar">
                 <div className="min-w-[1200px]">
                     {/* Header Row */}
-                    <div className="grid grid-cols-[140px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-white">
-                        <div className="p-4 font-bold text-[10px] tracking-widest text-text-muted border-r border-border sticky left-0 bg-white z-30 flex items-center uppercase">
+                    <div className="grid grid-cols-[140px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-surface/50">
+                        <div className="p-4 font-bold text-[10px] tracking-widest text-text-muted border-r border-border sticky left-0 bg-surface z-30 flex items-center uppercase">
                             RUANGAN
                         </div>
                         {Array.from({ length: 11 }, (_, i) => (
@@ -72,7 +79,7 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
                         return (
                             <div key={room.id} className="grid grid-cols-[140px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group">
                                 {/* Room Label - Sticky */}
-                                <div className="p-4 font-bold text-sm text-text-primary border-r border-border sticky left-0 bg-white z-20 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                <div className="p-4 font-bold text-sm text-text-primary border-r border-border sticky left-0 bg-card z-20 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors group-hover:bg-surface/30">
                                     {room.code}
                                 </div>
 
@@ -95,12 +102,12 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
 
                                         const appliedStyle = isConflict
                                             ? TIPE_STYLES.konflik 
-                                            : (item.isOwn ? 'bg-primary-500 border-primary-600 text-white shadow-md' : 'bg-surface/40 border-border/80 text-text-primary');
+                                            : (item.isOwn ? 'bg-primary-500 border-primary-600 text-white shadow-md' : 'bg-surface border-border/80 text-text-primary hover:border-primary-500/30');
 
                                         return (
                                             <div
                                                 key={item.id}
-                                                className={`relative z-10 mx-1.5 rounded-lg border p-3 flex flex-col justify-center transition-all hover:shadow-lg ${appliedStyle} ${isConflict ? 'ring-1 ring-danger/20' : ''}`}
+                                                className={`relative z-10 mx-1.5 rounded-lg border p-3 flex flex-col justify-center overflow-hidden transition-all hover:shadow-lg ${appliedStyle} ${isConflict ? 'ring-1 ring-danger/20' : ''}`}
                                                 style={{
                                                     gridColumnStart: item.sesiMulai,
                                                     gridColumnEnd: `span ${item.durasi}`
