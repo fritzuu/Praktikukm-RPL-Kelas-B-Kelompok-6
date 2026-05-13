@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
         Route::get('/jadwal',    [DosenJadwalController::class, 'index'])->name('jadwal');
+        Route::post('/jadwal/request', [DosenJadwalController::class, 'storeRequest'])->name('jadwal.request');
         Route::get('/notification', [DosenNotificationController::class, 'index'])->name('notification');
         Route::post('/notification/{notification}/read', [DosenNotificationController::class, 'markAsRead'])->name('notification.read');
         Route::delete('/notification/{notification}', [DosenNotificationController::class, 'destroy'])->name('notification.destroy');
