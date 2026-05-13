@@ -156,7 +156,7 @@ export default function DosenJadwal({
                                         <div 
                                             key={item.id}
                                             onClick={() => handleOpenDetail(item)}
-                                            className="group bg-card border border-border rounded-xl p-5 hover:border-primary-500 hover:scale-[1.02] hover:bg-primary-500/[0.03] hover:shadow-xl hover:shadow-primary-500/10 transition-all duration-300 cursor-pointer"
+                                            className="group bg-card border border-border rounded-xl p-5 hover:border-accent-cyan hover:scale-[1.02] hover:bg-accent-cyan/[0.03] hover:shadow-xl hover:shadow-accent-cyan/10 transition-all duration-300 cursor-pointer"
                                         >
                                             <div className="flex flex-col gap-1.5 mb-5">
                                                 <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2 py-0.5 rounded-md uppercase tracking-wider w-fit">
