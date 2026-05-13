@@ -77,6 +77,3 @@ export default function DosenLayout({ children }) {
         </div>
     );
 }
-        </div>
-    );
-}
