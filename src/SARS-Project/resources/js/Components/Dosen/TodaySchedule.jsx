@@ -1,4 +1,5 @@
-import { Clock, MapPin, Users, Radio } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Clock, MapPin, Users, Radio, Loader2 } from 'lucide-react';
 import { MOCK_JADWAL_HARI_INI } from '../../data/dosenMockData';
 
 const STATUS_STYLES = {
@@ -23,9 +24,26 @@ const STATUS_STYLES = {
 };
 
 export default function TodaySchedule({ schedules = MOCK_JADWAL_HARI_INI }) {
+    const [isLoading, setIsLoading] = useState(true);
+    
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 600);
+        
+        return () => clearTimeout(timer);
+    }, []);
+
     const today = new Date();
     const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     const formattedDate = today.toLocaleDateString('id-ID', options);
+
+    const LoadingSpinner = () => (
+        <div className="bg-card border border-border rounded-xl p-12 flex flex-col items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-3" />
+            <p className="text-sm font-medium text-text-secondary">Memuat jadwal...</p>
+        </div>
+    );
 
     return (
         <section className="mb-6">
@@ -45,7 +63,9 @@ export default function TodaySchedule({ schedules = MOCK_JADWAL_HARI_INI }) {
             </div>
 
             {/* Today Cards */}
-            {schedules.length === 0 ? (
+            {isLoading ? (
+                <LoadingSpinner />
+            ) : schedules.length === 0 ? (
                 <div className="bg-card border border-border rounded-xl p-6 text-center">
                     <p className="text-text-secondary font-medium">Tidak ada jadwal hari ini 🎉</p>
                 </div>
