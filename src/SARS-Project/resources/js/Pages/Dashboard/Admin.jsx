@@ -3,6 +3,7 @@ import AdminLayout from '../../Layouts/AdminLayout';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
 import ActivityTable from '../../Components/Shared/ActivityTable';
 import AdminStatCards from '../../Components/Admin/AdminStatCards';
+import AdminInsightCards from '../../Components/Admin/AdminInsightCards';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import ConflictAlerts from '../../Components/Admin/ConflictAlerts';
 import {
@@ -11,6 +12,7 @@ import {
     MOCK_AKTIVITAS,
     MOCK_SYNC_STATUS,
     MOCK_ROOMS,
+    MOCK_INSIGHTS,
 } from '../../data/mockData';
 
 const STATUS_STYLES = {
@@ -65,6 +67,7 @@ export default function AdminDashboard({
     konflik = MOCK_KONFLIK,
     aktivitas = MOCK_AKTIVITAS,
     syncStatus = MOCK_SYNC_STATUS,
+    insights = MOCK_INSIGHTS,
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -82,6 +85,8 @@ export default function AdminDashboard({
             >
                 <AdminStatCards syncStatus={syncStatus} />
             </WelcomeHeader>
+
+            <AdminInsightCards insights={insights} />
 
             <ScheduleGrid 
                 jadwalItems={jadwal} 
