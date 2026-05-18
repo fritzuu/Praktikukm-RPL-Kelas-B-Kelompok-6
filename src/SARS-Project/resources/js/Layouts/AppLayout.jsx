@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
+import { AnimatePresence } from 'motion/react';
 import Sidebar from '../Components/Shared/Sidebar';
 import TopBar from '../Components/Shared/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
@@ -64,19 +65,24 @@ export default function AppLayout({ navItems, branding, topBarActions, children 
                 </main>
 
                 {/* Right AI Panel */}
-                {aiPanelOpen && (
-                    <AiAssistantPanel
-                        isOpen={aiPanelOpen}
-                        onClose={() => setAiPanelOpen(false)}
-                        role={user?.role}
-                    />
-                )}
+                <AnimatePresence>
+                    {aiPanelOpen && (
+                        <AiAssistantPanel
+                            key="ai-panel"
+                            isOpen={aiPanelOpen}
+                            onClose={() => setAiPanelOpen(false)}
+                            role={user?.role}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* FAB saat AI panel tertutup */}
-            {!aiPanelOpen && (
-                <AiAssistantFab onClick={() => setAiPanelOpen(true)} />
-            )}
+            <AnimatePresence>
+                {!aiPanelOpen && (
+                    <AiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
