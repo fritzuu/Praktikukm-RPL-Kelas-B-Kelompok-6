@@ -326,52 +326,98 @@ class DatabaseSeeder extends Seeder
         // 12. NOTIFICATIONS
         // =============================================
         DB::table('notifications')->insert([
-            // Notif 1: REQ-2025-001 approved
+            // Notif 1: REQ-2025-001 approved to requester
             [
+                'user_id' => 5,
                 'request_id' => 1,
                 'triggered_by' => 1,
                 'type' => 'STATUS_CHANGE',
                 'title' => 'Pengajuan REQ-2025-001 Disetujui',
                 'body' => 'Pengajuan perubahan jadwal Pemrograman Web tanggal 17 Maret 2025 telah disetujui oleh Admin.',
                 'data_payload' => json_encode(['request_id' => 1, 'action' => 'view_request']),
+                'read_at' => $now->copy()->subDays(7),
                 'created_at' => $now->copy()->subDays(8),
             ],
-            // Notif 2: REQ-2025-002 forwarded to admin
+            // Notif 2: REQ-2025-002 forwarded to requester
             [
+                'user_id' => 6,
                 'request_id' => 2,
                 'triggered_by' => 4,
                 'type' => 'STATUS_CHANGE',
                 'title' => 'Pengajuan REQ-2025-002 Diteruskan ke Admin',
                 'body' => 'Pengajuan perubahan jadwal Jaringan Komputer telah divalidasi Aslab dan diteruskan ke Admin untuk keputusan akhir.',
                 'data_payload' => json_encode(['request_id' => 2, 'action' => 'view_request']),
+                'read_at' => $now->copy()->subDays(2),
                 'created_at' => $now->copy()->subDays(3),
             ],
             // Notif 3: REQ-2025-003 new request for aslab
             [
+                'user_id' => 4,
                 'request_id' => 3,
                 'triggered_by' => 7,
                 'type' => 'STATUS_CHANGE',
                 'title' => 'Pengajuan Baru: REQ-2025-003',
                 'body' => 'Fajar Nugroho mengajukan perubahan jadwal Basis Data Lanjut. Menunggu validasi Aslab.',
                 'data_payload' => json_encode(['request_id' => 3, 'action' => 'review_request']),
+                'read_at' => null,
                 'created_at' => $now->copy()->subDays(1),
             ],
         ]);
 
         // =============================================
-        // 13. NOTIFICATION RECIPIENTS
+        // 13. NOTIFICATION RECIPIENTS (IN_APP channel)
         // =============================================
         DB::table('notification_recipients')->insert([
-            // Notif 1 -> Andi (requester) - IN_APP, already read
-            ['notification_id' => 1, 'recipient_id' => 5, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => $now->copy()->subDays(8), 'is_read' => true,  'read_at' => $now->copy()->subDays(7)],
-            ['notification_id' => 1, 'recipient_id' => 5, 'channel' => 'PUSH',   'is_sent' => true, 'sent_at' => $now->copy()->subDays(8), 'is_read' => false, 'read_at' => null],
-            // Notif 2 -> Dewi (requester) - IN_APP, read
-            ['notification_id' => 2, 'recipient_id' => 6, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => $now->copy()->subDays(3), 'is_read' => true,  'read_at' => $now->copy()->subDays(2)],
-            // Notif 2 -> Admin (needs to review)
-            ['notification_id' => 2, 'recipient_id' => 1, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => $now->copy()->subDays(3), 'is_read' => false, 'read_at' => null],
-            // Notif 3 -> Aslab Reza (needs to validate)
-            ['notification_id' => 3, 'recipient_id' => 4, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => $now->copy()->subDays(1), 'is_read' => false, 'read_at' => null],
-            ['notification_id' => 3, 'recipient_id' => 4, 'channel' => 'PUSH',   'is_sent' => true, 'sent_at' => $now->copy()->subDays(1), 'is_read' => false, 'read_at' => null],
+            // Notif 1 → Andi (requester of REQ-001)
+            [
+                'notification_id' => 1,
+                'recipient_id'    => 5,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(8),
+                'is_read'         => true,
+                'read_at'         => $now->copy()->subDays(7),
+            ],
+            // Notif 2 → Dewi (requester of REQ-002)
+            [
+                'notification_id' => 2,
+                'recipient_id'    => 6,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(3),
+                'is_read'         => true,
+                'read_at'         => $now->copy()->subDays(2),
+            ],
+            // Notif 3 → Reza/Aslab (new request from Fajar)
+            [
+                'notification_id' => 3,
+                'recipient_id'    => 4,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(1),
+                'is_read'         => false,
+                'read_at'         => null,
+            ],
+            // Notif 1 → Siti/Dosen (informed about approved request for her course)
+            [
+                'notification_id' => 1,
+                'recipient_id'    => 2,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(8),
+                'is_read'         => true,
+                'read_at'         => $now->copy()->subDays(6),
+            ],
+            // Notif 2 → Ahmad/Dosen (informed about forwarded request for his course)
+            [
+                'notification_id' => 2,
+                'recipient_id'    => 3,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(3),
+                'is_read'         => false,
+                'read_at'         => null,
+            ],
         ]);
     }
 }
