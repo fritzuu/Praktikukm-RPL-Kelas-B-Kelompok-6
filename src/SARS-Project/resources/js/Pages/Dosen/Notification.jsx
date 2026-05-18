@@ -11,9 +11,9 @@ import {
 import DosenLayout from '../../Layouts/DosenLayout';
 
 const NOTIFICATION_TYPES = {
-    success: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
-    warning: { icon: AlertCircle, color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/30' },
-    info: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
+    success: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+    warning: { icon: AlertCircle, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+    info: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
 };
 
 export default function DosenNotification({ notifications = [] }) {
@@ -33,18 +33,18 @@ export default function DosenNotification({ notifications = [] }) {
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <>
+        <div className="max-w-5xl mx-auto">
             {/* ── Header Section ────────────────────────────────────── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-1">
                 <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20">
                         <Bell className="text-white" size={28} />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">
+                        <h1 className="text-3xl font-bold text-text-primary tracking-tight">
                             Notifikasi
                         </h1>
-                        <p className="text-white/60 mt-1">
+                        <p className="text-text-secondary mt-1 text-sm">
                             {unreadCount > 0 ? `${unreadCount} pesan belum dibaca` : 'Semua pesan sudah dibaca'}
                         </p>
                     </div>
@@ -52,27 +52,27 @@ export default function DosenNotification({ notifications = [] }) {
 
                 <button 
                     onClick={() => setDismissed(notifications.map(n => n.id))}
-                    className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-all duration-200 hover:shadow-md"
+                    className="px-4 py-2.5 rounded-lg bg-card hover:bg-surface border border-border text-text-secondary text-sm font-bold transition-all duration-200 shadow-sm"
                 >
                     Hapus Semua
                 </button>
             </div>
 
             {/* ── Filter Tabs ────────────────────────────────────── */}
-            <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+            <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-2 px-1 no-scrollbar">
                 {['all', 'unread', 'success', 'warning', 'info'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setFilter(tab)}
                         className={`
-                            px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap
+                            px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border
                             ${filter === tab
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25 border border-orange-400/50'
-                                : 'bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10'
+                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 border-primary-400/50'
+                                : 'bg-card border-border text-text-muted hover:text-text-primary hover:border-primary-500/30'
                             }
                         `}
                     >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        {tab}
                     </button>
                 ))}
             </div>
@@ -80,13 +80,13 @@ export default function DosenNotification({ notifications = [] }) {
             {/* ── Notifications List ────────────────────────────── */}
             <div className="space-y-4">
                 {filteredNotifications.length === 0 ? (
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center backdrop-blur-sm">
-                        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Bell size={32} className="text-white/40" />
+                    <div className="bg-card border border-border rounded-3xl p-16 text-center shadow-sm">
+                        <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Bell size={36} className="text-text-muted opacity-50" />
                         </div>
-                        <h3 className="text-lg font-bold text-white">Tidak ada notifikasi</h3>
-                        <p className="text-sm text-white/60 mt-1">
-                            {filter === 'all' ? 'Anda tidak memiliki pesan' : `Tidak ada pesan dengan filter "${filter}"`}
+                        <h3 className="text-xl font-bold text-text-primary">Tidak ada notifikasi</h3>
+                        <p className="text-sm text-text-muted mt-2">
+                            {filter === 'all' ? 'Kotak masuk Anda sedang kosong.' : `Tidak ada pesan dengan filter "${filter}"`}
                         </p>
                     </div>
                 ) : (
@@ -98,41 +98,41 @@ export default function DosenNotification({ notifications = [] }) {
                         return (
                             <div
                                 key={notif.id}
-                                className={`group bg-white/5 border border-white/10 hover:border-orange-500/30 rounded-2xl p-5 transition-all duration-300 hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/10 ${!notif.read ? 'border-orange-500/40 bg-orange-500/5' : ''}`}
+                                className={`group bg-card border border-border hover:border-primary-500/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/5 ${!notif.read ? 'border-primary-500/40 ring-1 ring-primary-500/5' : ''}`}
                             >
-                                <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-5">
                                     {/* Icon */}
-                                    <div className={`w-10 h-10 rounded-lg ${typeConfig.bg} border ${typeConfig.border} flex items-center justify-center shrink-0 mt-1`}>
-                                        <Icon className={`${typeConfig.color}`} size={20} />
+                                    <div className={`w-12 h-12 rounded-xl ${typeConfig.bg} flex items-center justify-center shrink-0 mt-0.5 transition-transform group-hover:scale-110`}>
+                                        <Icon className={`${typeConfig.color}`} size={24} />
                                     </div>
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
-                                                <h3 className="font-bold text-white group-hover:text-orange-300 transition-colors">
+                                                <h3 className={`font-bold text-text-primary group-hover:text-primary-500 transition-colors ${!notif.read ? 'text-lg' : 'text-base'}`}>
                                                     {notif.title}
                                                 </h3>
-                                                <p className="text-white/70 text-sm mt-1 line-clamp-2">
+                                                <p className="text-text-secondary text-sm mt-1.5 leading-relaxed">
                                                     {notif.message}
                                                 </p>
                                             </div>
 
                                             {/* Unread Badge */}
                                             {!notif.read && (
-                                                <div className="w-2 h-2 bg-orange-400 rounded-full shrink-0 mt-2 animate-pulse"></div>
+                                                <div className="w-2.5 h-2.5 bg-primary-500 rounded-full shrink-0 mt-2 shadow-[0_0_10px_rgba(30,58,138,0.5)]"></div>
                                             )}
                                         </div>
 
                                         {/* Metadata */}
-                                        <div className="flex items-center justify-between mt-3">
-                                            <div className="flex items-center gap-4 text-[10px] text-white/50 font-medium">
-                                                <span className="flex items-center gap-1">
+                                        <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/50">
+                                            <div className="flex items-center gap-4 text-[10px] text-text-muted font-bold uppercase tracking-widest">
+                                                <span className="flex items-center gap-1.5">
                                                     <Clock size={12} />
                                                     {timeAgo}
                                                 </span>
                                                 {notif.category && (
-                                                    <span className="px-2 py-1 bg-white/10 rounded-md">
+                                                    <span className="px-2 py-1 bg-surface rounded-md border border-border">
                                                         {notif.category}
                                                     </span>
                                                 )}
@@ -141,17 +141,17 @@ export default function DosenNotification({ notifications = [] }) {
                                             {/* Actions */}
                                             <div className="flex items-center gap-2">
                                                 {notif.actionUrl && (
-                                                    <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500 border border-orange-500/30 hover:border-orange-500 text-orange-300 hover:text-white text-[10px] font-bold transition-all">
-                                                        Tindakan
+                                                    <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all shadow-md shadow-primary-500/20">
+                                                        Lihat Detail
                                                         <ArrowRight size={12} />
                                                     </button>
                                                 )}
                                                 <button
                                                     onClick={() => handleDismiss(notif.id)}
-                                                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-red-400 transition-all"
-                                                    title="Hapus notifikasi"
+                                                    className="p-2 rounded-xl hover:bg-danger/10 text-text-muted hover:text-danger transition-all"
+                                                    title="Hapus"
                                                 >
-                                                    <Trash2 size={14} />
+                                                    <Trash2 size={16} />
                                                 </button>
                                             </div>
                                         </div>
@@ -162,20 +162,7 @@ export default function DosenNotification({ notifications = [] }) {
                     })
                 )}
             </div>
-
-            {/* ── Info Box ────────────────────────────────────── */}
-            <div className="mt-8 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-5 flex items-start gap-4 backdrop-blur-sm">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 mt-1">
-                    <Info className="text-blue-300" size={18} />
-                </div>
-                <div>
-                    <h4 className="font-bold text-white">Tips</h4>
-                    <p className="text-white/70 text-sm mt-1">
-                        Notifikasi penting akan selalu ditampilkan di bagian atas. Pastikan untuk selalu memperhatikan pesan dari sistem akademik untuk informasi terbaru tentang jadwal dan kegiatan mengajar Anda.
-                    </p>
-                </div>
-            </div>
-        </>
+        </div>
     );
 }
 

@@ -55,7 +55,7 @@ export default function DosenJadwal({
     return (
         <div className="space-y-8">
             {/* ── Header Section ────────────────────────────────────── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
                         <CalendarDays className="text-white" size={24} />
@@ -116,7 +116,7 @@ export default function DosenJadwal({
                                     flex-1 min-w-[100px] px-4 py-2.5 rounded-lg text-sm font-bold transition-all relative
                                     ${selectedDay === hari.key
                                         ? 'bg-primary-500 text-white shadow-md'
-                                        : 'text-text-secondary hover:bg-white/50 hover:text-text-primary'
+                                        : 'text-text-secondary hover:bg-surface hover:text-text-primary'
                                     }
                                 `}
                             >
@@ -156,7 +156,7 @@ export default function DosenJadwal({
                                         <div 
                                             key={item.id}
                                             onClick={() => handleOpenDetail(item)}
-                                            className="group bg-white border border-border rounded-xl p-5 hover:border-primary-500/40 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                                            className="group bg-card border border-border rounded-xl p-5 hover:border-primary-500/40 hover:shadow-lg transition-all duration-300 cursor-pointer"
                                         >
                                             <div className="flex flex-col gap-1.5 mb-5">
                                                 <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2 py-0.5 rounded-md uppercase tracking-wider w-fit">
@@ -228,7 +228,7 @@ export default function DosenJadwal({
                                     { label: 'Waktu', value: selectedJadwal.waktu },
                                     { label: 'Kapasitas', value: `${selectedJadwal.mahasiswa} MHS` },
                                 ].map(detail => (
-                                    <div key={detail.label} className="p-4 bg-white rounded-xl border border-border shadow-sm">
+                                    <div key={detail.label} className="p-4 bg-card rounded-xl border border-border shadow-sm">
                                         <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-1">{detail.label}</p>
                                         <p className="text-sm font-bold text-text-primary">{detail.value}</p>
                                     </div>
