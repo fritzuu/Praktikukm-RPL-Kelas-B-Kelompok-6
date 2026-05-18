@@ -19,6 +19,8 @@ return new class extends Migration
             $table->enum('day_of_week', ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']);
             $table->time('start_time');
             $table->time('end_time');
+            $table->unsignedTinyInteger('session_start')->default(1)->comment('Sesi mulai: 1, 2, 3, etc');
+            $table->unsignedTinyInteger('session_duration')->default(1)->comment('Durasi sesi: 1, 2, 3, dll');
             $table->date('effective_from');
             $table->date('effective_until')->nullable();
             $table->boolean('is_active')->default(true);
