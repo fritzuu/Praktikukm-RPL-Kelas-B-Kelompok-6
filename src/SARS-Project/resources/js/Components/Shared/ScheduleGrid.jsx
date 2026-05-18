@@ -18,16 +18,15 @@ const TIPE_STYLES = {
 // Internal Sub-components to keep render clean
 function DayTabs({ selectedDay, onSelectDay }) {
     return (
-        <div className="flex space-x-1 border-b border-border mb-4">
+        <div className="flex space-x-1">
             {HARI_LIST.map((hari) => (
                 <button
                     key={hari.key}
                     onClick={() => onSelectDay(hari.key)}
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-                        selectedDay === hari.key
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${selectedDay === hari.key
                             ? 'border-primary-500 text-primary-500'
                             : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
-                    }`}
+                        }`}
                 >
                     {hari.label}
                 </button>
@@ -94,7 +93,7 @@ export default function ScheduleGrid({
     // Default header actions
     const renderHeaderActions = () => {
         if (headerActions !== undefined) return headerActions;
-        
+
         // Default export button if no custom headerActions provided
         return (
             <button
@@ -110,17 +109,20 @@ export default function ScheduleGrid({
     return (
         <section className="mb-6">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <CalendarDays size={20} className="text-text-primary" />
-                    <h2 className="text-lg font-bold text-text-primary">
-                        {title}
-                    </h2>
-                </div>
-                {renderHeaderActions()}
+            <div className="flex items-center gap-2 mb-4">
+                <CalendarDays size={20} className="text-text-primary" />
+                <h2 className="text-lg font-bold text-text-primary">
+                    {title}
+                </h2>
             </div>
 
-            <DayTabs selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+            {/* Tabs & Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border mb-4 gap-4 sm:gap-0">
+                <DayTabs selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+                <div className="pb-2 sm:pb-0 sm:mb-2">
+                    {renderHeaderActions()}
+                </div>
+            </div>
 
             {/* Matrix Grid */}
             <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm">
@@ -140,7 +142,7 @@ export default function ScheduleGrid({
                     {/* Rows: Each Room */}
                     {displayRooms.map(room => {
                         const roomClasses = dayJadwal.filter(j => j.ruangan === room);
-                        
+
                         return (
                             <div key={room} className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors">
                                 {/* Room Label - Sticky */}
@@ -161,18 +163,18 @@ export default function ScheduleGrid({
                                     {roomClasses.map(item => {
                                         let isConflict = false;
                                         if (showConflicts) {
-                                            isConflict = roomClasses.some(other => 
+                                            isConflict = roomClasses.some(other =>
                                                 other.id !== item.id &&
                                                 ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
-                                                (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                    (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
                                             );
                                         }
 
                                         return (
-                                            <ScheduleCard 
-                                                key={item.id} 
-                                                item={item} 
-                                                isConflict={isConflict} 
+                                            <ScheduleCard
+                                                key={item.id}
+                                                item={item}
+                                                isConflict={isConflict}
                                                 onCardClick={onCardClick}
                                             />
                                         );
