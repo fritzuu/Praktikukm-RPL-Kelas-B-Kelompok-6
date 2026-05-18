@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+
 export default function WelcomeHeader({ user = {}, subtitle, children }) {
     // Greeting berdasarkan waktu
     const hour = new Date().getHours();
@@ -6,26 +8,49 @@ export default function WelcomeHeader({ user = {}, subtitle, children }) {
     else if (hour >= 15 && hour < 18) greeting = 'Selamat sore';
     else if (hour >= 18) greeting = 'Selamat malam';
 
+    // Konfigurasi transisi spring yang mulus
+    const springTransition = { type: 'spring', stiffness: 350, damping: 32 };
+
     return (
-        <section className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Left Column: Greeting & Subtitle */}
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+        <motion.section
+            layout
+            transition={springTransition}
+            className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        >
+            {/* Left Column: Greeting & Subtitle (Animate width/height changes) */}
+            <motion.div
+                layout
+                transition={springTransition}
+            >
+                {/* layout="position" mencegah teks mengalami distorsi scale */}
+                <motion.h1
+                    layout="position"
+                    transition={springTransition}
+                    className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight"
+                >
                     {greeting}, {user?.name || 'User'}.
-                </h1>
+                </motion.h1>
                 {subtitle && (
-                    <p className="text-text-secondary mt-1 text-sm">
+                    <motion.p
+                        layout="position"
+                        transition={springTransition}
+                        className="text-text-secondary mt-1 text-sm"
+                    >
                         {subtitle}
-                    </p>
+                    </motion.p>
                 )}
-            </div>
+            </motion.div>
 
             {/* Role-specific cards slot */}
             {children && (
-                <div className="mt-4 md:mt-0 shrink-0">
+                <motion.div
+                    layout="position"
+                    transition={springTransition}
+                    className="mt-4 md:mt-0 shrink-0"
+                >
                     {children}
-                </div>
+                </motion.div>
             )}
-        </section>
+        </motion.section>
     );
 }
