@@ -45,6 +45,13 @@ export default function WelcomeHeader({
         gagal: 'Gagal',
     };
 
+    const statCards = [
+        { label: 'Pending Verification', value: stats.pendingVerification, icon: Clock, color: 'bg-warning/10 text-warning', border: 'hover:border-warning/30' },
+        { label: 'Validation', value: stats.validation, icon: ClipboardCheck, color: 'bg-info/10 text-info', border: 'hover:border-info/30' },
+        { label: 'Accepted', value: stats.accepted, icon: ClipboardCheck, color: 'bg-success/10 text-success', border: 'hover:border-success/30' },
+        { label: 'Rejected', value: stats.rejected, icon: ClipboardCheck, color: 'bg-danger/10 text-danger', border: 'hover:border-danger/30' },
+    ];
+
     return (
         <section className="mb-6">
             {/* Greeting + Real-time Clock */}
@@ -54,10 +61,10 @@ export default function WelcomeHeader({
                         {greeting}, {user?.name?.split(',')[0] || 'Aslab'}.
                     </h1>
                     <p className="text-text-secondary mt-1 text-sm">
-                        {stats.pendingValidasi > 0 ? (
-                            <>Anda memiliki <span className="font-semibold text-warning">{stats.pendingValidasi} pengajuan</span> menunggu validasi.</>
+                        {stats.pendingVerification > 0 ? (
+                            <>Anda memiliki <span className="font-semibold text-warning">{stats.pendingVerification} pengajuan</span> menunggu verifikasi.</>
                         ) : (
-                            <>Semua pengajuan sudah divalidasi. 👍</>
+                            <>Semua pengajuan sudah diverifikasi. 👍</>
                         )}
                     </p>
                 </div>
@@ -93,20 +100,24 @@ export default function WelcomeHeader({
                 </div>
             </div>
 
-            {/* Single Stat Card: Pending Validasi */}
-            <div className="mt-5 max-w-xs">
-                <div className="bg-card border border-border rounded-xl px-5 py-5
-                               hover:shadow-md hover:border-warning/30 transition-all duration-200 group">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center text-warning transition-transform group-hover:scale-110">
-                            <ClipboardCheck size={24} />
+            {/* Small Stat Cards for Verification/Validation */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+                {statCards.map((card, idx) => {
+                    const Icon = card.icon;
+                    return (
+                        <div key={idx} className={`bg-card border border-border rounded-xl px-4 py-4 transition-all duration-200 group hover:shadow-md ${card.border}`}>
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${card.color}`}>
+                                    <Icon size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-text-primary leading-none">{card.value}</p>
+                                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">{card.label}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-3xl font-bold text-text-primary">{stats.pendingValidasi}</p>
-                            <p className="text-xs text-text-muted mt-0.5">Pending Validasi</p>
-                        </div>
-                    </div>
-                </div>
+                    );
+                })}
             </div>
         </section>
     );

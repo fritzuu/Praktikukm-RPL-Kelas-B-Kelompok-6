@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { CalendarDays, Clock, MapPin, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CalendarDays, Download, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -15,10 +16,25 @@ function getTodayKey() {
     return dayMap[jsDay];
 }
 
-export default function ScheduleGrid({ jadwalItems = [] }) {
+export default function ScheduleGrid({ schedules = [], rooms = [] }) {
     const [selectedDay, setSelectedDay] = useState(getTodayKey);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const dayJadwal = jadwalItems.filter(j => j.hari === selectedDay);
+    useEffect(() => {
+        if (isLoading) {
+            const timer = setTimeout(() => setIsLoading(false), 500);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
+
+    const handleDayChange = (hari) => {
+        if (hari !== selectedDay) {
+            setIsLoading(true);
+            setSelectedDay(hari);
+        }
+    };
+
+    const dayJadwal = schedules.filter(j => j.hari === selectedDay);
 
     return (
         <section className="mb-6">
@@ -35,16 +51,15 @@ export default function ScheduleGrid({ jadwalItems = [] }) {
                 </div>
             </div>
 
-            {/* Day Selector Tabs */}
-            <div className="flex space-x-8 border-b border-border mb-6 px-1 overflow-x-auto no-scrollbar">
+            <div className="flex space-x-1 border-b border-border mb-4 px-1 overflow-x-auto no-scrollbar">
                 {HARI_LIST.map((hari) => (
                     <button
                         key={hari.key}
-                        onClick={() => setSelectedDay(hari.key)}
-                        className={`pb-2 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+                        onClick={() => handleDayChange(hari.key)}
+                        className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
                             selectedDay === hari.key
                                 ? 'border-primary-500 text-primary-500 translate-y-[1px]'
-                                : 'border-transparent text-text-muted hover:text-text-primary'
+                                : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
                         }`}
                     >
                         {hari.label}
@@ -52,83 +67,122 @@ export default function ScheduleGrid({ jadwalItems = [] }) {
                 ))}
             </div>
 
-            {/* Schedule Cards Grid */}
-            {dayJadwal.length === 0 ? (
-                <div className="bg-card border border-border rounded-2xl p-12 text-center shadow-sm">
-                    <CalendarDays size={40} className="text-text-muted mx-auto mb-3" />
-                    <p className="text-text-secondary font-medium">Tidak ada jadwal pada hari ini</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {dayJadwal.map((item) => (
-                        <div
-                            key={item.id}
-                            className="bg-card border border-border rounded-2xl p-6 hover:border-accent-cyan hover:scale-[1.02] hover:bg-accent-cyan/[0.03] hover:shadow-xl hover:shadow-accent-cyan/10 transition-all duration-300 group flex flex-col"
-                        >
-                            {/* Course Badge */}
-                            <div className="mb-3">
-                                <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2.5 py-1 rounded-md uppercase tracking-wider">
-                                    {item.kode}
-                                </span>
-                                {item.kelas && item.kelas !== '-' && (
-                                    <span className="text-[10px] font-medium bg-surface text-text-muted px-2 py-0.5 rounded-md ml-2">
-                                        {item.kelas}
-                                    </span>
-                                )}
+            <AnimatePresence mode="wait">
+                {isLoading ? (
+                    <motion.div 
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.1 }}
+                        className="flex items-center justify-center py-20 bg-card border border-border rounded-xl shadow-sm"
+                    >
+                        <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </motion.div>
+                ) : dayJadwal.length === 0 ? (
+                    <motion.div 
+                        key="empty"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="bg-card border border-border rounded-xl p-12 text-center shadow-sm"
+                    >
+                        <CalendarDays size={40} className="text-text-muted mx-auto mb-3" />
+                        <p className="text-text-secondary font-medium">Tidak ada jadwal pada hari ini</p>
+                    </motion.div>
+                ) : (
+                    <motion.div 
+                        key={selectedDay}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm"
+                    >
+                        <div className="min-w-[1200px]">
+                            {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
+                            <div className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-card">
+                                <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                    RUANGAN
+                                </div>
+                                {Array.from({ length: 11 }, (_, i) => (
+                                    <div key={i} className="p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0">
+                                        SESI {i + 1}
+                                    </div>
+                                ))}
                             </div>
 
-                            {/* Course Name */}
-                            <h3 className="text-lg font-bold text-text-primary mb-6 group-hover:text-primary-500 transition-colors leading-snug">
-                                {item.nama}
-                            </h3>
-
-                            {/* Details List */}
-                            <div className="space-y-4 flex-1">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-text-secondary shrink-0 group-hover:bg-primary-500/10 group-hover:text-primary-500 transition-colors">
-                                        <Clock size={16} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-0.5">Waktu</p>
-                                        <p className="text-sm font-bold text-text-primary">
-                                            {item.waktu || `Sesi ${item.sesiMulai}`}
-                                            {item.sesiMulai && (
-                                                <span className="text-text-muted font-medium ml-1">(Sesi {item.sesiMulai})</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-text-secondary shrink-0 group-hover:bg-primary-500/10 group-hover:text-primary-500 transition-colors">
-                                        <MapPin size={16} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-0.5">Ruangan</p>
-                                        <p className="text-sm font-bold text-text-primary">
-                                            {item.ruangan}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {item.mahasiswa && (
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-text-secondary shrink-0 group-hover:bg-primary-500/10 group-hover:text-primary-500 transition-colors">
-                                            <Users size={16} />
+                            {/* Rows: Each Room */}
+                            {rooms.map(room => {
+                                // Find classes for this room on the selected day
+                                const roomClasses = dayJadwal.filter(j => j.ruangan_id === room.id || j.ruangan === room.code);
+                                
+                                return (
+                                    <div key={room.id} className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors">
+                                        {/* Room Label - Sticky */}
+                                        <div className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-20 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors">
+                                            <span className="truncate">{room.code}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-0.5">Kapasitas</p>
-                                            <p className="text-sm font-bold text-text-primary">
-                                                {item.mahasiswa} mahasiswa
-                                            </p>
+
+                                        {/* Sessions Grid Container */}
+                                        <div className="col-span-11 grid grid-cols-11 relative py-1.5 gap-y-1.5 min-h-[64px]">
+                                            {/* Background Grid Lines for visual separation */}
+                                            <div className="absolute inset-0 grid grid-cols-11 pointer-events-none">
+                                                {Array.from({ length: 11 }, (_, i) => (
+                                                    <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
+                                                ))}
+                                            </div>
+
+                                            {/* Render Classes */}
+                                            {roomClasses.map(item => {
+                                                // A conflict occurs if there are overlapping sessions.
+                                                const isConflict = roomClasses.some(other => 
+                                                    other.id !== item.id &&
+                                                    ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                                    (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                );
+
+                                                const appliedStyle = isConflict
+                                                    ? 'bg-danger/10 border-danger/50 text-danger-800 border-dashed'
+                                                    : 'bg-primary-500/5 border-primary-500/30 text-primary-600';
+
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className={`relative z-10 mx-1 rounded-md border p-2 flex flex-col justify-center overflow-hidden transition-all hover:z-20 hover:shadow-md ${appliedStyle} ${isConflict ? 'ring-2 ring-danger/30' : ''}`}
+                                                        style={{
+                                                            gridColumnStart: item.sesiMulai,
+                                                            gridColumnEnd: `span ${item.durasi}`
+                                                        }}
+                                                    >
+                                                        {/* Header Row of Card */}
+                                                        <div className="flex items-start justify-between gap-1 mb-1">
+                                                            <span className="font-bold text-[10px] leading-none truncate">
+                                                                {item.kode}
+                                                            </span>
+                                                            {isConflict && (
+                                                                <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] leading-tight font-semibold opacity-90 truncate">
+                                                            {item.nama}
+                                                        </p>
+                                                        <p className="text-[10px] mt-0.5 opacity-70 truncate">
+                                                            {item.kelas !== '-' && item.kelas ? `Kelas ${item.kelas}` : ''}
+                                                            {item.dosen && ` • ${item.dosen}`}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                );
+                            })}
                         </div>
-                    ))}
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 }
