@@ -129,7 +129,7 @@ export default function ScheduleGrid({
                 <div className="min-w-[1200px]">
                     {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
                     <div className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-card">
-                        <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-40 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                        <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                             RUANGAN
                         </div>
                         {Array.from({ length: 11 }, (_, i) => (
