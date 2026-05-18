@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'framer-motion';
 import Sidebar from '../Components/Shared/Sidebar';
 import TopBar from '../Components/Shared/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
