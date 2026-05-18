@@ -24,8 +24,8 @@ function DayTabs({ selectedDay, onSelectDay }) {
                     key={hari.key}
                     onClick={() => onSelectDay(hari.key)}
                     className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${selectedDay === hari.key
-                            ? 'border-primary-500 text-primary-500'
-                            : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
+                        ? 'border-primary-500 text-primary-500'
+                        : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
                         }`}
                 >
                     {hari.label}
@@ -101,7 +101,7 @@ export default function ScheduleGrid({
                 className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-card text-text-secondary border-border hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:shadow-lg transition-all duration-300 flex items-center gap-1.5"
             >
                 <Download size={14} />
-                Export Jadwal
+                Download Jadwal
             </button>
         );
     };
