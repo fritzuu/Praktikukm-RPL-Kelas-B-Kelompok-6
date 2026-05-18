@@ -55,7 +55,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
     }, []);
 
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'D';
-    const unreadCount = MOCK_DOSEN_NOTIFIKASI.filter(n => !n.dibaca).length;
+    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
 
     // Search results
     const searchResults = useMemo(() => {

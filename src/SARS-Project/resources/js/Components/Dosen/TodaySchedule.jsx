@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Clock, MapPin, Users, Radio, Loader2 } from 'lucide-react';
-import { MOCK_JADWAL_HARI_INI } from '../../data/dosenMockData';
-
 const STATUS_STYLES = {
     sedang_berlangsung: {
         badge: 'bg-success/10 text-success',
@@ -23,7 +21,7 @@ const STATUS_STYLES = {
     },
 };
 
-export default function TodaySchedule({ schedules = MOCK_JADWAL_HARI_INI }) {
+export default function TodaySchedule({ schedules = [] }) {
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
