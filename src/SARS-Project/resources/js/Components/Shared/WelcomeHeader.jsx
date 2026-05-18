@@ -7,20 +7,22 @@ export default function WelcomeHeader({ user = {}, subtitle, children }) {
     else if (hour >= 18) greeting = 'Selamat malam';
 
     return (
-        <section className="mb-6">
-            {/* Greeting */}
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
-                {greeting}, {user?.name || 'User'}.
-            </h1>
-            {subtitle && (
-                <p className="text-text-secondary mt-1 text-sm">
-                    {subtitle}
-                </p>
-            )}
+        <section className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Left Column: Greeting & Subtitle */}
+            <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+                    {greeting}, {user?.name || 'User'}.
+                </h1>
+                {subtitle && (
+                    <p className="text-text-secondary mt-1 text-sm">
+                        {subtitle}
+                    </p>
+                )}
+            </div>
 
             {/* Role-specific cards slot */}
             {children && (
-                <div className="mt-5">
+                <div className="mt-4 md:mt-0 shrink-0">
                     {children}
                 </div>
             )}
