@@ -21,21 +21,14 @@ class Room extends Model
     ];
 
     protected $casts = [
-        'capacity'  => 'integer',
-        'floor'     => 'integer',
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Relasi ke Schedule
+     */
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class);
-    }
-
-    /**
-     * Display label: "Gedung A - Lab Komputer 1"
-     */
-    public function getDisplayNameAttribute(): string
-    {
-        return "{$this->building} - {$this->name}";
     }
 }

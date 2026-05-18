@@ -22,15 +22,20 @@ class Course extends Model
     ];
 
     protected $casts = [
-        'credits'   => 'integer',
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Relasi ke Semester
+     */
     public function semester(): BelongsTo
     {
         return $this->belongsTo(Semester::class);
     }
 
+    /**
+     * Relasi ke Schedule
+     */
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class);

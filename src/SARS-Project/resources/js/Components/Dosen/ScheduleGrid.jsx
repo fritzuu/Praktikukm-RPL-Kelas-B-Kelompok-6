@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CalendarDays, Clock, MapPin, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CalendarDays, Clock, MapPin, Users, Loader2 } from 'lucide-react';
 import { MOCK_DOSEN_JADWAL } from '../../data/dosenMockData';
 
 const HARI_LIST = [
@@ -18,8 +18,25 @@ function getTodayKey() {
 
 export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
     const [selectedDay, setSelectedDay] = useState(getTodayKey);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [selectedDay]);
 
     const dayJadwal = jadwalItems.filter(j => j.hari === selectedDay);
+
+    const LoadingSpinner = () => (
+        <div className="bg-card border border-border rounded-2xl p-16 flex flex-col items-center justify-center shadow-sm">
+            <Loader2 className="w-10 h-10 animate-spin text-primary-500 mb-4" />
+            <p className="text-sm font-semibold text-text-secondary">Memuat jadwal...</p>
+        </div>
+    );
 
     return (
         <section className="mb-6">
@@ -54,7 +71,9 @@ export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
             </div>
 
             {/* Schedule Cards Grid */}
-            {dayJadwal.length === 0 ? (
+            {isLoading ? (
+                <LoadingSpinner />
+            ) : dayJadwal.length === 0 ? (
                 <div className="bg-card border border-border rounded-2xl p-12 text-center shadow-sm">
                     <CalendarDays size={40} className="text-text-muted mx-auto mb-3" />
                     <p className="text-text-secondary font-medium">Tidak ada jadwal pada hari ini</p>

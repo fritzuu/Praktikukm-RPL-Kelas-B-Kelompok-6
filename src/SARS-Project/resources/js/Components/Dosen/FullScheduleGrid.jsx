@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Download, CalendarDays, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, CalendarDays, AlertTriangle, Loader2 } from 'lucide-react';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -17,9 +17,26 @@ const TIPE_STYLES = {
 
 export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
     const [selectedDay, setSelectedDay] = useState('senin');
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 600);
+
+        return () => clearTimeout(timer);
+    }, [selectedDay]);
 
     // Filter jadwal based on selected day
     const dayJadwal = schedules.filter(j => j.hari === selectedDay);
+
+    const LoadingSpinner = () => (
+        <div className="bg-card border border-border rounded-2xl p-24 flex flex-col items-center justify-center shadow-sm w-full">
+            <Loader2 className="w-10 h-10 animate-spin text-primary-500 mb-4" />
+            <p className="text-sm font-semibold text-text-secondary">Memuat jadwal...</p>
+        </div>
+    );
 
     return (
         <section className="mb-8">
@@ -58,8 +75,11 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
             </div>
 
             {/* Matrix Grid */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto shadow-sm no-scrollbar">
-                <div className="min-w-[1200px]">
+            {isLoading ? (
+                <LoadingSpinner />
+            ) : (
+                <div className="bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto shadow-sm no-scrollbar">
+                    <div className="min-w-[1200px]">
                     {/* Header Row */}
                     <div className="grid grid-cols-[140px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-surface/50">
                         <div className="p-4 font-bold text-[10px] tracking-widest text-text-muted border-r border-border sticky left-0 bg-surface z-30 flex items-center uppercase">
@@ -136,6 +156,7 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
                     })}
                 </div>
             </div>
+            )}
         </section>
     );
 }

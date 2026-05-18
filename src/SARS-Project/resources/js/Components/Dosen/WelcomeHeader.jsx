@@ -6,11 +6,15 @@ import {
     Clock,
     TrendingUp,
 } from 'lucide-react';
-import { MOCK_DOSEN_STATS } from '../../data/dosenMockData';
-
 export default function WelcomeHeader({ 
     user = {}, 
-    stats = MOCK_DOSEN_STATS,
+    stats = {
+        totalMataKuliah: 0,
+        totalSks: 0,
+        totalMahasiswa: 0,
+        jadwalHariIni: 0,
+        pertemuanMingguIni: 0,
+    },
     syncStatus = { status: 'terkini', lastUpload: 'Hari ini, 08:42' } 
 }) {
     const [now, setNow] = useState(new Date());

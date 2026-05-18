@@ -22,7 +22,7 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
 
     useEffect(() => {
         if (isLoading) {
-            const timer = setTimeout(() => setIsLoading(false), 500);
+            const timer = setTimeout(() => setIsLoading(false), 200);
             return () => clearTimeout(timer);
         }
     }, [isLoading]);

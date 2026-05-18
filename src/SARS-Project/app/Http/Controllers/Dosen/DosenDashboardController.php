@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
-use App\Models\NotificationRecipient;
 use App\Models\Schedule;
 use App\Models\Semester;
 use App\Models\TeachingAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Carbon\Carbon;
 
 class DosenDashboardController extends Controller
 {
@@ -18,31 +18,30 @@ class DosenDashboardController extends Controller
      */
     public function index(Request $request): Response
     {
-        $user     = $request->user();
+        $user = $request->user();
         $semester = Semester::active();
 
-        if (! $semester) {
+        if (!$semester) {
             return Inertia::render('Dashboard/Dosen', [
-                'stats'         => $this->emptyStats(),
-                'jadwal'        => [],
+                'jadwal' => [],
+                'stats' => $this->emptyStats(),
                 'jadwalHariIni' => [],
-                'notifikasi'    => [],
             ]);
         }
 
-        // Ambil semua schedule_id yang ditugaskan ke dosen ini (PENGAJAR)
+        // 1. Ambil semua schedule_id yang ditugaskan ke dosen ini (PENGAJAR)
         $assignedScheduleIds = TeachingAssignment::where('user_id', $user->id)
             ->where('role_in_class', 'PENGAJAR')
             ->pluck('schedule_id');
 
-        // Ambil jadwal lengkap dosen di semester aktif
+        // 2. Ambil jadwal lengkap dosen di semester aktif
         $schedules = Schedule::whereIn('id', $assignedScheduleIds)
             ->where('semester_id', $semester->id)
             ->where('is_active', true)
             ->with(['course', 'room'])
             ->get();
 
-        // Transform jadwal ke format frontend
+        // 3. Format jadwal untuk ScheduleGrid (mingguan)
         $jadwal = $schedules->map(fn (Schedule $s) => [
             'id'        => (string) $s->id,
             'kode'      => $s->course->code,
@@ -57,88 +56,59 @@ class DosenDashboardController extends Controller
             'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
         ])->values();
 
-        // Jadwal hari ini
-        $todayDayName = $this->getTodayDayName();
-        $jadwalHariIni = $jadwal->where('hari', $todayDayName)->map(function ($item) {
-            $item['status'] = $this->determineScheduleStatus($item['waktu']);
-            return $item;
+        // 4. Filter jadwal HARI INI
+        // Karena data dummy menggunakan nama hari Indonesia (SENIN, dll)
+        $hariIniMap = [
+            0 => 'MINGGU', 1 => 'SENIN', 2 => 'SELASA', 3 => 'RABU',
+            4 => 'KAMIS', 5 => 'JUMAT', 6 => 'SABTU'
+        ];
+        // Untuk keperluan demo/testing, kalau hari ini Minggu, kita mock jadi Senin agar tidak kosong
+        $dayIndex = Carbon::now()->dayOfWeek;
+        $hariIniString = $dayIndex == 0 ? 'SENIN' : $hariIniMap[$dayIndex];
+        
+        $schedulesToday = $schedules->filter(fn($s) => strtoupper($s->day_of_week) === $hariIniString);
+        
+        $jadwalHariIni = $schedulesToday->map(function(Schedule $s) {
+            // Tentukan status (mock simple logic)
+            $nowTime = Carbon::now()->format('H:i:s');
+            $status = 'belum_dimulai';
+            if ($nowTime >= $s->start_time && $nowTime <= $s->end_time) {
+                $status = 'sedang_berlangsung';
+            } elseif ($nowTime > $s->end_time) {
+                $status = 'selesai';
+            }
+
+            return [
+                'id'        => 'th' . $s->id,
+                'kode'      => $s->course->code,
+                'nama'      => $s->course->name,
+                'kelas'     => $s->course->class_name,
+                'ruangan'   => $s->room->code,
+                'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
+                'sesi'      => 'Sesi ' . $s->session_start . '-' . ($s->session_start + $s->session_duration - 1),
+                'mahasiswa' => $s->room->capacity,
+                'status'    => $status,
+            ];
         })->values();
 
-        // Stats
-        $uniqueCourses = $schedules->pluck('course_id')->unique();
-        $totalSks = $schedules->pluck('course')->unique('id')->sum('credits');
+        // 5. Hitung Statistik (Stats)
+        $totalMahasiswa = $schedules->sum(fn($s) => $s->room->capacity); // Asumsi sederhana kapasitas kelas = mhs
 
         $stats = [
-            'totalMataKuliah'    => $uniqueCourses->count(),
-            'totalSks'           => $totalSks,
-            'totalMahasiswa'     => $schedules->sum(fn ($s) => $s->room->capacity),
-            'jadwalHariIni'      => $jadwalHariIni->count(),
+            'totalMataKuliah'    => $schedules->pluck('course_id')->unique()->count(),
+            'totalSks'           => $schedules->pluck('course')->unique('id')->sum('credits'),
+            'totalMahasiswa'     => $totalMahasiswa,
+            'jadwalHariIni'      => $schedulesToday->count(),
             'pertemuanMingguIni' => $schedules->count(),
         ];
 
-        // Notifikasi terbaru (IN_APP)
-        $notifikasi = NotificationRecipient::where('recipient_id', $user->id)
-            ->where('channel', 'IN_APP')
-            ->with('notification')
-            ->orderByDesc('notification_id')
-            ->limit(10)
-            ->get()
-            ->map(fn ($nr) => [
-                'id'     => (string) $nr->notification_id,
-                'judul'  => $nr->notification->title,
-                'pesan'  => $nr->notification->body,
-                'waktu'  => $nr->notification->created_at->diffForHumans(),
-                'dibaca' => $nr->is_read,
-                'tipe'   => strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
-                          : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info'),
-            ])->values();
-
         return Inertia::render('Dashboard/Dosen', [
-            'stats'         => $stats,
             'jadwal'        => $jadwal,
+            'stats'         => $stats,
             'jadwalHariIni' => $jadwalHariIni,
-            'notifikasi'    => $notifikasi,
         ]);
     }
 
-    /**
-     * Get today's day name in lowercase Indonesian.
-     */
-    private function getTodayDayName(): string
-    {
-        $dayMap = [
-            0 => 'senin',  // Minggu -> default Senin
-            1 => 'senin',
-            2 => 'selasa',
-            3 => 'rabu',
-            4 => 'kamis',
-            5 => 'jumat',
-            6 => 'senin',  // Sabtu -> default Senin
-        ];
-
-        return $dayMap[now()->dayOfWeek];
-    }
-
-    /**
-     * Determine if a schedule is currently running based on time.
-     */
-    private function determineScheduleStatus(string $waktu): string
-    {
-        $parts = explode(' - ', $waktu);
-        if (count($parts) !== 2) return 'belum_dimulai';
-
-        $now   = now();
-        $start = now()->setTimeFromTimeString($parts[0] . ':00');
-        $end   = now()->setTimeFromTimeString($parts[1] . ':00');
-
-        if ($now->between($start, $end)) return 'sedang_berlangsung';
-        if ($now->gt($end))              return 'selesai';
-        return 'belum_dimulai';
-    }
-
-    /**
-     * Empty stats fallback when no semester is active.
-     */
     private function emptyStats(): array
     {
         return [

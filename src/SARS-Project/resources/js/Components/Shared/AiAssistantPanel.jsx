@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { X, Bot, Sparkles, Send, Building2, Clock } from 'lucide-react';
 import {
     MOCK_AI_ANALYSIS,
@@ -6,12 +7,19 @@ import {
     MOCK_TUGAS_PENDING,
 } from '../../data/mockData';
 
-export default function AiAssistantPanel({ isOpen, onClose }) {
+const ROLE_MODE_LABELS = {
+    admin: 'Admin Mode',
+    dosen: 'Dosen Mode',
+    aslab: 'Aslab Mode',
+    mahasiswa: 'Mahasiswa Mode',
+};
+
+export default function AiAssistantPanel({ isOpen, onClose, role = 'admin', ref }) {
     const [chatInput, setChatInput] = useState('');
 
     function handleSend() {
         if (!chatInput.trim()) return;
-        console.log('AI Chat input:', chatInput);
+        console.log('AI Chat input:', chatInput, '| Role context:', role);
         setChatInput('');
     }
 
@@ -22,11 +30,21 @@ export default function AiAssistantPanel({ isOpen, onClose }) {
         }
     }
 
-    if (!isOpen) return null;
+
+    const modeLabel = ROLE_MODE_LABELS[role] || 'Mode Aktif';
 
     return (
-        <aside className="w-80 shrink-0 border-l border-border bg-card flex flex-col h-[calc(100vh-57px)] sticky top-[57px]">
-            {/* ── Header ───────────────────────────────────────────── */}
+        <motion.aside
+            ref={ref}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 320, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+            className="shrink-0 border-l border-border bg-card flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-40 overflow-hidden"
+        >
+            {/* Fixed width mask wrapper to prevent content squishing during transition */}
+            <div className="w-[320px] flex flex-col h-full shrink-0">
+                {/* ── Header ───────────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
                 <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center">
                     <Bot size={20} className="text-primary-500" />
@@ -38,7 +56,7 @@ export default function AiAssistantPanel({ isOpen, onClose }) {
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                         <span className="text-[10px] font-semibold text-success uppercase tracking-wide">
-                            Mode Aktif
+                            {modeLabel}
                         </span>
                     </div>
                 </div>
@@ -84,9 +102,7 @@ export default function AiAssistantPanel({ isOpen, onClose }) {
                         <div className="bg-surface rounded-xl p-3 text-center">
                             <div className="flex items-center justify-center gap-1.5 mb-1">
                                 <Building2 size={12} className="text-text-muted" />
-                                <span className="text-[10px] text-text-muted">
-                                    Utilisasi Ruangan
-                                </span>
+                                <span className="text-[10px] text-text-muted">Utilisasi Ruangan</span>
                             </div>
                             <p className="text-2xl font-bold text-text-primary">
                                 {MOCK_METRIK.utilisasiRuangan}
@@ -96,9 +112,7 @@ export default function AiAssistantPanel({ isOpen, onClose }) {
                         <div className="bg-surface rounded-xl p-3 text-center">
                             <div className="flex items-center justify-center gap-1.5 mb-1">
                                 <Clock size={12} className="text-text-muted" />
-                                <span className="text-[10px] text-text-muted">
-                                    Waktu Tunggu
-                                </span>
+                                <span className="text-[10px] text-text-muted">Waktu Tunggu</span>
                             </div>
                             <p className="text-2xl font-bold text-text-primary">
                                 {MOCK_METRIK.waktuTunggu}
@@ -116,17 +130,10 @@ export default function AiAssistantPanel({ isOpen, onClose }) {
                         {MOCK_TUGAS_PENDING.map((tugas, idx) => (
                             <li key={idx} className="flex items-start gap-2">
                                 <span
-                                    className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
-                                        idx === 0
-                                            ? 'bg-danger'
-                                            : idx === 1
-                                              ? 'bg-warning'
-                                              : 'bg-info'
-                                    }`}
+                                    className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${idx === 0 ? 'bg-danger' : idx === 1 ? 'bg-warning' : 'bg-info'
+                                        }`}
                                 />
-                                <span className="text-sm text-text-secondary leading-tight">
-                                    {tugas}
-                                </span>
+                                <span className="text-sm text-text-secondary leading-tight">{tugas}</span>
                             </li>
                         ))}
                     </ul>
@@ -135,28 +142,25 @@ export default function AiAssistantPanel({ isOpen, onClose }) {
 
             {/* ── Chat Input ───────────────────────────────────────── */}
             <div className="px-4 py-3 border-t border-border">
-                <div className="flex items-center gap-2 bg-surface rounded-xl px-3 py-2 border border-border
-                                focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all">
+                <div className="flex items-center gap-2 bg-surface rounded-xl px-3 py-2 border border-border focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all">
                     <input
                         type="text"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Tanyakan AI tentang konflik..."
-                        className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted
-                                   focus:outline-none"
+                        className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
                     />
                     <button
                         onClick={handleSend}
                         disabled={!chatInput.trim()}
-                        className="w-8 h-8 rounded-lg bg-primary-500 hover:bg-primary-600
-                                   disabled:bg-border disabled:cursor-not-allowed
-                                   text-white flex items-center justify-center transition-colors shrink-0"
+                        className="w-8 h-8 rounded-lg bg-primary-500 hover:bg-primary-600 disabled:bg-border disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors shrink-0"
                     >
                         <Send size={14} />
                     </button>
                 </div>
             </div>
-        </aside>
+            </div> {/* Closing mask wrapper */}
+        </motion.aside>
     );
 }

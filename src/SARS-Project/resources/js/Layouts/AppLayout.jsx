@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import Sidebar from '../Components/Dosen/Sidebar';
-import TopBar from '../Components/Dosen/TopBar';
-import AiAssistantPanel from '../Components/Dosen/AiAssistantPanel';
-import AiAssistantFab from '../Components/Dosen/AiAssistantFab';
+import { AnimatePresence } from 'motion/react';
+import Sidebar from '../Components/Shared/Sidebar';
+import TopBar from '../Components/Shared/TopBar';
+import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
+import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
-export default function DosenLayout({ children }) {
+export default function AppLayout({ navItems, branding, topBarActions, children }) {
     const { auth } = usePage().props;
     const user = auth?.user;
 
@@ -34,20 +35,12 @@ export default function DosenLayout({ children }) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Handle Theme Persistence
-    useEffect(() => {
-        const theme = localStorage.getItem('theme') || 'light';
-        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
-
     return (
         <div className="min-h-screen bg-surface font-sans">
             {/* ── Left Sidebar ────────────────────────────────────── */}
             <Sidebar
+                navItems={navItems}
+                branding={branding}
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
             />
@@ -56,6 +49,7 @@ export default function DosenLayout({ children }) {
             <TopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
+                actions={topBarActions}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}
@@ -71,18 +65,24 @@ export default function DosenLayout({ children }) {
                 </main>
 
                 {/* Right AI Panel */}
-                {aiPanelOpen && (
-                    <AiAssistantPanel
-                        isOpen={aiPanelOpen}
-                        onClose={() => setAiPanelOpen(false)}
-                    />
-                )}
+                <AnimatePresence>
+                    {aiPanelOpen && (
+                        <AiAssistantPanel
+                            key="ai-panel"
+                            isOpen={aiPanelOpen}
+                            onClose={() => setAiPanelOpen(false)}
+                            role={user?.role}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* FAB saat AI panel tertutup */}
-            {!aiPanelOpen && (
-                <AiAssistantFab onClick={() => setAiPanelOpen(true)} />
-            )}
+            <AnimatePresence>
+                {!aiPanelOpen && (
+                    <AiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

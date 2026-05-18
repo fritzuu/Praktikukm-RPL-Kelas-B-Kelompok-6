@@ -31,21 +31,33 @@ class Schedule extends Model
         'effective_until' => 'date',
     ];
 
+    /**
+     * Relasi ke Course
+     */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
+    /**
+     * Relasi ke Room
+     */
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
     }
 
+    /**
+     * Relasi ke Semester
+     */
     public function semester(): BelongsTo
     {
         return $this->belongsTo(Semester::class);
     }
 
+    /**
+     * Relasi ke TeachingAssignment
+     */
     public function teachingAssignments(): HasMany
     {
         return $this->hasMany(TeachingAssignment::class);
@@ -65,50 +77,5 @@ class Schedule extends Model
             'SABTU' => 'Sabtu',
         ];
         return $days[$this->day_of_week] ?? $this->day_of_week;
-    }
-
-    /**
-     * Get the dosen (PENGAJAR) assigned to this schedule.
-     */
-    public function dosens()
-    {
-        return $this->teachingAssignments()
-            ->where('role_in_class', 'PENGAJAR')
-            ->with('user');
-    }
-
-    /**
-     * Calculate session number from start_time.
-     * Sesi 1 = 07:00, Sesi 2 = 07:50, etc. (50 min per session)
-     */
-    public function getSessionStartAttribute(): int
-    {
-        // If stored in DB, use it, otherwise calculate
-        if (isset($this->attributes['session_start'])) {
-            return (int) $this->attributes['session_start'];
-        }
-
-        $minutes = (int) substr($this->start_time, 0, 2) * 60
-                 + (int) substr($this->start_time, 3, 2);
-        $baseMinutes = 7 * 60; // 07:00
-        return max(1, (int) floor(($minutes - $baseMinutes) / 50) + 1);
-    }
-
-    /**
-     * Calculate session duration (number of sessions).
-     */
-    public function getSessionDurationAttribute(): int
-    {
-        // If stored in DB, use it, otherwise calculate
-        if (isset($this->attributes['session_duration'])) {
-            return (int) $this->attributes['session_duration'];
-        }
-
-        $start = (int) substr($this->start_time, 0, 2) * 60
-               + (int) substr($this->start_time, 3, 2);
-        $end   = (int) substr($this->end_time, 0, 2) * 60
-               + (int) substr($this->end_time, 3, 2);
-        $diff  = $end - $start;
-        return max(1, (int) round($diff / 50));
     }
 }
