@@ -363,5 +363,61 @@ class DatabaseSeeder extends Seeder
                 'created_at' => $now->copy()->subDays(1),
             ],
         ]);
+
+        // =============================================
+        // 13. NOTIFICATION RECIPIENTS (IN_APP channel)
+        // =============================================
+        DB::table('notification_recipients')->insert([
+            // Notif 1 → Andi (requester of REQ-001)
+            [
+                'notification_id' => 1,
+                'recipient_id'    => 5,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(8),
+                'is_read'         => true,
+                'read_at'         => $now->copy()->subDays(7),
+            ],
+            // Notif 2 → Dewi (requester of REQ-002)
+            [
+                'notification_id' => 2,
+                'recipient_id'    => 6,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(3),
+                'is_read'         => true,
+                'read_at'         => $now->copy()->subDays(2),
+            ],
+            // Notif 3 → Reza/Aslab (new request from Fajar)
+            [
+                'notification_id' => 3,
+                'recipient_id'    => 4,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(1),
+                'is_read'         => false,
+                'read_at'         => null,
+            ],
+            // Notif 1 → Siti/Dosen (informed about approved request for her course)
+            [
+                'notification_id' => 1,
+                'recipient_id'    => 2,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(8),
+                'is_read'         => true,
+                'read_at'         => $now->copy()->subDays(6),
+            ],
+            // Notif 2 → Ahmad/Dosen (informed about forwarded request for his course)
+            [
+                'notification_id' => 2,
+                'recipient_id'    => 3,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => $now->copy()->subDays(3),
+                'is_read'         => false,
+                'read_at'         => null,
+            ],
+        ]);
     }
 }

@@ -26,8 +26,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
     const searchRef = useRef(null);
     const { props } = usePage();
 
-    // Get jadwal from page props for search
-    const jadwal = props.jadwal || props.jadwalItems || [];
+    const jadwal = props.jadwal || [];
 
     useEffect(() => {
         function handleClickOutside(e) {
@@ -39,7 +38,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Ctrl+K shortcut for search, ? for help
+    // Ctrl+K for search, ? for help
     useEffect(() => {
         function handleKeyDown(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -54,10 +53,9 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const initial = user?.name?.charAt(0)?.toUpperCase() || 'D';
-    const unreadCount = MOCK_DOSEN_NOTIFIKASI.filter(n => !n.dibaca).length;
+    const initial = user?.name?.charAt(0)?.toUpperCase() || 'A';
+    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
 
-    // Search results
     const searchResults = useMemo(() => {
         if (!searchQuery.trim()) return [];
         const q = searchQuery.toLowerCase();
@@ -69,7 +67,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
     }, [searchQuery, jadwal]);
 
     function handleMarkAllRead() {
-        fetch('/dosen/notifikasi/read-all', {
+        fetch('/aslab/notifikasi/read-all', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
@@ -81,7 +79,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
 
     function handleNotifClick(notif) {
         if (!notif.dibaca) {
-            fetch(`/dosen/notifikasi/${notif.id}/read`, {
+            fetch(`/aslab/notifikasi/${notif.id}/read`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
@@ -90,7 +88,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
             }).catch(() => {});
         }
         setNotifOpen(false);
-        try { router.get(route('dosen.notifikasi')); } catch {}
+        try { router.get(route('aslab.notifikasi')); } catch {}
     }
 
     return (
@@ -105,10 +103,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
             >
                 {/* ── Search ───────────────────────────────────────────── */}
                 <div className="relative flex-1 max-w-md">
-                    <Search
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-                    />
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                     <input
                         ref={searchRef}
                         type="text"
@@ -116,13 +111,12 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => setSearchFocused(true)}
                         onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                        placeholder="Cari jadwal, mata kuliah, atau ruangan..."
+                        placeholder="Cari jadwal, ruangan, atau request..."
                         className="w-full pl-10 pr-16 py-2 bg-surface border border-border rounded-lg
                                    text-sm text-text-primary placeholder:text-text-muted
                                    focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
                                    transition-all"
                     />
-                    {/* Ctrl+K hint */}
                     {!searchFocused && !searchQuery && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                             <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-[10px] font-mono text-text-muted">Ctrl</kbd>
@@ -168,21 +162,17 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
                     <div className="relative" ref={notifRef}>
                         <button
                             onClick={() => setNotifOpen(!notifOpen)}
-                            className="relative p-2 rounded-lg text-text-secondary hover:bg-surface
-                                       hover:text-text-primary transition-colors"
+                            className="relative p-2 rounded-lg text-text-secondary hover:bg-surface hover:text-text-primary transition-colors"
                         >
                             <Bell size={20} />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
-                                                 text-[9px] font-bold rounded-full flex items-center justify-center">
+                                <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                                     {unreadCount}
                                 </span>
                             )}
                         </button>
                         {notifOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-80 bg-card rounded-xl border border-border
-                                            shadow-lg shadow-black/5 overflow-hidden z-50">
-                                {/* Header */}
+                            <div className="absolute right-0 top-full mt-2 w-80 bg-card rounded-xl border border-border shadow-lg shadow-black/5 overflow-hidden z-50">
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                                     <h3 className="text-sm font-semibold text-text-primary">Notifikasi</h3>
                                     {unreadCount > 0 && (
@@ -191,58 +181,34 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
                                         </span>
                                     )}
                                 </div>
-
-                                {/* Items */}
                                 <div className="max-h-64 overflow-y-auto">
                                     {notifikasi.length === 0 ? (
-                                        <div className="px-4 py-8 text-center text-sm text-text-muted">
-                                            Belum ada notifikasi
-                                        </div>
+                                        <div className="px-4 py-8 text-center text-sm text-text-muted">Belum ada notifikasi</div>
                                     ) : (
                                         notifikasi.slice(0, 5).map((notif) => {
                                             const Icon = ICON_MAP[notif.tipe] || Calendar;
                                             return (
-                                                <div
-                                                    key={notif.id}
-                                                    onClick={() => handleNotifClick(notif)}
-                                                    className={`
-                                                        flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors cursor-pointer
-                                                        ${!notif.dibaca ? 'bg-primary-500/5' : ''}
-                                                    `}
-                                                >
-                                                    <div className={`
-                                                        w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5
-                                                        ${!notif.dibaca ? 'bg-primary-500/10 text-primary-500' : 'bg-surface text-text-muted'}
-                                                    `}>
+                                                <div key={notif.id} onClick={() => handleNotifClick(notif)}
+                                                    className={`flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors cursor-pointer ${!notif.dibaca ? 'bg-primary-500/5' : ''}`}>
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${!notif.dibaca ? 'bg-primary-500/10 text-primary-500' : 'bg-surface text-text-muted'}`}>
                                                         <Icon size={16} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className={`text-sm leading-tight ${!notif.dibaca ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
-                                                            {notif.judul}
-                                                        </p>
+                                                        <p className={`text-sm leading-tight ${!notif.dibaca ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>{notif.judul}</p>
                                                         <p className="text-[11px] text-text-muted mt-0.5">{notif.waktu}</p>
                                                     </div>
-                                                    {!notif.dibaca && (
-                                                        <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 mt-1.5" />
-                                                    )}
+                                                    {!notif.dibaca && <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 mt-1.5" />}
                                                 </div>
                                             );
                                         })
                                     )}
                                 </div>
-
-                                {/* Footer */}
                                 <div className="px-4 py-2.5 border-t border-border flex items-center justify-between">
-                                    <button
-                                        onClick={handleMarkAllRead}
-                                        className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors"
-                                    >
+                                    <button onClick={handleMarkAllRead} className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors">
                                         Tandai Semua Dibaca
                                     </button>
-                                    <button
-                                        onClick={() => { setNotifOpen(false); try { router.get(route('dosen.notifikasi')); } catch {} }}
-                                        className="text-xs font-medium text-text-muted hover:text-text-primary transition-colors"
-                                    >
+                                    <button onClick={() => { setNotifOpen(false); try { router.get(route('aslab.notifikasi')); } catch {} }}
+                                        className="text-xs font-medium text-text-muted hover:text-text-primary transition-colors">
                                         Lihat Semua →
                                     </button>
                                 </div>
@@ -251,27 +217,18 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
                     </div>
 
                     {/* ── Help Icon ─────────────────────────────────────────── */}
-                    <button
-                        onClick={() => setHelpOpen(true)}
-                        className="p-2 rounded-lg text-text-secondary hover:bg-surface
-                                   hover:text-text-primary transition-colors"
-                        title="Bantuan (tekan ?)"
-                    >
+                    <button onClick={() => setHelpOpen(true)} title="Bantuan (tekan ?)"
+                        className="p-2 rounded-lg text-text-secondary hover:bg-surface hover:text-text-primary transition-colors">
                         <HelpCircle size={20} />
                     </button>
 
                     {/* ── Profile ───────────────────────────────────────────── */}
                     <div className="flex items-center gap-3 pl-3 border-l border-border">
                         <div className="text-right hidden md:block">
-                            <p className="text-sm font-semibold text-text-primary leading-tight">
-                                {user?.name || 'Dosen'}
-                            </p>
-                            <p className="text-[11px] text-text-muted uppercase tracking-wide">
-                                Dosen Pengampu
-                            </p>
+                            <p className="text-sm font-semibold text-text-primary leading-tight">{user?.name || 'Aslab'}</p>
+                            <p className="text-[11px] text-text-muted uppercase tracking-wide">Asisten Lab</p>
                         </div>
-                        <div className="w-9 h-9 rounded-full bg-primary-500 text-white
-                                        flex items-center justify-center font-bold text-sm shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
                             {initial}
                         </div>
                     </div>
