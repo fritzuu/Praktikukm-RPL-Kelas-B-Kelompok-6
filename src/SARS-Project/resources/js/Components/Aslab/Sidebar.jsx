@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
     Calendar,
+    ClipboardCheck,
     Bell,
     Settings,
     LogOut,
@@ -12,10 +13,11 @@ import {
 import LogoutModal from '../Shared/LogoutModal';
 
 const NAV_ITEMS = [
-    { label: 'Dashboard', icon: LayoutDashboard, route: 'dosen.dashboard' },
-    { label: 'Jadwal', icon: Calendar, route: 'dosen.jadwal' },
-    { label: 'Notifikasi', icon: Bell, route: 'dosen.notifikasi' },
-    { label: 'Pengaturan', icon: Settings, route: 'dosen.pengaturan' },
+    { label: 'Dashboard',  icon: LayoutDashboard, route: 'aslab.dashboard' },
+    { label: 'Jadwal',     icon: Calendar,        route: 'aslab.jadwal' },
+    { label: 'Validasi',   icon: ClipboardCheck,  route: 'aslab.validasi' },
+    { label: 'Notifikasi', icon: Bell,             route: 'aslab.notifikasi' },
+    { label: 'Pengaturan', icon: Settings,         route: 'aslab.pengaturan' },
 ];
 
 export default function Sidebar({ isCollapsed, onToggle }) {
@@ -29,7 +31,7 @@ export default function Sidebar({ isCollapsed, onToggle }) {
             const routePath = route(routeName);
             return url.startsWith(new URL(routePath).pathname);
         } catch {
-            return url.includes(routeName.replace('dosen.', '/dosen/'));
+            return url.includes(routeName.replace('aslab.', '/aslab/'));
         }
     }
 
@@ -50,7 +52,7 @@ export default function Sidebar({ isCollapsed, onToggle }) {
                     ${isCollapsed ? 'w-16' : 'w-60'}
                 `}
             >
-                {/* ── Collapse Toggle (Floating on border) ─────────────── */}
+                {/* ── Collapse Toggle ─────────────────────────────────── */}
                 <button
                     onClick={onToggle}
                     title={isCollapsed ? 'Perbesar' : 'Perkecil'}
@@ -68,7 +70,7 @@ export default function Sidebar({ isCollapsed, onToggle }) {
                         <div className="overflow-hidden">
                             <p className="font-bold text-sm tracking-wide leading-tight">SARS</p>
                             <p className="text-[10px] text-white/50 uppercase tracking-widest">
-                                Dosen Panel
+                                Aslab Panel
                             </p>
                         </div>
                     )}
@@ -79,7 +81,7 @@ export default function Sidebar({ isCollapsed, onToggle }) {
                     {NAV_ITEMS.map((item) => {
                         const active = isActive(item.route);
                         const Icon = item.icon;
-                        const displayBadge = item.label === 'Notifikasi' && unreadCount > 0 ? unreadCount : item.badge;
+                        const displayBadge = item.label === 'Notifikasi' && unreadCount > 0 ? unreadCount : null;
 
                         return (
                             <button

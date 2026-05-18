@@ -1,6 +1,11 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Aslab\AslabDashboardController;
+use App\Http\Controllers\Aslab\AslabJadwalController;
+use App\Http\Controllers\Aslab\AslabValidationController;
+use App\Http\Controllers\Aslab\AslabNotifikasiController;
+use App\Http\Controllers\Aslab\AslabSettingController;
 use App\Http\Controllers\Dosen\DosenDashboardController;
 use App\Http\Controllers\Dosen\DosenJadwalController;
 use App\Http\Controllers\Dosen\DosenNotificationController;
@@ -39,10 +44,20 @@ Route::middleware('auth')->group(function () {
         ->get('/admin/dashboard', fn () => Inertia::render('Dashboard/Admin'))
         ->name('admin.dashboard');
 
-    // Aslab dashboard
-    Route::middleware('role:aslab')
-        ->get('/aslab/dashboard', fn () => Inertia::render('Dashboard/Aslab'))
-        ->name('aslab.dashboard');
+    // ── Aslab routes ─────────────────────────────────────────────────────────
+    Route::middleware('role:aslab')->prefix('aslab')->name('aslab.')->group(function () {
+        Route::get('/dashboard',             [AslabDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/jadwal',                [AslabJadwalController::class, 'index'])->name('jadwal');
+        Route::get('/validasi',              [AslabValidationController::class, 'index'])->name('validasi');
+        Route::post('/validasi/{id}/forward',[AslabValidationController::class, 'forward'])->name('validasi.forward');
+        Route::post('/validasi/{id}/reject', [AslabValidationController::class, 'reject'])->name('validasi.reject');
+        Route::get('/notifikasi',            [AslabNotifikasiController::class, 'index'])->name('notifikasi');
+        Route::post('/notifikasi/{id}/read', [AslabNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
+        Route::post('/notifikasi/read-all',  [AslabNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{id}',    [AslabNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+        Route::get('/pengaturan',            [AslabSettingController::class, 'index'])->name('pengaturan');
+        Route::post('/pengaturan',           [AslabSettingController::class, 'updateProfile'])->name('pengaturan.update');
+    });
 
     // ── Dosen routes ─────────────────────────────────────────────────────────
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
