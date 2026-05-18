@@ -176,11 +176,20 @@ export default function ScheduleGrid({
                         const roomClasses = dayJadwal.filter(j => j.ruangan === room);
 
                         return (
-                            <div key={room} className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors">
+                            <motion.div
+                                layout
+                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                key={room}
+                                className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                            >
                                 {/* Room Label - Sticky */}
-                                <div className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors">
+                                <motion.div
+                                    layout
+                                    transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                    className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
+                                >
                                     <span className="truncate">{room}</span>
-                                </div>
+                                </motion.div>
 
                                 {/* Sessions Grid Container */}
                                 <motion.div
@@ -202,9 +211,9 @@ export default function ScheduleGrid({
                                         let isConflict = false;
                                         if (showConflicts) {
                                             isConflict = roomClasses.some(other =>
-                                                other.id !== item.id &&
-                                                ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
-                                                    (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                 other.id !== item.id &&
+                                                 ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                                     (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
                                             );
                                         }
 
@@ -219,7 +228,7 @@ export default function ScheduleGrid({
                                         );
                                     })}
                                 </motion.div>
-                            </div>
+                            </motion.div>
                         );
                     })}
                 </div>
