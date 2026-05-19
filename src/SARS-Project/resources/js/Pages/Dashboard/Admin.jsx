@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePage, router } from '@inertiajs/react';
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import Modal from '../../Components/Modal';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
@@ -72,6 +72,7 @@ export default function AdminDashboard({
     syncStatus = MOCK_SYNC_STATUS,
     insights = MOCK_INSIGHTS,
     rooms = MOCK_ROOMS,
+    flash = {},
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -79,6 +80,46 @@ export default function AdminDashboard({
     const [selectedSchedule, setSelectedSchedule] = useState(null);
     const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
+
+    const [successMessage, setSuccessMessage] = useState(flash?.success || '');
+    const [errorMessage, setErrorMessage] = useState(flash?.error || '');
+
+    useEffect(() => {
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            const timer = setTimeout(() => setSuccessMessage(''), 5000);
+            return () => clearTimeout(timer);
+        } else {
+            setSuccessMessage('');
+        }
+    }, [flash, flash?.success]);
+
+    useEffect(() => {
+        if (flash?.error) {
+            setErrorMessage(flash.error);
+            const timer = setTimeout(() => setErrorMessage(''), 5000);
+            return () => clearTimeout(timer);
+        } else {
+            setErrorMessage('');
+        }
+    }, [flash, flash?.error]);
+
+    const handleResolve = (scheduleId) => {
+        const found = jadwal.find(s => s.id === scheduleId);
+        if (found) {
+            setScheduleToDelete(found);
+        }
+    };
+
+    const handleResolveAll = () => {
+        if (confirm("Apakah Anda yakin ingin menyelesaikan semua konflik secara otomatis? Tindakan ini akan menghapus jadwal-jadwal yang saling bertumpang tindih.")) {
+            router.post(route('admin.jadwal.resolve-conflicts'), {}, {
+                onSuccess: () => {
+                    // Success flash message will automatically handle notification
+                }
+            });
+        }
+    };
 
     const handleCardClick = (item) => {
         setSelectedSchedule(item);
@@ -113,6 +154,20 @@ export default function AdminDashboard({
                 <AdminStatCards syncStatus={syncStatus} />
             </WelcomeHeader>
 
+            {/* Flash Messages */}
+            {successMessage && (
+                <div className="mb-6 mt-4 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 px-4 py-3 rounded-xl shadow-sm animate-fade-in">
+                    <CheckCircle size={18} className="shrink-0" />
+                    <p className="text-xs font-semibold">{successMessage}</p>
+                </div>
+            )}
+            {errorMessage && (
+                <div className="mb-6 mt-4 flex items-center gap-3 bg-rose-500/10 border border-rose-500/30 text-rose-700 px-4 py-3 rounded-xl shadow-sm animate-fade-in">
+                    <AlertCircle size={18} className="shrink-0" />
+                    <p className="text-xs font-semibold">{errorMessage}</p>
+                </div>
+            )}
+
             <AdminInsightCards insights={insights} />
 
             <ScheduleGrid 
@@ -123,7 +178,11 @@ export default function AdminDashboard({
                 onCardClick={handleCardClick}
             />
 
-            <ConflictAlerts conflicts={konflik} />
+            <ConflictAlerts 
+                conflicts={konflik} 
+                onResolve={handleResolve}
+                onResolveAll={konflik.length > 0 ? handleResolveAll : null}
+            />
 
             <ActivityTable
                 title="Aktivitas Terbaru"

@@ -97,8 +97,8 @@ class AdminDashboardController extends Controller
                             'deskripsi' => "Mata Kuliah {$s1->kode} ({$s1->nama} - Kelas {$s1->kelas}) bertabrakan dengan {$s2->kode} ({$s2->nama} - Kelas {$s2->kelas}) di Ruangan {$s1->ruangan} pada hari " . ucfirst($s1->hari) . " (Sesi {$s1->sesiMulai}-" . ($s1->sesiMulai + $s1->durasi - 1) . " vs Sesi {$s2->sesiMulai}-" . ($s2->sesiMulai + $s2->durasi - 1) . ").",
                             'tipe' => 'bentrok_ruangan',
                             'aksi' => [
-                                ['label' => "Ubah {$s1->kode}", 'variant' => 'primary'],
-                                ['label' => "Ubah {$s2->kode}", 'variant' => 'secondary'],
+                                ['label' => "Hapus {$s1->kode} (Kelas {$s1->kelas})", 'variant' => 'primary', 'schedule_id' => $s1->id],
+                                ['label' => "Hapus {$s2->kode} (Kelas {$s2->kelas})", 'variant' => 'secondary', 'schedule_id' => $s2->id],
                             ]
                         ];
                     }
@@ -111,8 +111,8 @@ class AdminDashboardController extends Controller
                             'deskripsi' => "Dosen {$s1->dosen_nama} mengajar dua kelas sekaligus pada hari " . ucfirst($s1->hari) . ": {$s1->kode} ({$s1->nama} - Kelas {$s1->kelas}) di {$s1->ruangan} dan {$s2->kode} ({$s2->nama} - Kelas {$s2->kelas}) di {$s2->ruangan} (Sesi {$s1->sesiMulai}-" . ($s1->sesiMulai + $s1->durasi - 1) . " vs Sesi {$s2->sesiMulai}-" . ($s2->sesiMulai + $s2->durasi - 1) . ").",
                             'tipe' => 'bentrok_jadwal',
                             'aksi' => [
-                                ['label' => "Ubah {$s1->kode}", 'variant' => 'primary'],
-                                ['label' => "Ubah {$s2->kode}", 'variant' => 'secondary'],
+                                ['label' => "Hapus {$s1->kode} (Kelas {$s1->kelas})", 'variant' => 'primary', 'schedule_id' => $s1->id],
+                                ['label' => "Hapus {$s2->kode} (Kelas {$s2->kelas})", 'variant' => 'secondary', 'schedule_id' => $s2->id],
                             ]
                         ];
                     }
