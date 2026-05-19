@@ -39,10 +39,17 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Admin dashboard
-    Route::middleware('role:admin')
-        ->get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
-        ->name('admin.dashboard');
+    // Admin routes
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
+            ->name('admin.dashboard');
+        Route::get('/admin/jadwal', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'index'])
+            ->name('admin.jadwal');
+        Route::post('/admin/jadwal/import', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'import'])
+            ->name('admin.jadwal.import');
+        Route::delete('/admin/jadwal/{id}', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'destroy'])
+            ->name('admin.jadwal.destroy');
+    });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
     Route::middleware('role:aslab')->prefix('aslab')->name('aslab.')->group(function () {
