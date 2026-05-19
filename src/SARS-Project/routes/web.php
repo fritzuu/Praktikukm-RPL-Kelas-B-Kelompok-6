@@ -45,6 +45,8 @@ Route::middleware('auth')->group(function () {
             ->name('admin.dashboard');
         Route::get('/admin/jadwal', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'index'])
             ->name('admin.jadwal');
+        Route::post('/admin/jadwal/import', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'import'])
+            ->name('admin.jadwal.import');
     });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
