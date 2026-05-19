@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Download, CalendarDays, AlertTriangle } from 'lucide-react';
+import { Download, CalendarDays, AlertTriangle, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const HARI_LIST = [
@@ -162,6 +162,21 @@ export default function ScheduleGrid({
 }) {
     const [selectedDay, setSelectedDay] = useState('senin');
     
+    // State untuk filter
+    const [semesterFilter, setSemesterFilter] = useState('Semua');
+    const [kelasFilter, setKelasFilter] = useState('Semua');
+
+    // Extract unique semesters and classes from jadwalItems
+    const availableSemesters = useMemo(() => {
+        const sems = new Set(jadwalItems.map(j => j.semesterNum).filter(Boolean));
+        return ['Semua', ...Array.from(sems).sort()];
+    }, [jadwalItems]);
+
+    const availableKelas = useMemo(() => {
+        const kls = new Set(jadwalItems.map(j => j.kelas).filter(Boolean));
+        return ['Semua', ...Array.from(kls).sort()];
+    }, [jadwalItems]);
+    
     // State untuk lebar kolom (11 sesi)
     const [colWidths, setColWidths] = useState(() => Array(11).fill(110));
 
@@ -173,31 +188,72 @@ export default function ScheduleGrid({
         });
     };
 
-    const dayJadwal = useMemo(() => jadwalItems.filter(j => j.hari === selectedDay), [jadwalItems, selectedDay]);
+    // Terapkan filter semester & kelas
+    const filteredJadwalItems = useMemo(() => {
+        return jadwalItems.filter(j => {
+            const matchSemester = semesterFilter === 'Semua' || j.semesterNum === semesterFilter;
+            const matchKelas = kelasFilter === 'Semua' || j.kelas === kelasFilter;
+            return matchSemester && matchKelas;
+        });
+    }, [jadwalItems, semesterFilter, kelasFilter]);
+
+    const dayJadwal = useMemo(() => filteredJadwalItems.filter(j => j.hari === selectedDay), [filteredJadwalItems, selectedDay]);
 
     // Derive rooms if not provided
     const displayRooms = useMemo(() => {
         if (rooms) return rooms;
         const uniqueRooms = new Set();
-        jadwalItems.forEach(j => {
+        filteredJadwalItems.forEach(j => {
             if (j.ruangan) uniqueRooms.add(j.ruangan);
         });
         return Array.from(uniqueRooms).sort();
-    }, [rooms, jadwalItems]);
+    }, [rooms, filteredJadwalItems]);
 
     // Default header actions
     const renderHeaderActions = () => {
         if (headerActions !== undefined) return headerActions;
 
-        // Default export button if no custom headerActions provided
+        // Default filter & export buttons
         return (
-            <button
-                onClick={() => onExport?.(jadwalItems)}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-card text-text-secondary border-border hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:shadow-lg transition-all duration-300 flex items-center gap-1.5"
-            >
-                <Download size={14} />
-                Download Jadwal
-            </button>
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-background border border-border px-2 py-1.5 rounded-lg shadow-sm">
+                    <Filter size={14} className="text-text-muted ml-1" />
+                    
+                    <select 
+                        value={semesterFilter}
+                        onChange={(e) => setSemesterFilter(e.target.value)}
+                        className="bg-transparent border-none text-xs font-medium text-text-secondary focus:ring-0 cursor-pointer pr-6 py-0 outline-none h-auto w-auto min-w-[90px]"
+                        style={{ backgroundPosition: 'right 0.1rem center' }}
+                    >
+                        <option value="Semua">Semua Smt</option>
+                        {availableSemesters.filter(s => s !== 'Semua').map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+
+                    <div className="w-[1px] h-3 bg-border"></div>
+
+                    <select 
+                        value={kelasFilter}
+                        onChange={(e) => setKelasFilter(e.target.value)}
+                        className="bg-transparent border-none text-xs font-medium text-text-secondary focus:ring-0 cursor-pointer pr-6 py-0 outline-none h-auto w-auto min-w-[90px]"
+                        style={{ backgroundPosition: 'right 0.1rem center' }}
+                    >
+                        <option value="Semua">Semua Kls</option>
+                        {availableKelas.filter(k => k !== 'Semua').map(k => (
+                            <option key={k} value={k}>Kelas {k}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <button
+                    onClick={() => onExport?.(filteredJadwalItems)}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-card text-text-secondary border-border hover:bg-primary-500 hover:text-white hover:border-primary-500 hover:shadow-lg transition-all duration-300 flex items-center gap-1.5"
+                >
+                    <Download size={14} />
+                    Download
+                </button>
+            </div>
         );
     };
 
