@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import Modal from '../../Components/Modal';
-import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import { MOCK_JADWAL, MOCK_ROOMS } from '../../data/mockData';
 
@@ -21,10 +20,16 @@ export default function AdminJadwal({
 
     return (
         <>
-            <WelcomeHeader
-                user={user}
-                subtitle="Lihat, filter, dan kelola seluruh jadwal perkuliahan secara real-time."
-            />
+            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+                        Upload Jadwal
+                    </h1>
+                    <p className="text-text-secondary mt-1 text-sm">
+                        Lihat, filter, dan kelola seluruh jadwal perkuliahan secara real-time.
+                    </p>
+                </div>
+            </div>
 
             <div className="mt-6">
                 <ScheduleGrid 
