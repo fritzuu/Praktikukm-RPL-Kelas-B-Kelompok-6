@@ -7,7 +7,7 @@ export default function WelcomeHeader({ user = {}, subtitle, children }) {
     else if (hour >= 18) greeting = 'Selamat malam';
 
     return (
-        <section className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <section className="mb-6 flex flex-col md:flex-row md:items-stretch md:justify-between gap-4 min-h-[4.5rem]">
             {/* Left Column: Greeting & Subtitle */}
             <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
