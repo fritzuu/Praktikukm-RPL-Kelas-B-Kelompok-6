@@ -47,6 +47,10 @@ Route::middleware('auth')->group(function () {
             ->name('admin.jadwal');
         Route::post('/admin/jadwal/import', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'import'])
             ->name('admin.jadwal.import');
+        Route::delete('/admin/jadwal/{id}', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'destroy'])
+            ->name('admin.jadwal.destroy');
+        Route::post('/admin/jadwal/resolve-conflicts', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'resolveAllConflicts'])
+            ->name('admin.jadwal.resolve-conflicts');
     });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
