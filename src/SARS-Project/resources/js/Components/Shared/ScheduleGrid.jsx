@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Download, CalendarDays, AlertTriangle, Filter } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -161,6 +161,21 @@ export default function ScheduleGrid({
     onExport,
 }) {
     const [selectedDay, setSelectedDay] = useState('senin');
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (isLoading) {
+            const timer = setTimeout(() => setIsLoading(false), 400);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
+
+    const handleDayChange = (hari) => {
+        if (hari !== selectedDay) {
+            setIsLoading(true);
+            setSelectedDay(hari);
+        }
+    };
     
     // State untuk filter
     const [semesterFilter, setSemesterFilter] = useState('Semua');
@@ -273,7 +288,7 @@ export default function ScheduleGrid({
 
             {/* Tabs & Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border mb-4 gap-4 sm:gap-0">
-                <DayTabs selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+                <DayTabs selectedDay={selectedDay} onSelectDay={handleDayChange} />
                 <div className="pb-2 sm:pb-0 sm:mb-2">
                     {renderHeaderActions()}
                 </div>
@@ -281,86 +296,115 @@ export default function ScheduleGrid({
 
             {/* Matrix Grid */}
             <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm">
-                <div className="min-w-fit">
-                    {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
-                    <div className="grid border-b border-border bg-card" style={gridStyle}>
-                        <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                            RUANGAN
-                        </div>
-                        {Array.from({ length: 11 }, (_, i) => (
-                            <div key={i} className="relative p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0 select-none">
-                                SESI {i + 1}
-                                <ColumnResizer width={colWidths[i]} onResize={(newWidth) => handleResize(i, newWidth)} />
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Rows: Each Room */}
-                    {displayRooms.map(room => {
-                        const roomClasses = dayJadwal.filter(j => j.ruangan === room);
-
-                        return (
-                            <motion.div
-                                layout
-                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                                key={room}
-                                className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
-                                style={gridStyle}
-                            >
-                                {/* Room Label - Sticky */}
-                                <motion.div
-                                    layout
-                                    transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                                    className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
-                                >
-                                    <span className="truncate">{room}</span>
-                                </motion.div>
-
-                                {/* Sessions Grid Container */}
-                                <motion.div
-                                    key={selectedDay}
-                                    variants={CONTAINER_VARIANTS}
-                                    initial="hidden"
-                                    animate="show"
-                                    className="grid relative py-1.5 gap-y-1.5 min-h-[64px]"
-                                    style={{
-                                        gridColumn: '2 / -1',
-                                        gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ')
-                                    }}
-                                >
-                                    {/* Background Grid Lines for visual separation */}
-                                    <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
-                                        {Array.from({ length: 11 }, (_, i) => (
-                                            <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
-                                        ))}
+                <AnimatePresence mode="wait">
+                    {isLoading ? (
+                        <motion.div 
+                            key="loading"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="flex flex-col items-center justify-center py-32"
+                        >
+                            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="mt-4 text-xs font-semibold text-text-muted">Memuat jadwal...</p>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key={selectedDay}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="min-w-fit"
+                        >
+                            {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
+                            <div className="grid border-b border-border bg-card" style={gridStyle}>
+                                <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                    RUANGAN
+                                </div>
+                                {Array.from({ length: 11 }, (_, i) => (
+                                    <div key={i} className="relative p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0 select-none">
+                                        SESI {i + 1}
+                                        <ColumnResizer width={colWidths[i]} onResize={(newWidth) => handleResize(i, newWidth)} />
                                     </div>
+                                ))}
+                            </div>
 
-                                    {/* Render Classes */}
-                                    {roomClasses.map(item => {
-                                        let isConflict = false;
-                                        if (showConflicts) {
-                                            isConflict = roomClasses.some(other =>
-                                                 other.id !== item.id &&
-                                                 ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
-                                                     (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
-                                            );
-                                        }
+                            {/* Rows: Each Room */}
+                            {displayRooms.length === 0 ? (
+                                <div className="p-12 text-center text-text-muted text-sm font-semibold">
+                                    Tidak ada jadwal pada hari ini
+                                </div>
+                            ) : (
+                                displayRooms.map(room => {
+                                    const roomClasses = dayJadwal.filter(j => j.ruangan === room);
 
-                                        return (
-                                            <ScheduleCard
-                                                key={item.id}
-                                                item={item}
-                                                variants={CARD_VARIANTS}
-                                                isConflict={isConflict}
-                                                onCardClick={onCardClick}
-                                            />
-                                        );
-                                    })}
-                                </motion.div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
+                                    return (
+                                        <motion.div
+                                            layout
+                                            transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                            key={room}
+                                            className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                                            style={gridStyle}
+                                        >
+                                            {/* Room Label - Sticky */}
+                                            <motion.div
+                                                layout
+                                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                                className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
+                                            >
+                                                <span className="truncate">{room}</span>
+                                            </motion.div>
+
+                                            {/* Sessions Grid Container */}
+                                            <motion.div
+                                                key={selectedDay}
+                                                variants={CONTAINER_VARIANTS}
+                                                initial="hidden"
+                                                animate="show"
+                                                className="grid relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                                style={{
+                                                    gridColumn: '2 / -1',
+                                                    gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ')
+                                                }}
+                                            >
+                                                {/* Background Grid Lines for visual separation */}
+                                                <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
+                                                    {Array.from({ length: 11 }, (_, i) => (
+                                                        <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Render Classes */}
+                                                {roomClasses.map(item => {
+                                                    let isConflict = false;
+                                                    if (showConflicts) {
+                                                        isConflict = roomClasses.some(other =>
+                                                            other.id !== item.id &&
+                                                            ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                                                (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <ScheduleCard
+                                                            key={item.id}
+                                                            item={item}
+                                                            variants={CARD_VARIANTS}
+                                                            isConflict={isConflict}
+                                                            onCardClick={onCardClick}
+                                                        />
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        </motion.div>
+                                    );
+                                })
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </section>
     );
