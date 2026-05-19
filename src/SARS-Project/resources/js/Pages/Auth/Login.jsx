@@ -1,4 +1,5 @@
 import { useForm, usePage } from '@inertiajs/react';
+import unsImage from '../../../img/uns.png';
 
 const ROLES = [
     { key: 'mahasiswa', label: 'STUDENT',  placeholder: 'mahasiswa@student.university.ac.id' },
@@ -55,14 +56,13 @@ export default function Login() {
                         </p>
                     </div>
 
-                    {/* Hero Image Placeholder */}
-                    <div className="rounded-2xl overflow-hidden shadow-xl w-full max-w-md aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                        <div className="text-center text-gray-400 space-y-2">
-                            <svg className="w-16 h-16 mx-auto opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                            <p className="text-sm font-medium">Universitas</p>
-                        </div>
+                    {/* Hero Image */}
+                    <div className="rounded-2xl overflow-hidden shadow-xl w-full max-w-md aspect-[4/3] flex items-center justify-center bg-white">
+                        <img 
+                            src={unsImage} 
+                            alt="Universitas Sebelas Maret" 
+                            className="w-full h-full object-cover"
+                        />
                     </div>
                 </div>
 
