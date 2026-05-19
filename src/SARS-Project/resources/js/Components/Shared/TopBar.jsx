@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, Bell, HelpCircle } from 'lucide-react';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import NotificationDropdown from './NotificationDropdown';
 
 const ROLE_LABELS = {
@@ -12,6 +13,22 @@ const ROLE_LABELS = {
 export default function TopBar({ user, sidebarCollapsed, actions }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef(null);
+    const bellControls = useAnimationControls();
+
+    const triggerBellWobble = () => {
+        bellControls.start({
+            rotate: [0, -15, 12, -8, 6, -3, 0],
+            transition: { duration: 0.5, ease: "easeInOut" }
+        });
+    };
+
+    // Trigger periodic bell wobble every 5 seconds to draw attention
+    useEffect(() => {
+        const interval = setInterval(() => {
+            triggerBellWobble();
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Tutup dropdown saat klik di luar
     useEffect(() => {
@@ -59,18 +76,31 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 <div className="relative" ref={notifRef}>
                     <button
                         onClick={() => setNotifOpen(!notifOpen)}
+                        onMouseEnter={triggerBellWobble}
                         className="relative p-2 rounded-lg text-text-secondary hover:bg-surface
-                                   hover:text-text-primary transition-colors"
+                                   hover:text-text-primary transition-colors group"
                     >
-                        <Bell size={20} />
-                        <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
-                                         text-[9px] font-bold rounded-full flex items-center justify-center">
+                        <motion.div
+                            animate={bellControls}
+                            style={{ originX: 0.5, originY: 0 }}
+                        >
+                            <Bell size={20} />
+                        </motion.div>
+                        <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
+                            className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
+                                             text-[9px] font-bold rounded-full flex items-center justify-center"
+                        >
                             3
-                        </span>
+                        </motion.span>
                     </button>
-                    {notifOpen && (
-                        <NotificationDropdown onClose={() => setNotifOpen(false)} />
-                    )}
+                    <AnimatePresence>
+                        {notifOpen && (
+                            <NotificationDropdown onClose={() => setNotifOpen(false)} />
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* ── Help Icon ─────────────────────────────────────────── */}

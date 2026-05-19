@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Download, CalendarDays, AlertTriangle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -15,35 +16,66 @@ const TIPE_STYLES = {
     konflik: 'bg-danger/10 border-danger/50 text-danger-800 border-dashed',
 };
 
+const CONTAINER_VARIANTS = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.05,
+        },
+    },
+};
+
+const CARD_VARIANTS = {
+    hidden: { opacity: 0, scale: 0.92, y: 8 },
+    show: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: { type: 'spring', stiffness: 240, damping: 22 },
+    },
+};
+
 // Internal Sub-components to keep render clean
 function DayTabs({ selectedDay, onSelectDay }) {
     return (
-        <div className="flex space-x-1">
-            {HARI_LIST.map((hari) => (
-                <button
-                    key={hari.key}
-                    onClick={() => onSelectDay(hari.key)}
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${selectedDay === hari.key
-                        ? 'border-primary-500 text-primary-500'
-                        : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
-                        }`}
-                >
-                    {hari.label}
-                </button>
-            ))}
+        <div className="flex space-x-1 relative">
+            {HARI_LIST.map((hari) => {
+                const isActive = selectedDay === hari.key;
+                return (
+                    <button
+                        key={hari.key}
+                        onClick={() => onSelectDay(hari.key)}
+                        className={`relative px-4 py-2 text-sm font-semibold transition-colors focus:outline-none ${isActive
+                            ? 'text-primary-500'
+                            : 'text-text-muted hover:text-text-primary'
+                            }`}
+                      >
+                        {hari.label}
+                        {isActive && (
+                            <motion.div
+                                layoutId="activeTabUnderline"
+                                className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary-500 z-10"
+                                transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+                            />
+                        )}
+                    </button>
+                );
+            })}
         </div>
     );
 }
 
-function ScheduleCard({ item, isConflict, onCardClick }) {
+function ScheduleCard({ item, isConflict, onCardClick, variants }) {
     const appliedStyle = isConflict || item.tipe === 'konflik'
         ? TIPE_STYLES.konflik
         : (TIPE_STYLES[item.tipe] || TIPE_STYLES.resmi);
 
     return (
-        <div
+        <motion.div
+            variants={variants}
             onClick={() => onCardClick?.(item)}
-            className={`relative z-10 mx-1 rounded-md border p-2 flex flex-col justify-center overflow-hidden transition-all hover:z-20 hover:shadow-md ${appliedStyle} ${isConflict ? 'ring-2 ring-danger/30' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
+            className={`relative z-10 mx-1 rounded-md border p-2 flex flex-col justify-center overflow-hidden transition-[box-shadow,border-color] duration-300 hover:z-20 hover:shadow-md ${appliedStyle} ${isConflict ? 'ring-2 ring-danger/30' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
             style={{
                 gridColumnStart: item.sesiMulai,
                 gridColumnEnd: `span ${item.durasi}`
@@ -63,7 +95,7 @@ function ScheduleCard({ item, isConflict, onCardClick }) {
             <p className="text-[10px] mt-0.5 opacity-70 truncate">
                 {item.dosen}
             </p>
-        </div>
+        </motion.div>
     );
 }
 
@@ -144,14 +176,29 @@ export default function ScheduleGrid({
                         const roomClasses = dayJadwal.filter(j => j.ruangan === room);
 
                         return (
-                            <div key={room} className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors">
+                            <motion.div
+                                layout
+                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                key={room}
+                                className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                            >
                                 {/* Room Label - Sticky */}
-                                <div className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors">
+                                <motion.div
+                                    layout
+                                    transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                    className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
+                                >
                                     <span className="truncate">{room}</span>
-                                </div>
+                                </motion.div>
 
                                 {/* Sessions Grid Container */}
-                                <div className="col-span-11 grid grid-cols-11 relative py-1.5 gap-y-1.5 min-h-[64px]">
+                                <motion.div
+                                    key={selectedDay}
+                                    variants={CONTAINER_VARIANTS}
+                                    initial="hidden"
+                                    animate="show"
+                                    className="col-span-11 grid grid-cols-11 relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                >
                                     {/* Background Grid Lines for visual separation */}
                                     <div className="absolute inset-0 grid grid-cols-11 pointer-events-none">
                                         {Array.from({ length: 11 }, (_, i) => (
@@ -164,9 +211,9 @@ export default function ScheduleGrid({
                                         let isConflict = false;
                                         if (showConflicts) {
                                             isConflict = roomClasses.some(other =>
-                                                other.id !== item.id &&
-                                                ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
-                                                    (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                 other.id !== item.id &&
+                                                 ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                                     (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
                                             );
                                         }
 
@@ -174,13 +221,14 @@ export default function ScheduleGrid({
                                             <ScheduleCard
                                                 key={item.id}
                                                 item={item}
+                                                variants={CARD_VARIANTS}
                                                 isConflict={isConflict}
                                                 onCardClick={onCardClick}
                                             />
                                         );
                                     })}
-                                </div>
-                            </div>
+                                </motion.div>
+                            </motion.div>
                         );
                     })}
                 </div>
