@@ -11,7 +11,12 @@ export default function WelcomeHeader({ user = {}, subtitle, children }) {
             {/* Left Column: Greeting & Subtitle */}
             <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
-                    {greeting}, {user?.name || 'User'}.
+                    <span className="block text-lg md:text-xl font-medium text-text-secondary mb-1">
+                        {greeting},
+                    </span>
+                    <span className="block">
+                        {user?.name || 'User'}.
+                    </span>
                 </h1>
                 {subtitle && (
                     <p className="text-text-secondary mt-1 text-sm">
