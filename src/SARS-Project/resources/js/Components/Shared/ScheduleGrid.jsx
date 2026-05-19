@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Download, CalendarDays, AlertTriangle, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -161,10 +161,35 @@ export default function ScheduleGrid({
     onExport,
 }) {
     const [selectedDay, setSelectedDay] = useState('senin');
+    const [loading, setLoading] = useState(false);
     
     // State untuk filter
     const [semesterFilter, setSemesterFilter] = useState('Semua');
     const [kelasFilter, setKelasFilter] = useState('Semua');
+
+    useEffect(() => {
+        setLoading(true);
+        const timer = setTimeout(() => setLoading(false), 450);
+        return () => clearTimeout(timer);
+    }, [jadwalItems]);
+
+    const handleSelectDay = (day) => {
+        setLoading(true);
+        setSelectedDay(day);
+        setTimeout(() => setLoading(false), 450);
+    };
+
+    const handleSemesterChange = (val) => {
+        setLoading(true);
+        setSemesterFilter(val);
+        setTimeout(() => setLoading(false), 450);
+    };
+
+    const handleKelasChange = (val) => {
+        setLoading(true);
+        setKelasFilter(val);
+        setTimeout(() => setLoading(false), 450);
+    };
 
     // Extract unique semesters and classes from jadwalItems
     const availableSemesters = useMemo(() => {
@@ -221,7 +246,7 @@ export default function ScheduleGrid({
                     
                     <select 
                         value={semesterFilter}
-                        onChange={(e) => setSemesterFilter(e.target.value)}
+                        onChange={(e) => handleSemesterChange(e.target.value)}
                         className="bg-transparent border-none text-xs font-medium text-text-secondary focus:ring-0 cursor-pointer pr-6 py-0 outline-none h-auto w-auto min-w-[90px]"
                         style={{ backgroundPosition: 'right 0.1rem center' }}
                     >
@@ -235,7 +260,7 @@ export default function ScheduleGrid({
 
                     <select 
                         value={kelasFilter}
-                        onChange={(e) => setKelasFilter(e.target.value)}
+                        onChange={(e) => handleKelasChange(e.target.value)}
                         className="bg-transparent border-none text-xs font-medium text-text-secondary focus:ring-0 cursor-pointer pr-6 py-0 outline-none h-auto w-auto min-w-[90px]"
                         style={{ backgroundPosition: 'right 0.1rem center' }}
                     >
@@ -273,14 +298,14 @@ export default function ScheduleGrid({
 
             {/* Tabs & Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border mb-4 gap-4 sm:gap-0">
-                <DayTabs selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+                <DayTabs selectedDay={selectedDay} onSelectDay={handleSelectDay} />
                 <div className="pb-2 sm:pb-0 sm:mb-2">
                     {renderHeaderActions()}
                 </div>
             </div>
 
             {/* Matrix Grid */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm">
+            <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm relative min-h-[250px]">
                 <div className="min-w-fit">
                     {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
                     <div className="grid border-b border-border bg-card" style={gridStyle}>
@@ -362,6 +387,22 @@ export default function ScheduleGrid({
                         );
                     })}
                 </div>
+
+                {/* Loading Overlay */}
+                {loading && (
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex flex-col items-center justify-center z-40 animate-fade-in">
+                        <div className="flex flex-col items-center gap-3 bg-card border border-border p-5 rounded-2xl shadow-xl">
+                            <div className="relative flex items-center justify-center">
+                                <div className="w-10 h-10 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                                <CalendarDays className="absolute text-primary-500 animate-pulse" size={16} />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs font-bold text-text-primary">Memproses Jadwal...</p>
+                                <p className="text-[10px] text-text-muted mt-1">Mengambil data terbaru dari database</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );
