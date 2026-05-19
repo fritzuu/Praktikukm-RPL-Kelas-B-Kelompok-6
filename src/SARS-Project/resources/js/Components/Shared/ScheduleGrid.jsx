@@ -87,10 +87,41 @@ function ColumnResizer({ width, onResize }) {
     );
 }
 
+const MATKUL_COLORS = [
+    'bg-blue-500/10 border-blue-500/30 text-blue-700',
+    'bg-emerald-500/10 border-emerald-500/30 text-emerald-700',
+    'bg-violet-500/10 border-violet-500/30 text-violet-700',
+    'bg-amber-500/10 border-amber-500/30 text-amber-700',
+    'bg-pink-500/10 border-pink-500/30 text-pink-700',
+    'bg-cyan-500/10 border-cyan-500/30 text-cyan-700',
+    'bg-rose-500/10 border-rose-500/30 text-rose-700',
+    'bg-indigo-500/10 border-indigo-500/30 text-indigo-700',
+    'bg-teal-500/10 border-teal-500/30 text-teal-700',
+    'bg-fuchsia-500/10 border-fuchsia-500/30 text-fuchsia-700',
+    'bg-orange-500/10 border-orange-500/30 text-orange-700',
+    'bg-sky-500/10 border-sky-500/30 text-sky-700',
+];
+
+const getColorForMatkul = (nama) => {
+    if (!nama) return TIPE_STYLES.resmi;
+    let hash = 0;
+    for (let i = 0; i < nama.length; i++) {
+        hash = nama.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % MATKUL_COLORS.length;
+    return MATKUL_COLORS[index];
+};
+
 function ScheduleCard({ item, isConflict, onCardClick, variants }) {
-    const appliedStyle = isConflict || item.tipe === 'konflik'
-        ? TIPE_STYLES.konflik
-        : (TIPE_STYLES[item.tipe] || TIPE_STYLES.resmi);
+    let appliedStyle = '';
+    
+    if (isConflict || item.tipe === 'konflik') {
+        appliedStyle = TIPE_STYLES.konflik;
+    } else if (item.tipe === 'override') {
+        appliedStyle = TIPE_STYLES.override;
+    } else {
+        appliedStyle = getColorForMatkul(item.nama);
+    }
 
     return (
         <motion.div
