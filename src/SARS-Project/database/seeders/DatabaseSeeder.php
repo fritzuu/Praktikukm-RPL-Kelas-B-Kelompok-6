@@ -419,5 +419,9 @@ class DatabaseSeeder extends Seeder
                 'read_at'         => null,
             ],
         ]);
+
+        $this->call([
+            RealScheduleSeeder::class,
+        ]);
     }
 }

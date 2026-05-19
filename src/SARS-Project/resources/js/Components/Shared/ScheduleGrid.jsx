@@ -50,8 +50,8 @@ function ScheduleCard({ item, isConflict, onCardClick }) {
             }}
         >
             <div className="flex items-start justify-between gap-1 mb-1">
-                <span className="font-bold text-[10px] leading-none truncate">
-                    {item.kode}
+                <span className="font-bold text-[10px] leading-none truncate opacity-80">
+                    {item.semesterNum || item.kelas ? `${item.semesterNum || ''} - Kelas ${item.kelas || '-'}` : item.kode}
                 </span>
                 {(isConflict || item.tipe === 'konflik') && (
                     <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />
@@ -67,6 +67,31 @@ function ScheduleCard({ item, isConflict, onCardClick }) {
     );
 }
 
+function ColumnResizer({ onResize }) {
+    return (
+        <div 
+            className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary-400 active:bg-primary-500 z-50 transition-colors"
+            onMouseDown={(e) => {
+                e.preventDefault();
+                let startX = e.clientX;
+                const onMouseMove = (moveEvent) => {
+                    const delta = moveEvent.clientX - startX;
+                    startX = moveEvent.clientX;
+                    onResize(delta);
+                };
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    document.body.style.cursor = 'default';
+                };
+                document.body.style.cursor = 'col-resize';
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }}
+        />
+    );
+}
+
 export default function ScheduleGrid({
     jadwalItems = [],
     rooms, // optional array of rooms
@@ -77,6 +102,17 @@ export default function ScheduleGrid({
     onExport,
 }) {
     const [selectedDay, setSelectedDay] = useState('senin');
+    
+    // State untuk lebar kolom (11 sesi)
+    const [colWidths, setColWidths] = useState(() => Array(11).fill(110));
+
+    const handleResize = (index, delta) => {
+        setColWidths(prev => {
+            const newWidths = [...prev];
+            newWidths[index] = Math.max(80, newWidths[index] + delta);
+            return newWidths;
+        });
+    };
 
     const dayJadwal = useMemo(() => jadwalItems.filter(j => j.hari === selectedDay), [jadwalItems, selectedDay]);
 
@@ -106,6 +142,10 @@ export default function ScheduleGrid({
         );
     };
 
+    const gridStyle = {
+        gridTemplateColumns: `160px ${colWidths.map(w => `${w}px`).join(' ')}`
+    };
+
     return (
         <section className="mb-6">
             {/* Header */}
@@ -126,15 +166,16 @@ export default function ScheduleGrid({
 
             {/* Matrix Grid */}
             <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm">
-                <div className="min-w-[1200px]">
+                <div className="min-w-fit">
                     {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
-                    <div className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border bg-card">
+                    <div className="grid border-b border-border bg-card" style={gridStyle}>
                         <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                             RUANGAN
                         </div>
                         {Array.from({ length: 11 }, (_, i) => (
-                            <div key={i} className="p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0">
+                            <div key={i} className="relative p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0 select-none">
                                 SESI {i + 1}
+                                <ColumnResizer onResize={(delta) => handleResize(i, delta)} />
                             </div>
                         ))}
                     </div>
@@ -144,16 +185,27 @@ export default function ScheduleGrid({
                         const roomClasses = dayJadwal.filter(j => j.ruangan === room);
 
                         return (
-                            <div key={room} className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors">
+                            <div
+                                key={room}
+                                className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                                style={gridStyle}
+                            >
                                 {/* Room Label - Sticky */}
                                 <div className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors">
                                     <span className="truncate">{room}</span>
                                 </div>
 
                                 {/* Sessions Grid Container */}
-                                <div className="col-span-11 grid grid-cols-11 relative py-1.5 gap-y-1.5 min-h-[64px]">
+                                <div
+                                    key={selectedDay}
+                                    className="grid relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                    style={{
+                                        gridColumn: '2 / -1',
+                                        gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ')
+                                    }}
+                                >
                                     {/* Background Grid Lines for visual separation */}
-                                    <div className="absolute inset-0 grid grid-cols-11 pointer-events-none">
+                                    <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
                                         {Array.from({ length: 11 }, (_, i) => (
                                             <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
                                         ))}

@@ -40,7 +40,7 @@ Route::middleware('auth')->group(function () {
 
     // Admin dashboard
     Route::middleware('role:admin')
-        ->get('/admin/dashboard', fn () => Inertia::render('Dashboard/Admin'))
+        ->get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
         ->name('admin.dashboard');
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
