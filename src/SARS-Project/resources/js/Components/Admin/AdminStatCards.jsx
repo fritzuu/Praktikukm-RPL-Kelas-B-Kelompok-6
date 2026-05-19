@@ -38,7 +38,7 @@ export default function AdminStatCards({
     });
 
     return (
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-stretch gap-3 shrink-0">
             {/* Sync Status Card */}
             <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center justify-center w-[170px] shadow-sm">
                 <div className="flex flex-col gap-1.5 items-start">
@@ -69,7 +69,7 @@ export default function AdminStatCards({
             </div>
 
             {/* Live Clock Card */}
-            <div className="bg-card border border-border rounded-xl px-5 py-3 text-right hidden sm:block shadow-sm">
+            <div className="bg-card border border-border rounded-xl px-5 py-3 text-right hidden sm:flex flex-col justify-center items-end shadow-sm">
                 <div className="flex items-center gap-2 justify-end mb-0.5">
                     <Clock size={14} className="text-primary-500" />
                     <span className="text-2xl font-bold text-text-primary tracking-tight font-mono">

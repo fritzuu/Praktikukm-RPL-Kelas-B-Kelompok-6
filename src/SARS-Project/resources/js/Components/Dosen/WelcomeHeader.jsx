@@ -96,7 +96,12 @@ export default function WelcomeHeader({
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
-                        {greeting}, {user?.name?.split(',')[0] || 'Dosen'}.
+                        <span className="block text-lg md:text-xl font-medium text-text-secondary mb-1">
+                            {greeting},
+                        </span>
+                        <span className="block">
+                            {user?.name?.split(',')[0] || 'Dosen'}.
+                        </span>
                     </h1>
                     <p className="text-text-secondary mt-1 text-sm">
                         Anda memiliki{' '}
