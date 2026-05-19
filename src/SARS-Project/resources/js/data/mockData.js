@@ -204,6 +204,15 @@ export const MOCK_METRIK = {
     waktuTunggu: '1.2j',
 };
 
+// Insight cards untuk Admin Dashboard
+// Diisi backend partner via Inertia props — nilai di bawah hanya mock
+export const MOCK_INSIGHTS = {
+    pendingRequests: 14,      // Total pengajuan menunggu keputusan admin
+    conflictDetected: 2,      // Konflik jadwal/ruangan yang terdeteksi saat ini
+    acceptedThisWeek: 9,      // Pengajuan yang disetujui dalam 7 hari terakhir
+    declinedThisWeek: 3,      // Pengajuan yang ditolak dalam 7 hari terakhir
+};
+
 export const MOCK_TUGAS_PENDING = [
     'Setujui 14 permintaan perubahan',
     'Selesaikan bentrok Lab 301',

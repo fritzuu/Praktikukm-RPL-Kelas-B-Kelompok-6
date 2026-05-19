@@ -4,8 +4,9 @@ import WelcomeHeader from '../../Components/Aslab/WelcomeHeader';
 import ScheduleGrid from '../../Components/Aslab/ScheduleGrid';
 
 export default function AslabDashboard({
-    stats = { pendingValidasi: 0 },
+    stats = { pendingVerification: 0, validation: 0, accepted: 0, rejected: 0 },
     jadwal = [],
+    rooms = [],
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -14,7 +15,7 @@ export default function AslabDashboard({
         <>
             <WelcomeHeader user={user} stats={stats} />
 
-            <ScheduleGrid jadwalItems={jadwal} />
+            <ScheduleGrid schedules={jadwal} rooms={rooms} />
         </>
     );
 }

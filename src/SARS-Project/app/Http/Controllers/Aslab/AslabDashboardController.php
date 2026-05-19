@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use App\Models\Room;
 class AslabDashboardController extends Controller
 {
     /**
@@ -23,8 +24,9 @@ class AslabDashboardController extends Controller
 
         if (! $semester) {
             return Inertia::render('Dashboard/Aslab', [
-                'stats'      => ['pendingValidasi' => 0],
+                'stats'      => ['pendingVerification' => 0, 'validation' => 0, 'accepted' => 0, 'rejected' => 0],
                 'jadwal'     => [],
+                'rooms'      => [],
                 'notifikasi' => [],
             ]);
         }
@@ -41,6 +43,7 @@ class AslabDashboardController extends Controller
             'kode'      => $s->course->code,
             'nama'      => $s->course->name,
             'kelas'     => $s->course->class_name,
+            'ruangan_id'=> $s->room_id,
             'ruangan'   => $s->room->code,
             'hari'      => strtolower($s->day_of_week),
             'sesiMulai' => $s->session_start,
@@ -49,9 +52,20 @@ class AslabDashboardController extends Controller
             'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
         ])->values();
 
-        // Stats — only pending validasi
-        $pendingCount = ChangeRequest::where('status', 'PENDING_ASLAB')->count();
-        $stats = ['pendingValidasi' => $pendingCount];
+        // Stats
+        $pendingVerification = ChangeRequest::where('status', 'PENDING_ASLAB')->count();
+        $validation = ChangeRequest::where('status', 'PENDING_ADMIN')->count();
+        $accepted = ChangeRequest::where('status', 'APPROVED')->count();
+        $rejected = ChangeRequest::where('status', 'REJECTED')->count();
+        
+        $stats = [
+            'pendingVerification' => $pendingVerification,
+            'validation' => $validation,
+            'accepted' => $accepted,
+            'rejected' => $rejected
+        ];
+        
+        $rooms = Room::all();
 
         // Notifications
         $notifikasi = NotificationRecipient::where('recipient_id', $user->id)
@@ -73,6 +87,7 @@ class AslabDashboardController extends Controller
         return Inertia::render('Dashboard/Aslab', [
             'stats'      => $stats,
             'jadwal'     => $jadwal,
+            'rooms'      => $rooms,
             'notifikasi' => $notifikasi,
         ]);
 }

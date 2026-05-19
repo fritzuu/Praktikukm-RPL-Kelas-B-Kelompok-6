@@ -5,6 +5,7 @@ import Modal from '../../Components/Modal';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
 import ActivityTable from '../../Components/Shared/ActivityTable';
 import AdminStatCards from '../../Components/Admin/AdminStatCards';
+import AdminInsightCards from '../../Components/Admin/AdminInsightCards';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import ConflictAlerts from '../../Components/Admin/ConflictAlerts';
 import {
@@ -13,6 +14,7 @@ import {
     MOCK_AKTIVITAS,
     MOCK_SYNC_STATUS,
     MOCK_ROOMS,
+    MOCK_INSIGHTS,
 } from '../../data/mockData';
 
 const STATUS_STYLES = {
@@ -92,6 +94,8 @@ export default function AdminDashboard({
             >
                 <AdminStatCards syncStatus={syncStatus} />
             </WelcomeHeader>
+
+            <AdminInsightCards insights={insights} />
 
             <ScheduleGrid 
                 jadwalItems={jadwal} 
