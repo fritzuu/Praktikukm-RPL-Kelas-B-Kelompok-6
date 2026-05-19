@@ -29,6 +29,29 @@ export default function AdminJadwal({
     const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
+    const [successMessage, setSuccessMessage] = useState(flash?.success || '');
+    const [errorMessage, setErrorMessage] = useState(flash?.error || '');
+
+    useEffect(() => {
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            const timer = setTimeout(() => setSuccessMessage(''), 5000);
+            return () => clearTimeout(timer);
+        } else {
+            setSuccessMessage('');
+        }
+    }, [flash, flash?.success]);
+
+    useEffect(() => {
+        if (flash?.error) {
+            setErrorMessage(flash.error);
+            const timer = setTimeout(() => setErrorMessage(''), 5000);
+            return () => clearTimeout(timer);
+        } else {
+            setErrorMessage('');
+        }
+    }, [flash, flash?.error]);
+
     // Form helper using Inertia
     const { data, setData, post, processing, errors, reset, wasSuccessful } = useForm({
         raw_text: '',
@@ -153,16 +176,16 @@ export default function AdminJadwal({
             </div>
 
             {/* Flash Messages */}
-            {flash?.success && (
+            {successMessage && (
                 <div className="mb-6 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 px-4 py-3 rounded-xl shadow-sm animate-fade-in">
                     <CheckCircle size={18} className="shrink-0" />
-                    <p className="text-xs font-semibold">{flash.success}</p>
+                    <p className="text-xs font-semibold">{successMessage}</p>
                 </div>
             )}
-            {flash?.error && (
+            {errorMessage && (
                 <div className="mb-6 flex items-center gap-3 bg-rose-500/10 border border-rose-500/30 text-rose-700 px-4 py-3 rounded-xl shadow-sm animate-fade-in">
                     <AlertCircle size={18} className="shrink-0" />
-                    <p className="text-xs font-semibold">{flash.error}</p>
+                    <p className="text-xs font-semibold">{errorMessage}</p>
                 </div>
             )}
 
