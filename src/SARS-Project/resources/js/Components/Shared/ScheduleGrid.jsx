@@ -322,10 +322,11 @@ export default function ScheduleGrid({
                                     variants={CONTAINER_VARIANTS}
                                     initial="hidden"
                                     animate="show"
-                                    className="grid relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                    className="grid grid-flow-row-dense relative py-1.5 gap-y-1.5 min-h-[64px]"
                                     style={{
                                         gridColumn: '2 / -1',
-                                        gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ')
+                                        gridTemplateColumns: colWidths.map(w => `${w}px`).join(' '),
+                                        gridAutoFlow: 'row dense'
                                     }}
                                 >
                                     {/* Background Grid Lines for visual separation */}
