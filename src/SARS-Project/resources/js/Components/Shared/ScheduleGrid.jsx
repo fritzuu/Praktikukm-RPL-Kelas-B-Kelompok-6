@@ -39,29 +39,50 @@ const CARD_VARIANTS = {
 // Internal Sub-components to keep render clean
 function DayTabs({ selectedDay, onSelectDay }) {
     return (
-        <div className="flex space-x-1 relative">
-            {HARI_LIST.map((hari) => {
-                const isActive = selectedDay === hari.key;
-                return (
-                    <button
-                        key={hari.key}
-                        onClick={() => onSelectDay(hari.key)}
-                        className={`relative px-4 py-2 text-sm font-semibold transition-colors focus:outline-none ${isActive
-                            ? 'text-primary-500'
-                            : 'text-text-muted hover:text-text-primary'
-                            }`}
-                      >
-                        {hari.label}
-                        {isActive && (
-                            <motion.div
-                                layoutId="activeTabUnderline"
-                                className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary-500 z-10"
-                                transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-                            />
-                        )}
-                    </button>
-                );
-            })}
+        <div className="flex space-x-1">
+            {HARI_LIST.map((hari) => (
+                <button
+                    key={hari.key}
+                    onClick={() => onSelectDay(hari.key)}
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${selectedDay === hari.key
+                        ? 'border-primary-500 text-primary-500'
+                        : 'border-transparent text-text-muted hover:text-text-primary hover:border-border'
+                        }`}
+                >
+                    {hari.label}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function ColumnResizer({ width, onResize }) {
+    const handleMouseDown = (e) => {
+        e.preventDefault();
+        const startX = e.pageX;
+        const startWidth = width;
+        
+        const handleMouseMove = (moveEvent) => {
+            const diff = moveEvent.pageX - startX;
+            // Provide the absolute new width
+            onResize(startWidth + diff);
+        };
+        
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
+
+    return (
+        <div 
+            className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary-500/50 active:bg-primary-500 z-50 group"
+            onMouseDown={handleMouseDown}
+        >
+            <div className="absolute right-[1px] top-1/2 -translate-y-1/2 w-0.5 h-4 bg-border group-hover:bg-primary-500 rounded-full" />
         </div>
     );
 }
@@ -113,10 +134,10 @@ export default function ScheduleGrid({
     // State untuk lebar kolom (11 sesi)
     const [colWidths, setColWidths] = useState(() => Array(11).fill(110));
 
-    const handleResize = (index, delta) => {
+    const handleResize = (index, newWidth) => {
         setColWidths(prev => {
             const newWidths = [...prev];
-            newWidths[index] = Math.max(80, newWidths[index] + delta);
+            newWidths[index] = Math.max(80, newWidth);
             return newWidths;
         });
     };
@@ -182,7 +203,7 @@ export default function ScheduleGrid({
                         {Array.from({ length: 11 }, (_, i) => (
                             <div key={i} className="relative p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0 select-none">
                                 SESI {i + 1}
-                                <ColumnResizer onResize={(delta) => handleResize(i, delta)} />
+                                <ColumnResizer width={colWidths[i]} onResize={(newWidth) => handleResize(i, newWidth)} />
                             </div>
                         ))}
                     </div>
@@ -196,7 +217,8 @@ export default function ScheduleGrid({
                                 layout
                                 transition={{ type: 'spring', stiffness: 240, damping: 22 }}
                                 key={room}
-                                className="grid grid-cols-[160px_repeat(11,_minmax(0,_1fr))] border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                                className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                                style={gridStyle}
                             >
                                 {/* Room Label - Sticky */}
                                 <motion.div
@@ -213,7 +235,11 @@ export default function ScheduleGrid({
                                     variants={CONTAINER_VARIANTS}
                                     initial="hidden"
                                     animate="show"
-                                    className="col-span-11 grid grid-cols-11 relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                    className="grid relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                    style={{
+                                        gridColumn: '2 / -1',
+                                        gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ')
+                                    }}
                                 >
                                     {/* Background Grid Lines for visual separation */}
                                     <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
