@@ -29,6 +29,9 @@ export default function AdminJadwal({
     const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
+    const [showUploadConfirm, setShowUploadConfirm] = useState(false);
+    const [conflictsCount, setConflictsCount] = useState(0);
+
     const [successMessage, setSuccessMessage] = useState(flash?.success || '');
     const [errorMessage, setErrorMessage] = useState(flash?.error || '');
 
@@ -118,8 +121,103 @@ export default function AdminJadwal({
         }
     };
 
+    const checkConflicts = (text, overwrite) => {
+        if (!text) return 0;
+        const lines = text.split('\n');
+        let currentDay = '';
+        const parsedItems = [];
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            const lower = trimmed.toLowerCase();
+            if (lower.includes('senin')) currentDay = 'senin';
+            else if (lower.includes('selasa')) currentDay = 'selasa';
+            else if (lower.includes('rabu')) currentDay = 'rabu';
+            else if (lower.includes('kamis')) currentDay = 'kamis';
+            else if (lower.includes('jumat')) currentDay = 'jumat';
+
+            if (!currentDay) return;
+
+            if (trimmed.startsWith('Sesi')) {
+                // Extract session
+                const sessionMatch = trimmed.match(/Sesi\s+([0-9]+)(?:-([0-9]+))?:/);
+                if (!sessionMatch) return;
+
+                const startSession = parseInt(sessionMatch[1]);
+                const endSession = sessionMatch[2] ? parseInt(sessionMatch[2]) : startSession;
+
+                // Extract room
+                const roomMatch = trimmed.match(/\(Ruang:\s*(.*?)\)$/);
+                const roomName = roomMatch ? roomMatch[1].trim() : '';
+
+                if (roomName) {
+                    parsedItems.push({
+                        day: currentDay,
+                        room: roomName,
+                        start: startSession,
+                        end: endSession
+                    });
+                }
+            }
+        });
+
+        let conflictCount = 0;
+
+        // 1. Check conflicts within the uploaded text
+        const localConflicts = new Set();
+        for (let i = 0; i < parsedItems.length; i++) {
+            for (let j = i + 1; j < parsedItems.length; j++) {
+                const a = parsedItems[i];
+                const b = parsedItems[j];
+                if (a.day === b.day && a.room === b.room) {
+                    if ((a.start >= b.start && a.start <= b.end) || (b.start >= a.start && b.start <= a.end)) {
+                        localConflicts.add(i);
+                        localConflicts.add(j);
+                    }
+                }
+            }
+        }
+        conflictCount += localConflicts.size;
+
+        // 2. Check conflicts against existing schedules (only if NOT overwriting)
+        if (!overwrite && jadwal && jadwal.length > 0) {
+            parsedItems.forEach((newItem, idx) => {
+                if (localConflicts.has(idx)) return;
+
+                const hasDbConflict = jadwal.some(dbItem => {
+                    const dbDay = dbItem.hari?.toLowerCase();
+                    const dbRoom = dbItem.ruangan;
+                    const dbStart = dbItem.sesiMulai;
+                    const dbEnd = dbItem.sesiMulai + dbItem.durasi - 1;
+
+                    if (dbDay === newItem.day && dbRoom === newItem.room) {
+                        return (newItem.start >= dbStart && newItem.start <= dbEnd) ||
+                               (dbStart >= newItem.start && dbStart <= newItem.end);
+                    }
+                    return false;
+                });
+
+                if (hasDbConflict) {
+                    conflictCount++;
+                }
+            });
+        }
+
+        return conflictCount;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!data.raw_text.trim()) return;
+        const count = checkConflicts(data.raw_text, data.overwrite);
+        setConflictsCount(count);
+        setShowUploadConfirm(true);
+    };
+
+    const confirmUpload = () => {
+        setShowUploadConfirm(false);
         post(route('admin.jadwal.import'), {
             onSuccess: () => {
                 reset();
@@ -471,6 +569,76 @@ export default function AdminJadwal({
                                 <Trash2 size={16} />
                             )}
                             {deleteLoading ? 'Menghapus...' : 'Ya, Hapus'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Confirm Upload Modal */}
+            <Modal
+                isOpen={showUploadConfirm}
+                onClose={() => !processing && setShowUploadConfirm(false)}
+                maxWidth="sm"
+            >
+                <div className="relative p-2 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
+                        <Upload size={28} className="text-primary-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-text-primary mb-1">Konfirmasi Upload Jadwal</h3>
+                    
+                    <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+                        {data.overwrite 
+                            ? "Apakah Anda yakin ingin menghapus semua jadwal & kelas lama dan menambah jadwal baru?"
+                            : "Apakah Anda yakin ingin mengupload jadwal baru?"
+                        }
+                    </p>
+
+                    {/* Conflict Analysis Section */}
+                    <div className={`p-3 text-left rounded-xl border mb-6 text-xs ${
+                        conflictsCount > 0 
+                            ? 'bg-danger/10 border-danger/20 text-danger' 
+                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700'
+                    }`}>
+                        <div className="flex items-center gap-2 font-bold mb-1">
+                            {conflictsCount > 0 ? (
+                                <>
+                                    <AlertTriangle size={15} />
+                                    <span>Peringatan Konflik Jadwal</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={15} />
+                                    <span>Analisis Jadwal Aman</span>
+                                </>
+                            )}
+                        </div>
+                        <p className="opacity-90">
+                            {conflictsCount > 0 
+                                ? `Ditemukan ${conflictsCount} potensi konflik jadwal (ruangan & sesi yang sama bertumpuk) pada data yang akan di-import.`
+                                : "Tidak ditemukan potensi konflik jadwal baru. Semua ruangan & sesi aman."
+                            }
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowUploadConfirm(false)}
+                            disabled={processing}
+                            className="flex-1 px-4 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-text-primary hover:bg-card transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={confirmUpload}
+                            disabled={processing}
+                            className="flex-1 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {processing ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Upload size={16} />
+                            )}
+                            {processing ? 'Mengunggah...' : 'Ya, Upload'}
                         </button>
                     </div>
                 </div>
