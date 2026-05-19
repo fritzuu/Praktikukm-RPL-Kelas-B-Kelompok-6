@@ -239,3 +239,178 @@ export const MOCK_NOTIFIKASI = [
         dibaca: true,
     },
 ];
+
+// ─── Mock Data for Admin Persetujuan (Approval) Page ────────────────────────
+
+/**
+ * Pending requests that have been validated by Aslab (status: PENDING_ADMIN).
+ * Used as fallback when backend data is not yet available.
+ */
+export const MOCK_ADMIN_PENDING = [
+    {
+        id: 101,
+        requestCode: 'REQ-2025-047',
+        requestType: 'TEMPORARY',
+        createdAtDiff: '2 jam yang lalu',
+        requester: { name: 'Andi Wijaya', nimNip: '2241720001' },
+        schedule: {
+            code: 'IF-205',
+            course: 'Pemrograman Web',
+            room: 'Lab .4 TIK Lt.4',
+            day: 'Jumat',
+            time: '07:00 - 09:30',
+        },
+        proposedDay: 'Rabu',
+        proposedTime: '10:00 - 12:30',
+        proposedRoom: 'B4-11',
+        targetDate: '2025-06-05',
+        reason: 'Bentrok dengan ujian susulan Kalkulus II yang dijadwalkan oleh bagian akademik pada hari yang sama.',
+        hasConflict: false,
+        conflictDetails: null,
+        aslabValidation: {
+            validatedBy: 'Reza Pratama',
+            validatedAt: '19 May 2025, 10:30',
+            notes: 'Alasan valid, jadwal pengganti tersedia dan tidak bentrok.',
+        },
+    },
+    {
+        id: 102,
+        requestCode: 'REQ-2025-048',
+        requestType: 'PERMANENT',
+        createdAtDiff: '5 jam yang lalu',
+        requester: { name: 'Siti Nurhaliza', nimNip: '2241720015' },
+        schedule: {
+            code: 'MAT-202',
+            course: 'Kalkulus II',
+            room: 'B4-11',
+            day: 'Senin',
+            time: '13:00 - 15:30',
+        },
+        proposedDay: 'Selasa',
+        proposedTime: '13:00 - 15:30',
+        proposedRoom: 'B4-11',
+        targetDate: null,
+        reason: 'Jadwal Senin sore terlalu padat untuk mahasiswa semester 4 — 3 mata kuliah berturut tanpa jeda.',
+        hasConflict: true,
+        conflictDetails: 'Ruangan B4-11 sudah digunakan oleh IF-301 Basis Data Lanjut pada Selasa 13:00-15:30.',
+        aslabValidation: {
+            validatedBy: 'Reza Pratama',
+            validatedAt: '19 May 2025, 08:15',
+            notes: 'Alasan akademik valid. Namun ada potensi konflik ruangan — mohon dicek Admin.',
+        },
+    },
+    {
+        id: 103,
+        requestCode: 'REQ-2025-050',
+        requestType: 'TEMPORARY',
+        createdAtDiff: '1 hari yang lalu',
+        requester: { name: 'Budi Santoso', nimNip: '2241720022' },
+        schedule: {
+            code: 'IF-101',
+            course: 'Pengantar Informatika',
+            room: 'B4-11',
+            day: 'Senin',
+            time: '07:00 - 09:30',
+        },
+        proposedDay: 'Kamis',
+        proposedTime: '07:00 - 09:30',
+        proposedRoom: 'Pasca 1301',
+        targetDate: '2025-06-12',
+        reason: 'Dosen pengampu berhalangan hadir pada tanggal 12 Juni karena undangan seminar nasional.',
+        hasConflict: false,
+        conflictDetails: null,
+        aslabValidation: {
+            validatedBy: 'Dewi Lestari',
+            validatedAt: '18 May 2025, 16:45',
+            notes: 'Sudah dikonfirmasi dengan dosen bersangkutan. Request valid.',
+        },
+    },
+    {
+        id: 104,
+        requestCode: 'REQ-2025-051',
+        requestType: 'PERMANENT',
+        createdAtDiff: '2 hari yang lalu',
+        requester: { name: 'Fajar Rahman', nimNip: '2241720033' },
+        schedule: {
+            code: 'FIS-302',
+            course: 'Fisika Kuantum',
+            room: 'Lab 3 TIK Lt.3',
+            day: 'Selasa',
+            time: '10:00 - 12:30',
+        },
+        proposedDay: 'Kamis',
+        proposedTime: '10:00 - 12:30',
+        proposedRoom: 'Lab 3 TIK Lt.3',
+        targetDate: null,
+        reason: 'Mayoritas peserta kelas mengeluhkan bentrok dengan praktikum Pemrograman Web di hari Selasa.',
+        hasConflict: false,
+        conflictDetails: null,
+        aslabValidation: {
+            validatedBy: 'Reza Pratama',
+            validatedAt: '17 May 2025, 14:20',
+            notes: 'Petisi ditandatangani 28 dari 35 mahasiswa. Diteruskan untuk pertimbangan Admin.',
+        },
+    },
+];
+
+/**
+ * Recently decided requests (APPROVED / REJECTED_ADMIN).
+ * Used for the decision history table.
+ */
+export const MOCK_ADMIN_RECENT = [
+    {
+        id: 201,
+        requestCode: 'REQ-2025-040',
+        student: 'Dewi Anggraini',
+        course: 'Aljabar Linier',
+        requestType: 'TEMPORARY',
+        room: 'B4-10',
+        decision: 'APPROVED',
+        decidedAt: '18 May 2025, 14:00',
+        notes: 'Disetujui — ruangan pengganti tersedia.',
+    },
+    {
+        id: 202,
+        requestCode: 'REQ-2025-038',
+        student: 'Rizky Maulana',
+        course: 'Struktur Data',
+        requestType: 'PERMANENT',
+        room: 'B4.06',
+        decision: 'REJECTED_ADMIN',
+        decidedAt: '17 May 2025, 11:30',
+        notes: 'Alasan tidak cukup kuat untuk perubahan permanen.',
+    },
+    {
+        id: 203,
+        requestCode: 'REQ-2025-035',
+        student: 'Maya Putri',
+        course: 'Pemrograman Web',
+        requestType: 'TEMPORARY',
+        room: 'Lab .4 TIK Lt.4',
+        decision: 'APPROVED',
+        decidedAt: '16 May 2025, 09:15',
+        notes: '',
+    },
+    {
+        id: 204,
+        requestCode: 'REQ-2025-033',
+        student: 'Ahmad Fauzi',
+        course: 'Basis Data Lanjut',
+        requestType: 'PERMANENT',
+        room: 'Lab B4.05',
+        decision: 'APPROVED',
+        decidedAt: '15 May 2025, 16:45',
+        notes: 'Perubahan permanen disetujui, jadwal baseline diperbarui.',
+    },
+    {
+        id: 205,
+        requestCode: 'REQ-2025-030',
+        student: 'Lina Kusuma',
+        course: 'Kalkulus II',
+        requestType: 'TEMPORARY',
+        room: 'B4-11',
+        decision: 'REJECTED_ADMIN',
+        decidedAt: '14 May 2025, 10:00',
+        notes: 'Tanggal yang diajukan sudah lewat.',
+    },
+];
