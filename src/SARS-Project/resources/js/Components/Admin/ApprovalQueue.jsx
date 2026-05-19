@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Modal from '../Modal';
 import {
     ClipboardCheck,
     CheckCircle,
@@ -31,6 +33,36 @@ import {
  */
 export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
     const [expandedId, setExpandedId] = useState(null);
+    const [approveTarget, setApproveTarget] = useState(null);
+    const [rejectTarget, setRejectTarget] = useState(null);
+    const [approveNotes, setApproveNotes] = useState('');
+    const [rejectNotes, setRejectNotes] = useState('');
+
+    const handleConfirmApprove = () => {
+        if (onApprove && approveTarget) {
+            onApprove(approveTarget.id, approveNotes);
+        }
+        setApproveTarget(null);
+        setApproveNotes('');
+    };
+
+    const handleConfirmReject = () => {
+        if (onReject && rejectTarget && rejectNotes.trim().length >= 5) {
+            onReject(rejectTarget.id, rejectNotes);
+        }
+        setRejectTarget(null);
+        setRejectNotes('');
+    };
+
+    const closeApproveModal = () => {
+        setApproveTarget(null);
+        setApproveNotes('');
+    };
+
+    const closeRejectModal = () => {
+        setRejectTarget(null);
+        setRejectNotes('');
+    };
 
     const toggleExpand = (id) => {
         setExpandedId(expandedId === id ? null : id);
@@ -50,6 +82,7 @@ export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
     };
 
     return (
+        <>
         <div className="space-y-8">
             {/* ── Section Header ──────────────────────────────────── */}
             <div>
@@ -86,9 +119,12 @@ export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
                 ) : (
                     /* ── Card List ────────────────────────────────────── */
                     <div className="space-y-4">
-                        {pending.map((item) => (
-                            <div
+                        {pending.map((item, index) => (
+                            <motion.div
                                 key={item.id}
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.35, delay: index * 0.08, ease: 'easeOut' }}
                                 className={`bg-card border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all ${item.hasConflict
                                         ? 'border-danger/40'
                                         : 'border-border'
@@ -145,7 +181,16 @@ export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
                                 </div>
 
                                 {/* ── Expanded Details ─────────────────────── */}
+                                <AnimatePresence initial={false}>
                                 {expandedId === item.id && (
+                                    <motion.div
+                                        key="expanded"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                        className="overflow-hidden"
+                                    >
                                     <div className="px-6 pb-6 pt-2 border-t border-border space-y-5">
                                         {/* ── Side-by-Side Visual Diff ──────── */}
                                         <div className="bg-surface/30 border border-border/50 rounded-xl p-4">
@@ -298,15 +343,16 @@ export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
                                         )}
 
                                         {/* ── Action Buttons ─────────────────── */}
-                                        {/* TODO: Task 5 — Full modal confirmation for approve/reject */}
                                         <div className="flex items-center gap-3 pt-2">
                                             <button
+                                                onClick={() => setRejectTarget(item)}
                                                 className="flex items-center gap-2 px-5 py-2.5 bg-card border border-border text-text-secondary text-sm font-bold rounded-xl hover:bg-danger/5 hover:border-danger/30 hover:text-danger transition-all"
                                             >
                                                 <XCircle size={16} />
                                                 Tolak
                                             </button>
                                             <button
+                                                onClick={() => setApproveTarget(item)}
                                                 className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all"
                                             >
                                                 <CheckCircle size={16} />
@@ -314,12 +360,135 @@ export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
                                             </button>
                                         </div>
                                     </div>
+                                    </motion.div>
                                 )}
-                            </div>
+                                </AnimatePresence>
+                            </motion.div>
                         ))}
                     </div>
                 )}
             </div>
         </div>
+
+        {/* ── Approval Confirmation Modal ──────────────────────── */}
+        <Modal
+            isOpen={!!approveTarget}
+            onClose={closeApproveModal}
+            title="Setujui Pengajuan"
+            maxWidth="md"
+        >
+            {approveTarget && (
+                <div className="space-y-5">
+                    <div className="bg-emerald-500/[0.05] border border-emerald-500/15 rounded-xl p-4">
+                        <p className="text-sm text-text-secondary">
+                            Anda akan <span className="font-bold text-emerald-600">menyetujui</span> pengajuan dari:
+                        </p>
+                        <div className="flex items-center gap-3 mt-3">
+                            <div className="w-9 h-9 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-500 font-bold text-sm">
+                                {approveTarget.requester?.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-text-primary">{approveTarget.requester.name}</p>
+                                <p className="text-xs text-text-muted">
+                                    {approveTarget.schedule.code} — {approveTarget.schedule.course}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Catatan (Opsional)
+                        </label>
+                        <textarea
+                            value={approveNotes}
+                            onChange={(e) => setApproveNotes(e.target.value)}
+                            placeholder="Tambahkan catatan persetujuan jika diperlukan..."
+                            rows={3}
+                            className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-emerald-500/50 transition-all resize-none"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                        <button
+                            onClick={closeApproveModal}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-text-muted hover:text-text-primary bg-surface border border-border rounded-xl transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleConfirmApprove}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all"
+                        >
+                            <CheckCircle size={16} />
+                            Konfirmasi Setujui
+                        </button>
+                    </div>
+                </div>
+            )}
+        </Modal>
+
+        {/* ── Rejection Confirmation Modal ─────────────────────── */}
+        <Modal
+            isOpen={!!rejectTarget}
+            onClose={closeRejectModal}
+            title="Tolak Pengajuan"
+            maxWidth="md"
+        >
+            {rejectTarget && (
+                <div className="space-y-5">
+                    <div className="bg-danger/[0.05] border border-danger/15 rounded-xl p-4">
+                        <p className="text-sm text-text-secondary">
+                            Anda akan <span className="font-bold text-danger">menolak</span> pengajuan dari:
+                        </p>
+                        <div className="flex items-center gap-3 mt-3">
+                            <div className="w-9 h-9 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-500 font-bold text-sm">
+                                {rejectTarget.requester?.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-text-primary">{rejectTarget.requester.name}</p>
+                                <p className="text-xs text-text-muted">
+                                    {rejectTarget.schedule.code} — {rejectTarget.schedule.course}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Alasan Penolakan <span className="text-danger">*</span>
+                        </label>
+                        <textarea
+                            value={rejectNotes}
+                            onChange={(e) => setRejectNotes(e.target.value)}
+                            placeholder="Jelaskan alasan penolakan pengajuan ini (min. 5 karakter)..."
+                            rows={3}
+                            className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-danger/50 transition-all resize-none"
+                        />
+                        {rejectNotes.length > 0 && rejectNotes.trim().length < 5 && (
+                            <p className="text-[11px] text-danger mt-1.5">Minimal 5 karakter diperlukan.</p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                        <button
+                            onClick={closeRejectModal}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-text-muted hover:text-text-primary bg-surface border border-border rounded-xl transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleConfirmReject}
+                            disabled={rejectNotes.trim().length < 5}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-danger text-white text-sm font-bold rounded-xl hover:bg-danger/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <XCircle size={16} />
+                            Konfirmasi Tolak
+                        </button>
+                    </div>
+                </div>
+            )}
+        </Modal>
+        </>
     );
 }
