@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Admin\AdminPersetujuanController;
 use App\Http\Controllers\Aslab\AslabDashboardController;
 use App\Http\Controllers\Aslab\AslabJadwalController;
 use App\Http\Controllers\Aslab\AslabValidationController;
@@ -40,13 +39,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // ── Admin routes ─────────────────────────────────────────────────────────
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard',                    [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/persetujuan',                  [AdminPersetujuanController::class, 'index'])->name('persetujuan');
-        Route::post('/persetujuan/{id}/approve',     [AdminPersetujuanController::class, 'approve'])->name('persetujuan.approve');
-        Route::post('/persetujuan/{id}/reject',      [AdminPersetujuanController::class, 'reject'])->name('persetujuan.reject');
-    });
+    // Admin dashboard
+    Route::middleware('role:admin')
+        ->get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
+        ->name('admin.dashboard');
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
     Route::middleware('role:aslab')->prefix('aslab')->name('aslab.')->group(function () {
