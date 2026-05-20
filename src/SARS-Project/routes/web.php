@@ -11,6 +11,9 @@ use App\Http\Controllers\Dosen\DosenJadwalController;
 use App\Http\Controllers\Dosen\DosenNotificationController;
 use App\Http\Controllers\Dosen\DosenNotifikasiController;
 use App\Http\Controllers\Dosen\DosenSettingController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminJadwalController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -40,21 +43,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Shared Notification routes
-    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
-    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     // Admin routes
     Route::middleware('role:admin')->group(function () {
-        Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
             ->name('admin.dashboard');
-        Route::get('/admin/jadwal', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'index'])
+        Route::get('/admin/jadwal', [AdminJadwalController::class, 'index'])
             ->name('admin.jadwal');
-        Route::post('/admin/jadwal/import', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'import'])
+        Route::post('/admin/jadwal/import', [AdminJadwalController::class, 'import'])
             ->name('admin.jadwal.import');
-        Route::delete('/admin/jadwal/{id}', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'destroy'])
+        Route::delete('/admin/jadwal/{id}', [AdminJadwalController::class, 'destroy'])
             ->name('admin.jadwal.destroy');
-        Route::post('/admin/jadwal/resolve-conflicts', [\App\Http\Controllers\Admin\AdminJadwalController::class, 'resolveAllConflicts'])
+        Route::post('/admin/jadwal/resolve-conflicts', [AdminJadwalController::class, 'resolveAllConflicts'])
             ->name('admin.jadwal.resolve-conflicts');
     });
 
