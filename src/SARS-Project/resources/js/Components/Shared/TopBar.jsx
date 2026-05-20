@@ -52,7 +52,7 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
     return (
         <header
             className={`
-                sticky top-0 z-40 bg-card border-b border-border
+                sticky top-0 z-50 bg-card border-b border-border
                 flex items-center gap-4 px-6 py-3
                 transition-all duration-250
                 ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
