@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CalendarDays, Download, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -35,6 +35,18 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
     };
 
     const dayJadwal = schedules.filter(j => j.hari === selectedDay);
+
+    // Filter rooms to only include rooms that have at least one schedule
+    const displayRooms = useMemo(() => {
+        const roomIdsWithSchedules = new Set(schedules.map(s => s.ruangan_id).filter(Boolean));
+        const roomNamesWithSchedules = new Set(schedules.map(s => s.ruangan).filter(Boolean));
+        
+        return rooms.filter(room => 
+            roomIdsWithSchedules.has(room.id) || 
+            roomNamesWithSchedules.has(room.code) || 
+            roomNamesWithSchedules.has(room.name)
+        );
+    }, [rooms, schedules]);
 
     return (
         <section className="mb-6">
@@ -114,7 +126,7 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
                             </div>
 
                             {/* Rows: Each Room */}
-                            {rooms.map(room => {
+                            {displayRooms.map(room => {
                                 // Find classes for this room on the selected day
                                 const roomClasses = dayJadwal.filter(j => j.ruangan_id === room.id || j.ruangan === room.code);
                                 

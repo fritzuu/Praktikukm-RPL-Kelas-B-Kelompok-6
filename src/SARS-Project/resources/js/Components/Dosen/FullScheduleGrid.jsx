@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Download, CalendarDays, AlertTriangle, Loader2 } from 'lucide-react';
 
 const HARI_LIST = [
@@ -18,6 +18,18 @@ const TIPE_STYLES = {
 export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
     const [selectedDay, setSelectedDay] = useState('senin');
     const [isLoading, setIsLoading] = useState(true);
+
+    // Filter rooms to only include rooms that have at least one schedule
+    const displayRooms = useMemo(() => {
+        const roomIdsWithSchedules = new Set(schedules.map(s => s.ruangan_id).filter(Boolean));
+        const roomNamesWithSchedules = new Set(schedules.map(s => s.ruangan).filter(Boolean));
+        
+        return rooms.filter(room => 
+            roomIdsWithSchedules.has(room.id) || 
+            roomNamesWithSchedules.has(room.code) || 
+            roomNamesWithSchedules.has(room.name)
+        );
+    }, [rooms, schedules]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -93,7 +105,7 @@ export default function FullScheduleGrid({ schedules = [], rooms = [] }) {
                     </div>
 
                     {/* Rows: Each Room */}
-                    {rooms.map(room => {
+                    {displayRooms.map(room => {
                         const roomClasses = dayJadwal.filter(j => j.ruangan_id === room.id);
                         
                         return (

@@ -44,7 +44,9 @@ class AdminDashboardController extends Controller
                 return $s;
             });
 
-        $rooms = DB::table('rooms')->pluck('name');
+        $rooms = DB::table('rooms')
+            ->whereIn('id', DB::table('schedules')->where('is_active', true)->pluck('room_id'))
+            ->pluck('name');
 
         // ─── Conflict Detection Logic ──────────────────────────────────────────
         // Fetch all active schedules to find overlaps

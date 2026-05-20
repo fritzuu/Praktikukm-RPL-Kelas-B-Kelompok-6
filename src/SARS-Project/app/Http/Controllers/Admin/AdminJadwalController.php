@@ -46,7 +46,9 @@ class AdminJadwalController extends Controller
                 return $s;
             });
 
-        $rooms = DB::table('rooms')->pluck('name');
+        $rooms = DB::table('rooms')
+            ->whereIn('id', DB::table('schedules')->where('is_active', true)->pluck('room_id'))
+            ->pluck('name');
 
         return Inertia::render('Admin/Jadwal', [
             'jadwal' => $schedules,

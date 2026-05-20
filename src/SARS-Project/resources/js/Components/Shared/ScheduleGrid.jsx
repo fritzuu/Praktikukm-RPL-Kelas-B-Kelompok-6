@@ -224,15 +224,18 @@ export default function ScheduleGrid({
 
     const dayJadwal = useMemo(() => filteredJadwalItems.filter(j => j.hari === selectedDay), [filteredJadwalItems, selectedDay]);
 
-    // Derive rooms if not provided
+    // Derive rooms if not provided, or filter provided rooms to only those with schedules in the schedules list
     const displayRooms = useMemo(() => {
-        if (rooms) return rooms;
-        const uniqueRooms = new Set();
-        filteredJadwalItems.forEach(j => {
-            if (j.ruangan) uniqueRooms.add(j.ruangan);
+        const roomsWithSchedules = new Set();
+        jadwalItems.forEach(j => {
+            if (j.ruangan) roomsWithSchedules.add(j.ruangan);
         });
-        return Array.from(uniqueRooms).sort();
-    }, [rooms, filteredJadwalItems]);
+        
+        if (rooms) {
+            return rooms.filter(room => roomsWithSchedules.has(room));
+        }
+        return Array.from(roomsWithSchedules).sort();
+    }, [rooms, jadwalItems]);
 
     // Default header actions
     const renderHeaderActions = () => {

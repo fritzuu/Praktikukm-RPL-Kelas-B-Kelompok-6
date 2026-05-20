@@ -44,7 +44,8 @@ class AslabJadwalController extends Controller
                 'isOwn'      => false, // Aslab doesn't own any schedule
             ]);
 
-        $rooms = Room::all(['id', 'code', 'name']);
+        $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))
+            ->get(['id', 'code', 'name']);
 
         return Inertia::render('Aslab/Jadwal', [
             'allSchedules' => $allSchedules,
