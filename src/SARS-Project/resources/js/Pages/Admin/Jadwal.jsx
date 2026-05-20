@@ -3,7 +3,6 @@ import { usePage, useForm, router } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import Modal from '../../Components/Modal';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
-import { MOCK_JADWAL, MOCK_ROOMS } from '../../data/mockData';
 import { 
     Upload, 
     FileText, 
@@ -17,8 +16,8 @@ import {
 } from 'lucide-react';
 
 export default function AdminJadwal({
-    jadwal = MOCK_JADWAL,
-    rooms = MOCK_ROOMS,
+    jadwal = [],
+    rooms = [],
     flash = {}
 }) {
     const { auth } = usePage().props;

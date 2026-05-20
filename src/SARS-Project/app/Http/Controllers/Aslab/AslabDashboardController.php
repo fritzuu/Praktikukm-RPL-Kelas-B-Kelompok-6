@@ -80,7 +80,7 @@ class AslabDashboardController extends Controller
             'rejected' => $rejected
         ];
         
-        $rooms = \Illuminate\Support\Facades\DB::table('rooms')->pluck('name');
+        $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))->get();
 
         // Notifications
         $notifikasi = NotificationRecipient::where('recipient_id', $user->id)

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, HelpCircle } from 'lucide-react';
+import { Search, Bell, HelpCircle, X } from 'lucide-react';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import { usePage } from '@inertiajs/react';
 import NotificationDropdown from './NotificationDropdown';
@@ -19,6 +19,34 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef(null);
     const bellControls = useAnimationControls();
+
+    const [searchVal, setSearchVal] = useState(() => window.__globalSearchQuery || '');
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        console.log('TopBar: Search input changed to:', value);
+        setSearchVal(value);
+        window.__globalSearchQuery = value;
+        const event = new CustomEvent('global-search', { detail: value });
+        window.dispatchEvent(event);
+    };
+
+    const handleClearSearch = () => {
+        setSearchVal('');
+        window.__globalSearchQuery = '';
+        const event = new CustomEvent('global-search', { detail: '' });
+        window.dispatchEvent(event);
+    };
+
+    // Listen to global-search-reset event if any component wants to clear it
+    useEffect(() => {
+        const handleReset = () => {
+            setSearchVal('');
+            window.__globalSearchQuery = '';
+        };
+        window.addEventListener('global-search-reset', handleReset);
+        return () => window.removeEventListener('global-search-reset', handleReset);
+    }, []);
 
     const triggerBellWobble = () => {
         if (unreadCount === 0) return;
@@ -66,12 +94,21 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 <input
                     type="text"
                     placeholder="Cari jadwal, ruangan, atau dosen..."
-                    className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg
+                    value={searchVal}
+                    onChange={handleSearchChange}
+                    className="w-full pl-10 pr-10 py-2 bg-surface border border-border rounded-lg
                                text-sm text-text-primary placeholder:text-text-muted
                                focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
                                transition-all"
-                    readOnly
                 />
+                {searchVal && (
+                    <button 
+                        onClick={handleClearSearch}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary p-0.5 rounded-full hover:bg-surface-hover transition-colors"
+                    >
+                        <X size={14} />
+                    </button>
+                )}
             </div>
 
             {/* ── Right Section ──────────────────────────────────────── */}

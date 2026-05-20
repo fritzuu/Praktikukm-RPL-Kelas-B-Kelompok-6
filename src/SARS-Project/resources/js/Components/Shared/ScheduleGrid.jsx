@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Download, CalendarDays, AlertTriangle, Filter } from 'lucide-react';
+import { Download, CalendarDays, AlertTriangle, Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const HARI_LIST = [
@@ -56,6 +56,7 @@ function DayTabs({ selectedDay, onSelectDay }) {
     );
 }
 
+// ColumnResizer helper
 function ColumnResizer({ width, onResize }) {
     const handleMouseDown = (e) => {
         e.preventDefault();
@@ -64,7 +65,6 @@ function ColumnResizer({ width, onResize }) {
         
         const handleMouseMove = (moveEvent) => {
             const diff = moveEvent.pageX - startX;
-            // Provide the absolute new width
             onResize(startWidth + diff);
         };
         
@@ -153,7 +153,7 @@ function ScheduleCard({ item, isConflict, onCardClick, variants }) {
 
 export default function ScheduleGrid({
     jadwalItems = [],
-    rooms, // optional array of rooms
+    rooms,
     title = "Jadwal & Ketersediaan Ruangan",
     headerActions,
     showConflicts = false,
@@ -163,9 +163,28 @@ export default function ScheduleGrid({
     const [selectedDay, setSelectedDay] = useState('senin');
     const [loading, setLoading] = useState(false);
     
-    // State untuk filter
+    // State untuk filter & search
     const [semesterFilter, setSemesterFilter] = useState('Semua');
     const [kelasFilter, setKelasFilter] = useState('Semua');
+    const [searchQuery, setSearchQuery] = useState(() => window.__globalSearchQuery || '');
+
+    // Listen to global search events from TopBar
+    useEffect(() => {
+        const handleGlobalSearch = (e) => {
+            console.log('ScheduleGrid: Received global-search event with detail:', e.detail);
+            setSearchQuery(e.detail || '');
+        };
+        window.addEventListener('global-search', handleGlobalSearch);
+        return () => window.removeEventListener('global-search', handleGlobalSearch);
+    }, []);
+
+    const handleResetAllFilters = () => {
+        window.__globalSearchQuery = '';
+        setSearchQuery('');
+        setSemesterFilter('Semua');
+        setKelasFilter('Semua');
+        window.dispatchEvent(new CustomEvent('global-search-reset'));
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -213,34 +232,107 @@ export default function ScheduleGrid({
         });
     };
 
-    // Terapkan filter semester & kelas
+    // ─── Structured Search Logic ──────────────────────────────────────────
+    // Parse search query into structured filters to prevent cross-field false positives.
+    // E.g. "smt 2 kls d" → semesterSearch="2", kelasSearch="d", remaining text tokens=[]
+    // E.g. "jaringan smt4" → semesterSearch="4", kelasSearch=null, remaining=["jaringan"]
     const filteredJadwalItems = useMemo(() => {
         return jadwalItems.filter(j => {
-            const matchSemester = semesterFilter === 'Semua' || j.semesterNum === semesterFilter;
+            // 1. Dropdown filters
+            const matchSemester = semesterFilter === 'Semua' || (j.semesterNum && j.semesterNum.toString() === semesterFilter.toString());
             const matchKelas = kelasFilter === 'Semua' || j.kelas === kelasFilter;
+
+            const raw = searchQuery.toLowerCase().trim();
+            if (!raw) {
+                return matchSemester && matchKelas;
+            }
+
+            // 2. Extract structured semester pattern from search query
+            //    Matches: smt2, smt 2, sem4, sem 4, semester 6, semester6
+            let queryCopy = raw;
+            let semesterSearch = null;
+            const semMatch = queryCopy.match(/\b(?:smt|sem|semester)\s*(\d+)\b/);
+            if (semMatch) {
+                semesterSearch = semMatch[1]; // just the number, e.g. "2"
+                queryCopy = queryCopy.replace(semMatch[0], ' ').trim();
+            }
+
+            // 3. Extract structured class pattern from search query
+            //    Matches: kls a, kls d, kelas b, kelasC
+            let kelasSearch = null;
+            const klsMatch = queryCopy.match(/\b(?:kls|kelas)\s*([a-z])\b/);
+            if (klsMatch) {
+                kelasSearch = klsMatch[1].toUpperCase(); // "D"
+                queryCopy = queryCopy.replace(klsMatch[0], ' ').trim();
+            }
+
+            // 4. Remaining tokens are general text (match against nama, kode, ruangan, dosen)
+            const remainingTokens = queryCopy.split(/\s+/).filter(Boolean);
+
+            // 5. Match semester (structured) — compare number only
+            if (semesterSearch) {
+                const semNum = String(j.semesterNum || '').toLowerCase();
+                // Extract just the number from "Semester 4" → "4"
+                const itemSemNum = semNum.replace(/[^0-9]/g, '');
+                if (itemSemNum !== semesterSearch) {
+                    return false;
+                }
+            }
+
+            // 6. Match kelas (structured) — exact letter match
+            if (kelasSearch) {
+                const itemKelas = String(j.kelas || '').toUpperCase().trim();
+                // Handle classes like "A P" (praktikum) — check if starts with the letter
+                if (!itemKelas.startsWith(kelasSearch)) {
+                    return false;
+                }
+            }
+
+            // 7. Match remaining general tokens against name, code, room, lecturer
+            if (remainingTokens.length > 0) {
+                const generalTarget = [
+                    String(j.nama || ''),
+                    String(j.kode || ''),
+                    String(j.ruangan || ''),
+                    String(j.dosen || ''),
+                ].join(' ').toLowerCase();
+
+                const matchGeneral = remainingTokens.every(token => generalTarget.includes(token));
+                if (!matchGeneral) {
+                    return false;
+                }
+            }
+
             return matchSemester && matchKelas;
         });
-    }, [jadwalItems, semesterFilter, kelasFilter]);
+    }, [jadwalItems, semesterFilter, kelasFilter, searchQuery]);
 
     const dayJadwal = useMemo(() => filteredJadwalItems.filter(j => j.hari === selectedDay), [filteredJadwalItems, selectedDay]);
 
-    // Derive rooms if not provided
+    // Derive rooms if not provided, or filter provided rooms to only those with schedules in the schedules list
     const displayRooms = useMemo(() => {
-        if (rooms) return rooms;
-        const uniqueRooms = new Set();
-        filteredJadwalItems.forEach(j => {
-            if (j.ruangan) uniqueRooms.add(j.ruangan);
+        const roomsWithSchedules = new Set();
+        jadwalItems.forEach(j => {
+            if (j.ruangan) {
+                roomsWithSchedules.add(j.ruangan.toLowerCase().trim());
+            }
         });
-        return Array.from(uniqueRooms).sort();
-    }, [rooms, filteredJadwalItems]);
+        
+        if (rooms) {
+            return rooms.filter(room => {
+                const roomName = typeof room === 'object' ? (room.code || room.nama || room.name) : room;
+                return roomName && roomsWithSchedules.has(roomName.toLowerCase().trim());
+            });
+        }
+        return Array.from(roomsWithSchedules).sort();
+    }, [rooms, jadwalItems]);
 
     // Default header actions
     const renderHeaderActions = () => {
         if (headerActions !== undefined) return headerActions;
 
-        // Default filter & export buttons
         return (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="flex items-center gap-2 bg-background border border-border px-2 py-1.5 rounded-lg shadow-sm">
                     <Filter size={14} className="text-text-muted ml-1" />
                     
@@ -282,6 +374,7 @@ export default function ScheduleGrid({
         );
     };
 
+
     const gridStyle = {
         gridTemplateColumns: `160px ${colWidths.map(w => `${w}px`).join(' ')}`
     };
@@ -321,15 +414,30 @@ export default function ScheduleGrid({
                     </div>
 
                     {/* Rows: Each Room */}
-                    {displayRooms.length === 0 ? (
-                        <div className="p-12 text-center text-text-muted text-sm font-semibold">
-                            Tidak ada jadwal pada hari ini
+                    {dayJadwal.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                            <Search className="w-10 h-10 text-text-muted mb-3 stroke-[1.5]" />
+                            <h3 className="text-sm font-semibold text-text-primary">Tidak ada jadwal ditemukan</h3>
+                            <p className="text-xs text-text-muted mt-1 max-w-[320px]">
+                                {searchQuery 
+                                    ? `Tidak ada jadwal pada hari ${selectedDay.charAt(0).toUpperCase() + selectedDay.slice(1)} yang cocok dengan kata kunci "${searchQuery}".`
+                                    : `Tidak ada jadwal perkuliahan pada hari ${selectedDay.charAt(0).toUpperCase() + selectedDay.slice(1)}.`
+                                }
+                            </p>
+                            {(searchQuery || semesterFilter !== 'Semua' || kelasFilter !== 'Semua') && (
+                                <button
+                                    onClick={handleResetAllFilters}
+                                    className="mt-4 px-3 py-1.5 text-xs font-semibold text-primary-500 hover:text-primary-600 bg-primary-500/10 hover:bg-primary-500/20 rounded-lg transition-colors"
+                                >
+                                    Reset Semua Filter
+                                </button>
+                            )}
                         </div>
                     ) : (
                         displayRooms.map((room, idx) => {
                             const roomKey = typeof room === 'object' ? (room.id || idx) : room;
                             const roomName = typeof room === 'object' ? (room.code || room.nama || room.name) : room;
-                            const roomClasses = dayJadwal.filter(j => j.ruangan === roomName || j.ruangan_id === (typeof room === 'object' ? room.id : undefined));
+                            const roomClasses = dayJadwal.filter(j => j.ruangan === roomName || (j.ruangan_id != null && typeof room === 'object' && j.ruangan_id === room.id));
 
                             return (
                                 <motion.div
@@ -373,9 +481,9 @@ export default function ScheduleGrid({
                                             let isConflict = false;
                                             if (showConflicts) {
                                                 isConflict = roomClasses.some(other =>
-                                                    other.id !== item.id &&
-                                                    ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
-                                                        (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                     other.id !== item.id &&
+                                                     ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                                         (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
                                                 );
                                             }
 
