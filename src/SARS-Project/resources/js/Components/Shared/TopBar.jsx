@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, Bell, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
+import { usePage } from '@inertiajs/react';
 import NotificationDropdown from './NotificationDropdown';
 
 const ROLE_LABELS = {
@@ -11,6 +12,10 @@ const ROLE_LABELS = {
 };
 
 export default function TopBar({ user, sidebarCollapsed, actions }) {
+    const { auth } = usePage().props;
+    const notifications = auth?.notifications || [];
+    const unreadCount = notifications.filter(n => !n.dibaca).length;
+
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef(null);
     const bellControls = useAnimationControls();
@@ -86,19 +91,24 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                         >
                             <Bell size={20} />
                         </motion.div>
-                        <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
-                            className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
-                                             text-[9px] font-bold rounded-full flex items-center justify-center"
-                        >
-                            3
-                        </motion.span>
+                        {unreadCount > 0 && (
+                            <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
+                                className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
+                                                 text-[9px] font-bold rounded-full flex items-center justify-center"
+                            >
+                                {unreadCount}
+                            </motion.span>
+                        )}
                     </button>
                     <AnimatePresence>
                         {notifOpen && (
-                            <NotificationDropdown onClose={() => setNotifOpen(false)} />
+                            <NotificationDropdown 
+                                onClose={() => setNotifOpen(false)} 
+                                notifications={notifications}
+                            />
                         )}
                     </AnimatePresence>
                 </div>
