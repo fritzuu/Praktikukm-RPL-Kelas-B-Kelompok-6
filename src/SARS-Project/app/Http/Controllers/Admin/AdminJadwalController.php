@@ -290,4 +290,65 @@ class AdminJadwalController extends Controller
             return redirect()->route('admin.jadwal')->with('error', "Gagal mengimpor jadwal: " . $e->getMessage());
         }
     }
+
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+        try {
+            DB::table('teaching_assignments')->where('schedule_id', $id)->delete();
+            DB::table('schedules')->where('id', $id)->delete();
+            
+            DB::commit();
+            return redirect()->back()->with('success', 'Jadwal berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menghapus jadwal: ' . $e->getMessage());
+        }
+    }
+
+    public function resolveAllConflicts()
+    {
+        DB::beginTransaction();
+        try {
+            $schedulesList = DB::table('schedules')
+                ->where('is_active', true)
+                ->get();
+
+            $toDelete = [];
+            $checked = [];
+
+            foreach ($schedulesList as $s1) {
+                foreach ($schedulesList as $s2) {
+                    if ($s1->id === $s2->id) continue;
+                    
+                    $pairKey = min($s1->id, $s2->id) . '-' . max($s1->id, $s2->id);
+                    if (in_array($pairKey, $checked)) continue;
+                    
+                    $sameDay = strtolower($s1->day_of_week) === strtolower($s2->day_of_week);
+                    $sameRoom = $s1->room_id === $s2->room_id;
+                    
+                    if ($sameDay && $sameRoom) {
+                        $overlap = ($s1->session_start >= $s2->session_start && $s1->session_start < $s2->session_start + $s2->session_duration) ||
+                                   ($s2->session_start >= $s1->session_start && $s2->session_start < $s1->session_start + $s1->session_duration);
+                        
+                        if ($overlap) {
+                            $checked[] = $pairKey;
+                            $toDelete[] = $s2->id;
+                        }
+                    }
+                }
+            }
+
+            if (!empty($toDelete)) {
+                DB::table('teaching_assignments')->whereIn('schedule_id', $toDelete)->delete();
+                DB::table('schedules')->whereIn('id', $toDelete)->delete();
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Semua konflik jadwal berhasil diselesaikan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menyelesaikan konflik: ' . $e->getMessage());
+        }
+    }
 }

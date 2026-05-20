@@ -7,11 +7,11 @@ const TIPE_BADGES = {
     umum: { label: 'Umum', style: 'bg-info/10 text-info' },
 };
 
-export default function ConflictAlerts({ conflicts = MOCK_KONFLIK }) {
+export default function ConflictAlerts({ conflicts = MOCK_KONFLIK, onResolve, onResolveAll }) {
     if (!conflicts.length) return null;
 
     return (
-        <section className="mb-6">
+        <section className="mb-6 animate-fade-in">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -20,9 +20,14 @@ export default function ConflictAlerts({ conflicts = MOCK_KONFLIK }) {
                         Konflik Jadwal Mendesak
                     </h2>
                 </div>
-                <button className="text-xs font-semibold text-primary-500 hover:text-primary-600 transition-colors">
-                    Selesaikan Semua
-                </button>
+                {onResolveAll && (
+                    <button 
+                        onClick={onResolveAll}
+                        className="text-xs font-semibold text-primary-500 hover:text-primary-600 transition-colors"
+                    >
+                        Selesaikan Semua
+                    </button>
+                )}
             </div>
 
             {/* Conflict Cards */}
@@ -33,7 +38,7 @@ export default function ConflictAlerts({ conflicts = MOCK_KONFLIK }) {
                         <div
                             key={conflict.id}
                             className="bg-card border border-border rounded-xl px-5 py-4
-                                       border-l-4 border-l-danger"
+                                       border-l-4 border-l-danger shadow-sm hover:shadow-md transition-all duration-200"
                         >
                             <div className="flex items-start justify-between gap-4 mb-2">
                                 <h3 className="font-semibold text-text-primary text-sm">
@@ -52,7 +57,13 @@ export default function ConflictAlerts({ conflicts = MOCK_KONFLIK }) {
                                 {conflict.aksi.map((aksi, idx) => (
                                     <button
                                         key={idx}
-                                        onClick={() => console.log(`Aksi: ${aksi.label} untuk konflik ${conflict.id}`)}
+                                        onClick={() => {
+                                            if (aksi.schedule_id && onResolve) {
+                                                onResolve(aksi.schedule_id);
+                                            } else {
+                                                console.log(`Aksi: ${aksi.label} untuk konflik ${conflict.id}`);
+                                            }
+                                        }}
                                         className={`
                                             text-xs font-medium px-3 py-1.5 rounded-lg transition-colors
                                             ${aksi.variant === 'primary'
