@@ -142,15 +142,7 @@ export default function AdminDashboard({
 
     return (
         <>
-            <WelcomeHeader
-                user={user}
-                subtitle={
-                    <>
-                        Operasi akademik stabil dengan{' '}
-                        <span className="font-semibold text-danger">{konflik.length} konflik</span> tertunda.
-                    </>
-                }
-            >
+            <WelcomeHeader user={user}>
                 <AdminStatCards syncStatus={syncStatus} />
             </WelcomeHeader>
 

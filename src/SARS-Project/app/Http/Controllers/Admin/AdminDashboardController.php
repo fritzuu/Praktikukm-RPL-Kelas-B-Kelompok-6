@@ -133,11 +133,19 @@ class AdminDashboardController extends Controller
             'dbName' => DB::connection()->getDatabaseName()
         ];
 
+        $insights = [
+            'pendingRequests' => DB::table('change_requests')->where('status', 'PENDING_ADMIN')->count(),
+            'conflictDetected' => count($konflik),
+            'acceptedThisWeek' => DB::table('change_requests')->where('status', 'APPROVED')->where('updated_at', '>=', now()->subDays(7))->count(),
+            'declinedThisWeek' => DB::table('change_requests')->where('status', 'REJECTED')->where('updated_at', '>=', now()->subDays(7))->count(),
+        ];
+
         return Inertia::render('Dashboard/Admin', [
             'jadwal' => $schedules,
             'rooms' => $rooms,
             'konflik' => $konflik,
             'syncStatus' => $syncStatus,
+            'insights' => $insights,
         ]);
     }
 }
