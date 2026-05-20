@@ -9,7 +9,9 @@ import {
     AlertTriangle,
     X,
 } from 'lucide-react';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import HelpModal from '../Shared/HelpModal';
+import NotificationDropdown from '../Shared/NotificationDropdown';
 
 const ICON_MAP = {
     jadwal: Calendar,
@@ -24,10 +26,29 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
     const [helpOpen, setHelpOpen] = useState(false);
     const notifRef = useRef(null);
     const searchRef = useRef(null);
+    const bellControls = useAnimationControls();
     const { props } = usePage();
 
     // Get jadwal from page props for search
     const jadwal = props.jadwal || props.jadwalItems || [];
+
+    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
+
+    const triggerBellWobble = () => {
+        if (unreadCount === 0) return;
+        bellControls.start({
+            rotate: [0, -15, 12, -8, 6, -3, 0],
+            transition: { duration: 0.5, ease: "easeInOut" }
+        });
+    };
+
+    useEffect(() => {
+        if (unreadCount === 0) return;
+        const interval = setInterval(() => {
+            triggerBellWobble();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [unreadCount]);
 
     useEffect(() => {
         function handleClickOutside(e) {
@@ -55,7 +76,6 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
     }, []);
 
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'D';
-    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
 
     // Search results
     const searchResults = useMemo(() => {
@@ -67,31 +87,6 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
             j.ruangan?.toLowerCase().includes(q)
         ).slice(0, 5);
     }, [searchQuery, jadwal]);
-
-    function handleMarkAllRead() {
-        fetch('/dosen/notifikasi/read-all', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                'Accept': 'application/json',
-            },
-        }).catch(() => {});
-        setNotifOpen(false);
-    }
-
-    function handleNotifClick(notif) {
-        if (!notif.dibaca) {
-            fetch(`/dosen/notifikasi/${notif.id}/read`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                    'Accept': 'application/json',
-                },
-            }).catch(() => {});
-        }
-        setNotifOpen(false);
-        try { router.get(route('dosen.notifikasi')); } catch {}
-    }
 
     return (
         <>
@@ -168,86 +163,36 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
                     <div className="relative" ref={notifRef}>
                         <button
                             onClick={() => setNotifOpen(!notifOpen)}
+                            onMouseEnter={triggerBellWobble}
                             className="relative p-2 rounded-lg text-text-secondary hover:bg-surface
-                                       hover:text-text-primary transition-colors"
+                                       hover:text-text-primary transition-colors group"
                         >
-                            <Bell size={20} />
+                            <motion.div
+                                animate={bellControls}
+                                style={{ originX: 0.5, originY: 0 }}
+                            >
+                                <Bell size={20} />
+                            </motion.div>
                             {unreadCount > 0 && (
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
-                                                 text-[9px] font-bold rounded-full flex items-center justify-center">
+                                <motion.span
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
+                                    className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
+                                                     text-[9px] font-bold rounded-full flex items-center justify-center"
+                                >
                                     {unreadCount}
-                                </span>
+                                </motion.span>
                             )}
                         </button>
-                        {notifOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-80 bg-card rounded-xl border border-border
-                                            shadow-lg shadow-black/5 overflow-hidden z-50">
-                                {/* Header */}
-                                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                                    <h3 className="text-sm font-semibold text-text-primary">Notifikasi</h3>
-                                    {unreadCount > 0 && (
-                                        <span className="text-[10px] font-bold bg-danger/10 text-danger px-2 py-0.5 rounded-full">
-                                            {unreadCount} baru
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Items */}
-                                <div className="max-h-64 overflow-y-auto">
-                                    {notifikasi.length === 0 ? (
-                                        <div className="px-4 py-8 text-center text-sm text-text-muted">
-                                            Belum ada notifikasi
-                                        </div>
-                                    ) : (
-                                        notifikasi.slice(0, 5).map((notif) => {
-                                            const Icon = ICON_MAP[notif.tipe] || Calendar;
-                                            return (
-                                                <div
-                                                    key={notif.id}
-                                                    onClick={() => handleNotifClick(notif)}
-                                                    className={`
-                                                        flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors cursor-pointer
-                                                        ${!notif.dibaca ? 'bg-primary-500/5' : ''}
-                                                    `}
-                                                >
-                                                    <div className={`
-                                                        w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5
-                                                        ${!notif.dibaca ? 'bg-primary-500/10 text-primary-500' : 'bg-surface text-text-muted'}
-                                                    `}>
-                                                        <Icon size={16} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className={`text-sm leading-tight ${!notif.dibaca ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
-                                                            {notif.judul}
-                                                        </p>
-                                                        <p className="text-[11px] text-text-muted mt-0.5">{notif.waktu}</p>
-                                                    </div>
-                                                    {!notif.dibaca && (
-                                                        <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 mt-1.5" />
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-
-                                {/* Footer */}
-                                <div className="px-4 py-2.5 border-t border-border flex items-center justify-between">
-                                    <button
-                                        onClick={handleMarkAllRead}
-                                        className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors"
-                                    >
-                                        Tandai Semua Dibaca
-                                    </button>
-                                    <button
-                                        onClick={() => { setNotifOpen(false); try { router.get(route('dosen.notifikasi')); } catch {} }}
-                                        className="text-xs font-medium text-text-muted hover:text-text-primary transition-colors"
-                                    >
-                                        Lihat Semua →
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <AnimatePresence>
+                            {notifOpen && (
+                                <NotificationDropdown 
+                                    onClose={() => setNotifOpen(false)} 
+                                    notifications={notifikasi}
+                                />
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     {/* ── Help Icon ─────────────────────────────────────────── */}

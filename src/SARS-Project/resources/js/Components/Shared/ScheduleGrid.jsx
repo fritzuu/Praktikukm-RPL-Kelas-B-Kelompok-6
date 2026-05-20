@@ -321,14 +321,16 @@ export default function ScheduleGrid({
                     </div>
 
                     {/* Rows: Each Room */}
-                    {displayRooms.map(room => {
-                        const roomClasses = dayJadwal.filter(j => j.ruangan === room);
+                    {displayRooms.map((room, idx) => {
+                        const roomKey = typeof room === 'object' ? (room.id || idx) : room;
+                        const roomName = typeof room === 'object' ? (room.code || room.nama || room.name) : room;
+                        const roomClasses = dayJadwal.filter(j => j.ruangan === roomName || j.ruangan_id === (typeof room === 'object' ? room.id : undefined));
 
                         return (
                             <motion.div
                                 layout
                                 transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                                key={room}
+                                key={roomKey}
                                 className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
                                 style={gridStyle}
                             >
@@ -338,7 +340,7 @@ export default function ScheduleGrid({
                                     transition={{ type: 'spring', stiffness: 240, damping: 22 }}
                                     className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
                                 >
-                                    <span className="truncate">{room}</span>
+                                    <span className="truncate">{roomName}</span>
                                 </motion.div>
 
                                 {/* Sessions Grid Container */}
