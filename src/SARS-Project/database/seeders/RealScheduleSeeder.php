@@ -191,6 +191,7 @@ EOT;
                 // Extract room
                 preg_match('/\(Ruang:\s*(.*?)\)$/', $line, $roomMatch);
                 $roomName = $roomMatch ? trim($roomMatch[1]) : 'Unknown Room';
+                $roomName = strtoupper($roomName);
 
                 // Check room type
                 $roomType = 'KELAS';
@@ -198,10 +199,11 @@ EOT;
                     $roomType = 'LABORATORIUM';
                 }
 
-                $roomId = DB::table('rooms')->where('name', $roomName)->value('id');
+                $roomCode = strtoupper(substr(Str::slug($roomName), 0, 20));
+                $roomId = DB::table('rooms')->where('code', $roomCode)->value('id');
                 if (!$roomId) {
                     $roomId = DB::table('rooms')->insertGetId([
-                        'code' => substr(Str::slug($roomName), 0, 20),
+                        'code' => $roomCode,
                         'name' => $roomName,
                         'capacity' => 40,
                         'building' => 'Unknown',
