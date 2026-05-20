@@ -55,6 +55,29 @@ export default function AdminJadwal({
         }
     }, [flash, flash?.error]);
 
+    useEffect(() => {
+        const handlePageShow = (event) => {
+            if (event.persisted) {
+                router.reload();
+            }
+        };
+
+        window.addEventListener('pageshow', handlePageShow);
+
+        try {
+            const perfEntries = performance.getEntriesByType("navigation");
+            if (perfEntries.length > 0 && perfEntries[0].type === "back_forward") {
+                router.reload();
+            }
+        } catch (e) {
+            console.error("Navigation timing API error:", e);
+        }
+
+        return () => {
+            window.removeEventListener('pageshow', handlePageShow);
+        };
+    }, []);
+
     // Form helper using Inertia
     const { data, setData, post, processing, errors, reset, wasSuccessful } = useForm({
         raw_text: '',
