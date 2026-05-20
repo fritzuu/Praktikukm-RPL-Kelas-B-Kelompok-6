@@ -26,7 +26,7 @@ export default function DosenJadwal({
     jadwal = [], 
     allSchedules = [],
     rooms = [],
-    semester = { nama: 'Ganjil', tahun: '2024/2025' }
+    semester = { nama: 'Ganjil', tahun: '2025/2026' }
 }) {
     const getTodayKey = () => {
         const jsDay = new Date().getDay();
