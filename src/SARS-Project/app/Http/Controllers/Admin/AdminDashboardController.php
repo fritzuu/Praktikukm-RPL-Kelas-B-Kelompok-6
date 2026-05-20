@@ -44,7 +44,9 @@ class AdminDashboardController extends Controller
                 return $s;
             });
 
-        $rooms = DB::table('rooms')->pluck('name');
+        $rooms = DB::table('rooms')
+            ->whereIn('id', DB::table('schedules')->where('is_active', true)->pluck('room_id'))
+            ->pluck('name');
 
         // ─── Conflict Detection Logic ──────────────────────────────────────────
         // Fetch all active schedules to find overlaps
@@ -140,12 +142,38 @@ class AdminDashboardController extends Controller
             'declinedThisWeek' => DB::table('change_requests')->where('status', 'REJECTED')->where('updated_at', '>=', now()->subDays(7))->count(),
         ];
 
+        $aktivitas = DB::table('activities')
+            ->join('users', 'activities.user_id', '=', 'users.id')
+            ->select(
+                'activities.id',
+                'users.name as nama',
+                'activities.action as aksi',
+                'activities.status',
+                'activities.created_at'
+            )
+            ->orderByDesc('activities.created_at')
+            ->limit(10)
+            ->get()
+            ->map(function ($act) {
+                $avatarInitial = strtoupper(substr($act->nama, 0, 1));
+                $waktu = \Carbon\Carbon::parse($act->created_at)->timezone('Asia/Jakarta')->diffForHumans();
+                return [
+                    'id' => (string) $act->id,
+                    'nama' => $act->nama,
+                    'aksi' => $act->aksi,
+                    'status' => $act->status,
+                    'waktu' => $waktu,
+                    'avatarInitial' => $avatarInitial,
+                ];
+            });
+
         return Inertia::render('Dashboard/Admin', [
             'jadwal' => $schedules,
             'rooms' => $rooms,
             'konflik' => $konflik,
             'syncStatus' => $syncStatus,
             'insights' => $insights,
+            'aktivitas' => $aktivitas,
         ]);
     }
 }

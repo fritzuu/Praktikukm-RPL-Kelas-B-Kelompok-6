@@ -9,15 +9,6 @@ import AdminStatCards from '../../Components/Admin/AdminStatCards';
 import AdminInsightCards from '../../Components/Admin/AdminInsightCards';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import ConflictAlerts from '../../Components/Admin/ConflictAlerts';
-import {
-    MOCK_JADWAL,
-    MOCK_KONFLIK,
-    MOCK_AKTIVITAS,
-    MOCK_SYNC_STATUS,
-    MOCK_ROOMS,
-    MOCK_INSIGHTS,
-} from '../../data/mockData';
-
 const STATUS_STYLES = {
     disetujui: 'bg-success/10 text-success',
     tertunda: 'bg-warning/10 text-warning',
@@ -66,12 +57,12 @@ const ADMIN_ACTIVITY_COLUMNS = [
 ];
 
 export default function AdminDashboard({
-    jadwal = MOCK_JADWAL,
-    konflik = MOCK_KONFLIK,
-    aktivitas = MOCK_AKTIVITAS,
-    syncStatus = MOCK_SYNC_STATUS,
-    insights = MOCK_INSIGHTS,
-    rooms = MOCK_ROOMS,
+    jadwal = [],
+    konflik = [],
+    aktivitas = [],
+    syncStatus = {},
+    insights = {},
+    rooms = [],
     flash = {},
 }) {
     const { auth } = usePage().props;

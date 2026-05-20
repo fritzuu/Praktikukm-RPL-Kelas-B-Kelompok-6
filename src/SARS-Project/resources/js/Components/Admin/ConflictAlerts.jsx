@@ -1,5 +1,4 @@
 import { AlertTriangle } from 'lucide-react';
-import { MOCK_KONFLIK } from '../../data/mockData';
 
 const TIPE_BADGES = {
     bentrok_ruangan: { label: 'Ruangan Bentrok', style: 'bg-danger/10 text-danger' },
@@ -7,7 +6,7 @@ const TIPE_BADGES = {
     umum: { label: 'Umum', style: 'bg-info/10 text-info' },
 };
 
-export default function ConflictAlerts({ conflicts = MOCK_KONFLIK, onResolve, onResolveAll }) {
+export default function ConflictAlerts({ conflicts = [], onResolve, onResolveAll }) {
     if (!conflicts.length) return null;
 
     return (
