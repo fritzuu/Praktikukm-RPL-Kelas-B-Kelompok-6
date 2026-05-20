@@ -161,25 +161,35 @@ export default function ScheduleGrid({
     onExport,
 }) {
     const [selectedDay, setSelectedDay] = useState('senin');
-    const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        if (isLoading) {
-            const timer = setTimeout(() => setIsLoading(false), 400);
-            return () => clearTimeout(timer);
-        }
-    }, [isLoading]);
-
-    const handleDayChange = (hari) => {
-        if (hari !== selectedDay) {
-            setIsLoading(true);
-            setSelectedDay(hari);
-        }
-    };
+    const [loading, setLoading] = useState(false);
     
     // State untuk filter
     const [semesterFilter, setSemesterFilter] = useState('Semua');
     const [kelasFilter, setKelasFilter] = useState('Semua');
+
+    useEffect(() => {
+        setLoading(true);
+        const timer = setTimeout(() => setLoading(false), 450);
+        return () => clearTimeout(timer);
+    }, [jadwalItems]);
+
+    const handleSelectDay = (day) => {
+        setLoading(true);
+        setSelectedDay(day);
+        setTimeout(() => setLoading(false), 450);
+    };
+
+    const handleSemesterChange = (val) => {
+        setLoading(true);
+        setSemesterFilter(val);
+        setTimeout(() => setLoading(false), 450);
+    };
+
+    const handleKelasChange = (val) => {
+        setLoading(true);
+        setKelasFilter(val);
+        setTimeout(() => setLoading(false), 450);
+    };
 
     // Extract unique semesters and classes from jadwalItems
     const availableSemesters = useMemo(() => {
@@ -236,7 +246,7 @@ export default function ScheduleGrid({
                     
                     <select 
                         value={semesterFilter}
-                        onChange={(e) => setSemesterFilter(e.target.value)}
+                        onChange={(e) => handleSemesterChange(e.target.value)}
                         className="bg-transparent border-none text-xs font-medium text-text-secondary focus:ring-0 cursor-pointer pr-6 py-0 outline-none h-auto w-auto min-w-[90px]"
                         style={{ backgroundPosition: 'right 0.1rem center' }}
                     >
@@ -250,7 +260,7 @@ export default function ScheduleGrid({
 
                     <select 
                         value={kelasFilter}
-                        onChange={(e) => setKelasFilter(e.target.value)}
+                        onChange={(e) => handleKelasChange(e.target.value)}
                         className="bg-transparent border-none text-xs font-medium text-text-secondary focus:ring-0 cursor-pointer pr-6 py-0 outline-none h-auto w-auto min-w-[90px]"
                         style={{ backgroundPosition: 'right 0.1rem center' }}
                     >
@@ -288,123 +298,119 @@ export default function ScheduleGrid({
 
             {/* Tabs & Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border mb-4 gap-4 sm:gap-0">
-                <DayTabs selectedDay={selectedDay} onSelectDay={handleDayChange} />
+                <DayTabs selectedDay={selectedDay} onSelectDay={handleSelectDay} />
                 <div className="pb-2 sm:pb-0 sm:mb-2">
                     {renderHeaderActions()}
                 </div>
             </div>
 
             {/* Matrix Grid */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm">
-                <AnimatePresence mode="wait">
-                    {isLoading ? (
-                        <motion.div 
-                            key="loading"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="flex flex-col items-center justify-center py-32"
-                        >
-                            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="mt-4 text-xs font-semibold text-text-muted">Memuat jadwal...</p>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key={selectedDay}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="min-w-fit"
-                        >
-                            {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
-                            <div className="grid border-b border-border bg-card" style={gridStyle}>
-                                <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                    RUANGAN
-                                </div>
-                                {Array.from({ length: 11 }, (_, i) => (
-                                    <div key={i} className="relative p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0 select-none">
-                                        SESI {i + 1}
-                                        <ColumnResizer width={colWidths[i]} onResize={(newWidth) => handleResize(i, newWidth)} />
-                                    </div>
-                                ))}
+            <div className="bg-card border border-border rounded-xl overflow-hidden overflow-x-auto shadow-sm relative min-h-[250px]">
+                <div className="min-w-fit">
+                    {/* Header Row: Rooms (Empty Corner) + 11 Sessions */}
+                    <div className="grid border-b border-border bg-card" style={gridStyle}>
+                        <div className="p-3 font-bold text-[11px] tracking-wider text-text-muted border-r border-border sticky left-0 bg-card z-30 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                            RUANGAN
+                        </div>
+                        {Array.from({ length: 11 }, (_, i) => (
+                            <div key={i} className="relative p-3 text-center text-[10px] tracking-wider font-bold text-text-muted border-r border-border last:border-r-0 select-none">
+                                SESI {i + 1}
+                                <ColumnResizer width={colWidths[i]} onResize={(newWidth) => handleResize(i, newWidth)} />
                             </div>
+                        ))}
+                    </div>
 
-                            {/* Rows: Each Room */}
-                            {displayRooms.length === 0 ? (
-                                <div className="p-12 text-center text-text-muted text-sm font-semibold">
-                                    Tidak ada jadwal pada hari ini
-                                </div>
-                            ) : (
-                                displayRooms.map(room => {
-                                    const roomClasses = dayJadwal.filter(j => j.ruangan === room);
+                    {/* Rows: Each Room */}
+                    {displayRooms.length === 0 ? (
+                        <div className="p-12 text-center text-text-muted text-sm font-semibold">
+                            Tidak ada jadwal pada hari ini
+                        </div>
+                    ) : (
+                        displayRooms.map((room, idx) => {
+                            const roomKey = typeof room === 'object' ? (room.id || idx) : room;
+                            const roomName = typeof room === 'object' ? (room.code || room.nama || room.name) : room;
+                            const roomClasses = dayJadwal.filter(j => j.ruangan === roomName || j.ruangan_id === (typeof room === 'object' ? room.id : undefined));
 
-                                    return (
-                                        <motion.div
-                                            layout
-                                            transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                                            key={room}
-                                            className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
-                                            style={gridStyle}
-                                        >
-                                            {/* Room Label - Sticky */}
-                                            <motion.div
-                                                layout
-                                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                                                className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
-                                            >
-                                                <span className="truncate">{room}</span>
-                                            </motion.div>
+                            return (
+                                <motion.div
+                                    layout
+                                    transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                    key={roomKey}
+                                    className="grid border-b border-border last:border-b-0 relative group hover:bg-background/30 transition-colors"
+                                    style={gridStyle}
+                                >
+                                    {/* Room Label - Sticky */}
+                                    <motion.div
+                                        layout
+                                        transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                        className="p-3 font-semibold text-xs text-text-primary border-r border-border sticky left-0 bg-card z-30 flex items-center group-hover:bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"
+                                    >
+                                        <span className="truncate">{roomName}</span>
+                                    </motion.div>
 
-                                            {/* Sessions Grid Container */}
-                                            <motion.div
-                                                key={selectedDay}
-                                                variants={CONTAINER_VARIANTS}
-                                                initial="hidden"
-                                                animate="show"
-                                                className="grid relative py-1.5 gap-y-1.5 min-h-[64px]"
-                                                style={{
-                                                    gridColumn: '2 / -1',
-                                                    gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ')
-                                                }}
-                                            >
-                                                {/* Background Grid Lines for visual separation */}
-                                                <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
-                                                    {Array.from({ length: 11 }, (_, i) => (
-                                                        <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
-                                                    ))}
-                                                </div>
+                                    {/* Sessions Grid Container */}
+                                    <motion.div
+                                        key={selectedDay}
+                                        variants={CONTAINER_VARIANTS}
+                                        initial="hidden"
+                                        animate="show"
+                                        className="grid grid-flow-row-dense relative py-1.5 gap-y-1.5 min-h-[64px]"
+                                        style={{
+                                            gridColumn: '2 / -1',
+                                            gridTemplateColumns: colWidths.map(w => `${w}px`).join(' '),
+                                            gridAutoFlow: 'row dense'
+                                        }}
+                                    >
+                                        {/* Background Grid Lines for visual separation */}
+                                        <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
+                                            {Array.from({ length: 11 }, (_, i) => (
+                                                <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
+                                            ))}
+                                        </div>
 
-                                                {/* Render Classes */}
-                                                {roomClasses.map(item => {
-                                                    let isConflict = false;
-                                                    if (showConflicts) {
-                                                        isConflict = roomClasses.some(other =>
-                                                            other.id !== item.id &&
-                                                            ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
-                                                                (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
-                                                        );
-                                                    }
+                                        {/* Render Classes */}
+                                        {roomClasses.map(item => {
+                                            let isConflict = false;
+                                            if (showConflicts) {
+                                                isConflict = roomClasses.some(other =>
+                                                    other.id !== item.id &&
+                                                    ((item.sesiMulai >= other.sesiMulai && item.sesiMulai < other.sesiMulai + other.durasi) ||
+                                                        (other.sesiMulai >= item.sesiMulai && other.sesiMulai < item.sesiMulai + item.durasi))
+                                                );
+                                            }
 
-                                                    return (
-                                                        <ScheduleCard
-                                                            key={item.id}
-                                                            item={item}
-                                                            variants={CARD_VARIANTS}
-                                                            isConflict={isConflict}
-                                                            onCardClick={onCardClick}
-                                                        />
-                                                    );
-                                                })}
-                                            </motion.div>
-                                        </motion.div>
-                                    );
-                                })
-                            )}
-                        </motion.div>
+                                            return (
+                                                <ScheduleCard
+                                                    key={item.id}
+                                                    item={item}
+                                                    variants={CARD_VARIANTS}
+                                                    isConflict={isConflict}
+                                                    onCardClick={onCardClick}
+                                                />
+                                            );
+                                        })}
+                                    </motion.div>
+                                </motion.div>
+                            );
+                        })
                     )}
-                </AnimatePresence>
+                </div>
+
+                {/* Loading Overlay */}
+                {loading && (
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex flex-col items-center justify-center z-40 animate-fade-in">
+                        <div className="flex flex-col items-center gap-3 bg-card border border-border p-5 rounded-2xl shadow-xl">
+                            <div className="relative flex items-center justify-center">
+                                <div className="w-10 h-10 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                                <CalendarDays className="absolute text-primary-500 animate-pulse" size={16} />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs font-bold text-text-primary">Memproses Jadwal...</p>
+                                <p className="text-[10px] text-text-muted mt-1">Mengambil data terbaru dari database</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );

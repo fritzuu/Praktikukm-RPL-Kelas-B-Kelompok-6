@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import Sidebar from '../Components/Dosen/Sidebar';
 import TopBar from '../Components/Dosen/TopBar';
-import AiAssistantPanel from '../Components/Dosen/AiAssistantPanel';
-import AiAssistantFab from '../Components/Dosen/AiAssistantFab';
+import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
+import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
 export default function DosenLayout({ children }) {
     const { auth } = usePage().props;
@@ -71,18 +72,24 @@ export default function DosenLayout({ children }) {
                 </main>
 
                 {/* Right AI Panel */}
-                {aiPanelOpen && (
-                    <AiAssistantPanel
-                        isOpen={aiPanelOpen}
-                        onClose={() => setAiPanelOpen(false)}
-                    />
-                )}
+                <AnimatePresence>
+                    {aiPanelOpen && (
+                        <AiAssistantPanel
+                            key="ai-panel"
+                            isOpen={aiPanelOpen}
+                            onClose={() => setAiPanelOpen(false)}
+                            role="dosen"
+                        />
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* FAB saat AI panel tertutup */}
-            {!aiPanelOpen && (
-                <AiAssistantFab onClick={() => setAiPanelOpen(true)} />
-            )}
+            <AnimatePresence>
+                {!aiPanelOpen && (
+                    <AiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

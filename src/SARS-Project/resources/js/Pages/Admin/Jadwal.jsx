@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePage, useForm } from '@inertiajs/react';
+import { usePage, useForm, router } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import Modal from '../../Components/Modal';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
@@ -10,6 +10,7 @@ import {
     Calendar, 
     CheckCircle, 
     AlertCircle, 
+    AlertTriangle,
     Trash2, 
     HelpCircle,
     Info
@@ -25,6 +26,57 @@ export default function AdminJadwal({
 
     const [activeTab, setActiveTab] = useState('view'); // 'view' or 'upload'
     const [selectedSchedule, setSelectedSchedule] = useState(null);
+    const [scheduleToDelete, setScheduleToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    const [showUploadConfirm, setShowUploadConfirm] = useState(false);
+    const [conflictsCount, setConflictsCount] = useState(0);
+
+    const [successMessage, setSuccessMessage] = useState(flash?.success || '');
+    const [errorMessage, setErrorMessage] = useState(flash?.error || '');
+
+    useEffect(() => {
+        if (flash?.success) {
+            setSuccessMessage(flash.success);
+            const timer = setTimeout(() => setSuccessMessage(''), 5000);
+            return () => clearTimeout(timer);
+        } else {
+            setSuccessMessage('');
+        }
+    }, [flash, flash?.success]);
+
+    useEffect(() => {
+        if (flash?.error) {
+            setErrorMessage(flash.error);
+            const timer = setTimeout(() => setErrorMessage(''), 5000);
+            return () => clearTimeout(timer);
+        } else {
+            setErrorMessage('');
+        }
+    }, [flash, flash?.error]);
+
+    useEffect(() => {
+        const handlePageShow = (event) => {
+            if (event.persisted) {
+                router.reload();
+            }
+        };
+
+        window.addEventListener('pageshow', handlePageShow);
+
+        try {
+            const perfEntries = performance.getEntriesByType("navigation");
+            if (perfEntries.length > 0 && perfEntries[0].type === "back_forward") {
+                router.reload();
+            }
+        } catch (e) {
+            console.error("Navigation timing API error:", e);
+        }
+
+        return () => {
+            window.removeEventListener('pageshow', handlePageShow);
+        };
+    }, []);
 
     // Form helper using Inertia
     const { data, setData, post, processing, errors, reset, wasSuccessful } = useForm({
@@ -38,6 +90,21 @@ export default function AdminJadwal({
 
     const handleCardClick = (item) => {
         setSelectedSchedule(item);
+    };
+
+    const confirmDelete = () => {
+        if (!scheduleToDelete) return;
+        setDeleteLoading(true);
+        router.delete(route('admin.jadwal.destroy', scheduleToDelete.id), {
+            onSuccess: () => {
+                setDeleteLoading(false);
+                setScheduleToDelete(null);
+                setSelectedSchedule(null);
+            },
+            onError: () => {
+                setDeleteLoading(false);
+            }
+        });
     };
 
     // Handle File upload and text parsing
@@ -77,8 +144,103 @@ export default function AdminJadwal({
         }
     };
 
+    const checkConflicts = (text, overwrite) => {
+        if (!text) return 0;
+        const lines = text.split('\n');
+        let currentDay = '';
+        const parsedItems = [];
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            const lower = trimmed.toLowerCase();
+            if (lower.includes('senin')) currentDay = 'senin';
+            else if (lower.includes('selasa')) currentDay = 'selasa';
+            else if (lower.includes('rabu')) currentDay = 'rabu';
+            else if (lower.includes('kamis')) currentDay = 'kamis';
+            else if (lower.includes('jumat')) currentDay = 'jumat';
+
+            if (!currentDay) return;
+
+            if (trimmed.startsWith('Sesi')) {
+                // Extract session
+                const sessionMatch = trimmed.match(/Sesi\s+([0-9]+)(?:-([0-9]+))?:/);
+                if (!sessionMatch) return;
+
+                const startSession = parseInt(sessionMatch[1]);
+                const endSession = sessionMatch[2] ? parseInt(sessionMatch[2]) : startSession;
+
+                // Extract room
+                const roomMatch = trimmed.match(/\(Ruang:\s*(.*?)\)$/);
+                const roomName = roomMatch ? roomMatch[1].trim() : '';
+
+                if (roomName) {
+                    parsedItems.push({
+                        day: currentDay,
+                        room: roomName,
+                        start: startSession,
+                        end: endSession
+                    });
+                }
+            }
+        });
+
+        let conflictCount = 0;
+
+        // 1. Check conflicts within the uploaded text
+        const localConflicts = new Set();
+        for (let i = 0; i < parsedItems.length; i++) {
+            for (let j = i + 1; j < parsedItems.length; j++) {
+                const a = parsedItems[i];
+                const b = parsedItems[j];
+                if (a.day === b.day && a.room === b.room) {
+                    if ((a.start >= b.start && a.start <= b.end) || (b.start >= a.start && b.start <= a.end)) {
+                        localConflicts.add(i);
+                        localConflicts.add(j);
+                    }
+                }
+            }
+        }
+        conflictCount += localConflicts.size;
+
+        // 2. Check conflicts against existing schedules (only if NOT overwriting)
+        if (!overwrite && jadwal && jadwal.length > 0) {
+            parsedItems.forEach((newItem, idx) => {
+                if (localConflicts.has(idx)) return;
+
+                const hasDbConflict = jadwal.some(dbItem => {
+                    const dbDay = dbItem.hari?.toLowerCase();
+                    const dbRoom = dbItem.ruangan;
+                    const dbStart = dbItem.sesiMulai;
+                    const dbEnd = dbItem.sesiMulai + dbItem.durasi - 1;
+
+                    if (dbDay === newItem.day && dbRoom === newItem.room) {
+                        return (newItem.start >= dbStart && newItem.start <= dbEnd) ||
+                               (dbStart >= newItem.start && dbStart <= newItem.end);
+                    }
+                    return false;
+                });
+
+                if (hasDbConflict) {
+                    conflictCount++;
+                }
+            });
+        }
+
+        return conflictCount;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!data.raw_text.trim()) return;
+        const count = checkConflicts(data.raw_text, data.overwrite);
+        setConflictsCount(count);
+        setShowUploadConfirm(true);
+    };
+
+    const confirmUpload = () => {
+        setShowUploadConfirm(false);
         post(route('admin.jadwal.import'), {
             onSuccess: () => {
                 reset();
@@ -135,16 +297,16 @@ export default function AdminJadwal({
             </div>
 
             {/* Flash Messages */}
-            {flash?.success && (
+            {successMessage && (
                 <div className="mb-6 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 px-4 py-3 rounded-xl shadow-sm animate-fade-in">
                     <CheckCircle size={18} className="shrink-0" />
-                    <p className="text-xs font-semibold">{flash.success}</p>
+                    <p className="text-xs font-semibold">{successMessage}</p>
                 </div>
             )}
-            {flash?.error && (
+            {errorMessage && (
                 <div className="mb-6 flex items-center gap-3 bg-rose-500/10 border border-rose-500/30 text-rose-700 px-4 py-3 rounded-xl shadow-sm animate-fade-in">
                     <AlertCircle size={18} className="shrink-0" />
-                    <p className="text-xs font-semibold">{flash.error}</p>
+                    <p className="text-xs font-semibold">{errorMessage}</p>
                 </div>
             )}
 
@@ -367,17 +529,142 @@ export default function AdminJadwal({
                             </div>
                         </div>
 
-                        <div className="pt-2 border-t border-border">
-                            <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Dosen Pengajar</h4>
-                            <div className="flex items-center gap-3 mt-2">
-                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-lg">
-                                    {selectedSchedule.dosen ? selectedSchedule.dosen.charAt(0).toUpperCase() : '?'}
+                        <div className="pt-2 border-t border-border flex flex-col gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Dosen Pengajar</h4>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-lg">
+                                        {selectedSchedule.dosen ? selectedSchedule.dosen.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <p className="font-semibold text-text-primary">{selectedSchedule.dosen}</p>
                                 </div>
-                                <p className="font-semibold text-text-primary">{selectedSchedule.dosen}</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-2">
+                                <button
+                                    onClick={() => setScheduleToDelete(selectedSchedule)}
+                                    className="flex-1 py-3 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl text-sm font-bold transition-colors flex justify-center items-center gap-2"
+                                >
+                                    <Trash2 size={16} /> Hapus Jadwal
+                                </button>
+                                <button
+                                    onClick={() => setSelectedSchedule(null)}
+                                    className="flex-1 py-3 bg-surface hover:bg-card border border-border text-text-secondary rounded-xl text-sm font-bold transition-colors"
+                                >
+                                    Tutup
+                                </button>
                             </div>
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* Confirm Delete Modal */}
+            <Modal
+                isOpen={!!scheduleToDelete}
+                onClose={() => !deleteLoading && setScheduleToDelete(null)}
+                maxWidth="sm"
+            >
+                <div className="relative p-2 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle size={28} className="text-danger" />
+                    </div>
+                    <h3 className="text-lg font-bold text-text-primary mb-1">Hapus Jadwal?</h3>
+                    <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+                        Apakah Anda yakin ingin menghapus jadwal <strong>{scheduleToDelete?.nama} ({scheduleToDelete?.kode})</strong>? Tindakan ini akan menghapus permanen data jadwal tersebut.
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setScheduleToDelete(null)}
+                            disabled={deleteLoading}
+                            className="flex-1 px-4 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-text-primary hover:bg-card transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            disabled={deleteLoading}
+                            className="flex-1 px-4 py-2.5 bg-danger hover:bg-danger/90 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {deleteLoading ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Trash2 size={16} />
+                            )}
+                            {deleteLoading ? 'Menghapus...' : 'Ya, Hapus'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Confirm Upload Modal */}
+            <Modal
+                isOpen={showUploadConfirm}
+                onClose={() => !processing && setShowUploadConfirm(false)}
+                maxWidth="sm"
+            >
+                <div className="relative p-2 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
+                        <Upload size={28} className="text-primary-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-text-primary mb-1">Konfirmasi Upload Jadwal</h3>
+                    
+                    <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+                        {data.overwrite 
+                            ? "Apakah Anda yakin ingin menghapus semua jadwal & kelas lama dan menambah jadwal baru?"
+                            : "Apakah Anda yakin ingin mengupload jadwal baru?"
+                        }
+                    </p>
+
+                    {/* Conflict Analysis Section */}
+                    <div className={`p-3 text-left rounded-xl border mb-6 text-xs ${
+                        conflictsCount > 0 
+                            ? 'bg-danger/10 border-danger/20 text-danger' 
+                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700'
+                    }`}>
+                        <div className="flex items-center gap-2 font-bold mb-1">
+                            {conflictsCount > 0 ? (
+                                <>
+                                    <AlertTriangle size={15} />
+                                    <span>Peringatan Konflik Jadwal</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={15} />
+                                    <span>Analisis Jadwal Aman</span>
+                                </>
+                            )}
+                        </div>
+                        <p className="opacity-90">
+                            {conflictsCount > 0 
+                                ? `Ditemukan ${conflictsCount} potensi konflik jadwal (ruangan & sesi yang sama bertumpuk) pada data yang akan di-import.`
+                                : "Tidak ditemukan potensi konflik jadwal baru. Semua ruangan & sesi aman."
+                            }
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowUploadConfirm(false)}
+                            disabled={processing}
+                            className="flex-1 px-4 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-text-primary hover:bg-card transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={confirmUpload}
+                            disabled={processing}
+                            className="flex-1 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {processing ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Upload size={16} />
+                            )}
+                            {processing ? 'Mengunggah...' : 'Ya, Upload'}
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </>
     );
