@@ -21,19 +21,21 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
     const bellControls = useAnimationControls();
 
     const triggerBellWobble = () => {
+        if (unreadCount === 0) return;
         bellControls.start({
             rotate: [0, -15, 12, -8, 6, -3, 0],
             transition: { duration: 0.5, ease: "easeInOut" }
         });
     };
 
-    // Trigger periodic bell wobble every 5 seconds to draw attention
+    // Trigger periodic bell wobble every 5 seconds to draw attention if there are unread notifications
     useEffect(() => {
+        if (unreadCount === 0) return;
         const interval = setInterval(() => {
             triggerBellWobble();
-        }, 2000);
+        }, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [unreadCount]);
 
     // Tutup dropdown saat klik di luar
     useEffect(() => {
