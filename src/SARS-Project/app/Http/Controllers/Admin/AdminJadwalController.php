@@ -284,6 +284,28 @@ class AdminJadwalController extends Controller
             }
 
             DB::commit();
+
+            // Log activity
+            $this->logActivity(
+                $request->user()->id,
+                "Mengimpor {$importedCount} jadwal perkuliahan baru."
+            );
+
+            // Send notification to Admin and all Lecturers and Aslabs
+            $recipientIds = DB::table('user_roles')
+                ->whereIn('role_id', [1, 2, 4]) // Admin (1), Aslab (2), Dosen (4)
+                ->pluck('user_id')
+                ->unique()
+                ->toArray();
+
+            $this->sendNotification(
+                "Pembaruan Jadwal Kuliah",
+                "Admin telah mengimpor {$importedCount} jadwal perkuliahan baru ke dalam sistem.",
+                "SYSTEM",
+                $recipientIds,
+                $request->user()->id
+            );
+
             return redirect()->route('admin.jadwal')->with('success', "Berhasil mengimpor {$importedCount} jadwal perkuliahan!");
         } catch (\Exception $e) {
             DB::rollBack();
@@ -291,14 +313,45 @@ class AdminJadwalController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        // Get schedule info before deleting
+        $scheduleInfo = DB::table('schedules')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->leftJoin('teaching_assignments', 'schedules.id', '=', 'teaching_assignments.schedule_id')
+            ->select('courses.name as course_name', 'courses.class_name', 'teaching_assignments.user_id as lecturer_id')
+            ->where('schedules.id', $id)
+            ->first();
+
         DB::beginTransaction();
         try {
             DB::table('teaching_assignments')->where('schedule_id', $id)->delete();
             DB::table('schedules')->where('id', $id)->delete();
             
             DB::commit();
+
+            if ($scheduleInfo) {
+                // Log activity
+                $this->logActivity(
+                    $request->user()->id,
+                    "Menghapus jadwal {$scheduleInfo->course_name} ({$scheduleInfo->class_name})."
+                );
+
+                // Notify admin and lecturer
+                $recipients = [$request->user()->id];
+                if ($scheduleInfo->lecturer_id) {
+                    $recipients[] = $scheduleInfo->lecturer_id;
+                }
+
+                $this->sendNotification(
+                    "Jadwal Dihapus",
+                    "Jadwal kelas {$scheduleInfo->course_name} ({$scheduleInfo->class_name}) telah dihapus oleh Admin.",
+                    "STATUS_CHANGE",
+                    $recipients,
+                    $request->user()->id
+                );
+            }
+
             return redirect()->back()->with('success', 'Jadwal berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -306,7 +359,7 @@ class AdminJadwalController extends Controller
         }
     }
 
-    public function resolveAllConflicts()
+    public function resolveAllConflicts(Request $request)
     {
         DB::beginTransaction();
         try {
@@ -339,12 +392,52 @@ class AdminJadwalController extends Controller
                 }
             }
 
+            $deletedSchedules = [];
             if (!empty($toDelete)) {
+                // Get schedule info before deleting to notify affected lecturers
+                $deletedSchedules = DB::table('schedules')
+                    ->join('courses', 'schedules.course_id', '=', 'courses.id')
+                    ->leftJoin('teaching_assignments', 'schedules.id', '=', 'teaching_assignments.schedule_id')
+                    ->select('courses.name as course_name', 'courses.class_name', 'teaching_assignments.user_id as lecturer_id')
+                    ->whereIn('schedules.id', $toDelete)
+                    ->get();
+
                 DB::table('teaching_assignments')->whereIn('schedule_id', $toDelete)->delete();
                 DB::table('schedules')->whereIn('id', $toDelete)->delete();
             }
 
             DB::commit();
+
+            if (!empty($toDelete)) {
+                // Log activity
+                $this->logActivity(
+                    $request->user()->id,
+                    "Menyelesaikan konflik jadwal dengan menghapus " . count($toDelete) . " jadwal bertumpukan."
+                );
+
+                // Notify admin
+                $this->sendNotification(
+                    "Penyelesaian Konflik Berhasil",
+                    "Anda berhasil menyelesaikan semua konflik jadwal dengan menghapus " . count($toDelete) . " jadwal yang bertumpukan.",
+                    "SYSTEM",
+                    [$request->user()->id],
+                    $request->user()->id
+                );
+
+                // Notify affected lecturers
+                foreach ($deletedSchedules as $sch) {
+                    if ($sch->lecturer_id) {
+                        $this->sendNotification(
+                            "Jadwal Dihapus karena Bentrok",
+                            "Jadwal kelas {$sch->course_name} ({$sch->class_name}) telah dihapus oleh Admin untuk menyelesaikan konflik ruangan.",
+                            "CONFLICT_ALERT",
+                            [$sch->lecturer_id],
+                            $request->user()->id
+                        );
+                    }
+                }
+            }
+
             return redirect()->back()->with('success', 'Semua konflik jadwal berhasil diselesaikan.');
         } catch (\Exception $e) {
             DB::rollBack();

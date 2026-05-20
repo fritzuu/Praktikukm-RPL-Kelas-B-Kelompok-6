@@ -420,6 +420,33 @@ class DatabaseSeeder extends Seeder
             ],
         ]);
 
+        // =============================================
+        // 14. ACTIVITIES
+        // =============================================
+        DB::table('activities')->insert([
+            [
+                'user_id' => 1,
+                'action' => 'Mengimpor 45 jadwal perkuliahan baru.',
+                'status' => 'disetujui',
+                'created_at' => $now->copy()->subMinutes(30),
+                'updated_at' => $now->copy()->subMinutes(30),
+            ],
+            [
+                'user_id' => 4,
+                'action' => 'Memvalidasi pengajuan perubahan jadwal REQ-2025-001.',
+                'status' => 'disetujui',
+                'created_at' => $now->copy()->subHours(2),
+                'updated_at' => $now->copy()->subHours(2),
+            ],
+            [
+                'user_id' => 1,
+                'action' => 'Menyetujui pengajuan perubahan jadwal REQ-2025-001.',
+                'status' => 'disetujui',
+                'created_at' => $now->copy()->subHours(1),
+                'updated_at' => $now->copy()->subHours(1),
+            ],
+        ]);
+
         $this->call([
             RealScheduleSeeder::class,
         ]);
