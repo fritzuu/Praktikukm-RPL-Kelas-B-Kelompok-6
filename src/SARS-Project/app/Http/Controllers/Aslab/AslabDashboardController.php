@@ -80,7 +80,7 @@ class AslabDashboardController extends Controller
             'rejected' => $rejected
         ];
         
-        $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))->get();
+        $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))->pluck('name');
 
         // Notifications
         $notifikasi = NotificationRecipient::where('recipient_id', $user->id)

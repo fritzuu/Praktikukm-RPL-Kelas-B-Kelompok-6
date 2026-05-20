@@ -53,7 +53,7 @@ class AslabJadwalController extends Controller
         $semester = DB::table('semesters')->where('is_active', true)->first();
         $rooms = DB::table('rooms')
             ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id ?? 0)->where('is_active', true)->pluck('room_id'))
-            ->get(['id', 'code', 'name']);
+            ->pluck('name');
 
         return Inertia::render('Aslab/Jadwal', [
             'jadwal'   => $schedules,
