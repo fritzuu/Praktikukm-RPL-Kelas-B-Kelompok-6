@@ -437,7 +437,7 @@ export default function ScheduleGrid({
                         displayRooms.map((room, idx) => {
                             const roomKey = typeof room === 'object' ? (room.id || idx) : room;
                             const roomName = typeof room === 'object' ? (room.code || room.nama || room.name) : room;
-                            const roomClasses = dayJadwal.filter(j => j.ruangan === roomName || j.ruangan_id === (typeof room === 'object' ? room.id : undefined));
+                            const roomClasses = dayJadwal.filter(j => j.ruangan === roomName || (j.ruangan_id != null && typeof room === 'object' && j.ruangan_id === room.id));
 
                             return (
                                 <motion.div
