@@ -29,3 +29,6 @@ Thumbs.db
 # Agent and Skills
 .agents/
 skills-lock.json
+
+/test.php
+/test_db.php
