@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Download, CalendarDays, AlertTriangle, Filter, Search, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },

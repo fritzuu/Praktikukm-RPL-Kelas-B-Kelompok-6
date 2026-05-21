@@ -32,25 +32,40 @@ class AslabDashboardController extends Controller
         }
 
         // All schedules in the active semester (aslab sees everything)
-        $schedules = Schedule::where('semester_id', $semester->id)
-            ->where('is_active', true)
-            ->with(['course', 'room'])
-            ->get();
-
-        // All schedules formatted for day-tab ScheduleGrid
-        $jadwal = $schedules->map(fn (Schedule $s) => [
-            'id'        => (string) $s->id,
-            'kode'      => $s->course->code,
-            'nama'      => $s->course->name,
-            'kelas'     => $s->course->class_name,
-            'ruangan_id'=> $s->room_id,
-            'ruangan'   => $s->room->code,
-            'hari'      => strtolower($s->day_of_week),
-            'sesiMulai' => $s->session_start,
-            'durasi'    => $s->session_duration,
-            'mahasiswa' => $s->room->capacity,
-            'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
-        ])->values();
+        // Use the same join-based query as AdminJadwalController for data consistency
+        $jadwal = \Illuminate\Support\Facades\DB::table('schedules')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('semesters', 'courses.semester_id', '=', 'semesters.id')
+            ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
+            ->leftJoin('teaching_assignments', function($join) {
+                $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
+                     ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
+            })
+            ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
+            ->select(
+                'schedules.id',
+                'courses.code as kode',
+                'courses.name as nama',
+                'courses.class_name as kelas',
+                'courses.description as semesterNum',
+                'semesters.name as semester',
+                'rooms.name as ruangan',
+                'users.name as dosen',
+                'schedules.day_of_week as hari',
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
+                'schedules.start_time as jamMulai',
+                'schedules.end_time as jamAkhir'
+            )
+            ->where('schedules.is_active', true)
+            ->where('schedules.semester_id', $semester->id)
+            ->get()
+            ->map(function ($s) {
+                $s->hari = strtolower($s->hari);
+                $s->tipe = 'resmi';
+                $s->dosen = $s->dosen ?? 'Belum Ditentukan';
+                return $s;
+            });
 
         // Stats
         $pendingVerification = ChangeRequest::where('status', 'PENDING_ASLAB')->count();
@@ -65,7 +80,7 @@ class AslabDashboardController extends Controller
             'rejected' => $rejected
         ];
         
-        $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))->get();
+        $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))->pluck('name');
 
         // Notifications
         $notifikasi = NotificationRecipient::where('recipient_id', $user->id)

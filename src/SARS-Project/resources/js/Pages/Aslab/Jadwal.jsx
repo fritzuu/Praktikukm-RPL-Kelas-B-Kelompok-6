@@ -1,35 +1,118 @@
-import React from 'react';
-import { CalendarDays } from 'lucide-react';
+import React, { useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import AslabLayout from '../../Layouts/AslabLayout';
-import ScheduleGrid from '../../Components/Aslab/ScheduleGrid';
+import Modal from '../../Components/Modal';
+import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 
-export default function AslabJadwal({ 
-    allSchedules = [],
+export default function AslabJadwal({
+    jadwal = [],
     rooms = [],
-    semester = { nama: 'Genap', tahun: '2024/2025' }
+    semester = null,
 }) {
+    const { auth } = usePage().props;
+    const user = auth?.user;
+
+    const [selectedSchedule, setSelectedSchedule] = useState(null);
+
+    const handleCardClick = (item) => {
+        setSelectedSchedule(item);
+    };
+
     return (
-        <div className="space-y-6">
-            {/* ── Page Header ──────────────────────────────────────── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                        <CalendarDays className="text-white" size={24} />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-text-primary tracking-tight">
-                            Jadwal Keseluruhan
-                        </h1>
-                        <p className="text-text-secondary text-sm">
-                            Semester {semester?.nama || 'Genap'} TA {semester?.tahun || '2024/2025'}
-                        </p>
-                    </div>
+        <>
+            {/* Header */}
+            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+                        Jadwal & Ketersediaan Ruangan
+                    </h1>
+                    <p className="text-text-secondary mt-1 text-sm">
+                        {semester
+                            ? `Semester ${semester.nama} TA ${semester.tahun}`
+                            : 'Lihat ketersediaan ruangan dan filter matkul.'}
+                    </p>
                 </div>
             </div>
 
-            {/* Render the unified ScheduleGrid component */}
-            <ScheduleGrid schedules={allSchedules} rooms={rooms} />
-        </div>
+            {/* Schedule Grid — identical to Admin */}
+            <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden p-6">
+                <ScheduleGrid
+                    jadwalItems={jadwal}
+                    rooms={rooms}
+                    showConflicts={true}
+                    onExport={(jadwalItems) => console.log('Exporting jadwal...', jadwalItems)}
+                    onCardClick={handleCardClick}
+                />
+            </div>
+
+            {/* Details Modal — identical to Admin */}
+            <Modal
+                isOpen={!!selectedSchedule}
+                onClose={() => setSelectedSchedule(null)}
+                title="Detail Jadwal"
+                maxWidth="md"
+            >
+                {selectedSchedule && (
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Mata Kuliah</h4>
+                            <p className="text-lg font-bold text-text-primary">{selectedSchedule.nama} ({selectedSchedule.kode})</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Kelas</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.kelas || '-'}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Semester</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.semester || '-'}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Ruangan</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.ruangan}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Hari</h4>
+                                <p className="font-medium text-text-primary capitalize">{selectedSchedule.hari}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Waktu</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedSchedule.jamMulai && selectedSchedule.jamAkhir
+                                        ? `${selectedSchedule.jamMulai.substring(0,5)} - ${selectedSchedule.jamAkhir.substring(0,5)}`
+                                        : 'Waktu belum diatur'}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Sesi</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedSchedule.durasi > 1
+                                        ? `Sesi ${selectedSchedule.sesiMulai} - ${selectedSchedule.sesiMulai + selectedSchedule.durasi - 1}`
+                                        : `Sesi ${selectedSchedule.sesiMulai}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border">
+                            <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Dosen Pengajar</h4>
+                            <div className="flex items-center gap-3 mt-2">
+                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-lg">
+                                    {selectedSchedule.dosen ? selectedSchedule.dosen.charAt(0).toUpperCase() : '?'}
+                                </div>
+                                <p className="font-semibold text-text-primary">{selectedSchedule.dosen}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        </>
     );
 }
 
