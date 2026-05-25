@@ -147,6 +147,10 @@ function ScheduleCard({ item, isConflict, onCardClick, variants }) {
             <p className="text-[10px] mt-0.5 opacity-70 truncate">
                 {item.dosen}
             </p>
+            <p className="text-[9px] mt-1 font-semibold opacity-85 truncate">
+                Sesi {item.sesiMulai}{item.durasi > 1 ? ` - ${item.sesiMulai + item.durasi - 1}` : ''}
+                {item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
+            </p>
         </motion.div>
     );
 }

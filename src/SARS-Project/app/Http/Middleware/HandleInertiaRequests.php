@@ -70,10 +70,33 @@ class HandleInertiaRequests extends Middleware
                         ];
                     })->toArray() : [],
             ],
+            'unreadCount' => $request->user()
+                ? \App\Models\NotificationRecipient::where('recipient_id', $request->user()->id)
+                    ->where('is_read', false)
+                    ->count()
+                : 0,
+            'notifikasi' => $request->user()
+                ? \App\Models\NotificationRecipient::where('recipient_id', $request->user()->id)
+                    ->where('channel', 'IN_APP')
+                    ->with('notification')
+                    ->orderByDesc('notification_id')
+                    ->limit(10)
+                    ->get()
+                    ->map(fn ($nr) => [
+                        'id'     => (string) $nr->notification_id,
+                        'judul'  => $nr->notification->title,
+                        'pesan'  => $nr->notification->body,
+                        'waktu'  => $nr->notification->created_at->diffForHumans(),
+                        'dibaca' => (bool) $nr->is_read,
+                        'tipe'   => strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
+                                  : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info'),
+                    ])->values()->toArray()
+                : [],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'serverTime' => now()->timestamp * 1000,
         ]);
     }
 }

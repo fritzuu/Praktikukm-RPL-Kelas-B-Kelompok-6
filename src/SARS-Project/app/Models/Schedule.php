@@ -64,6 +64,14 @@ class Schedule extends Model
     }
 
     /**
+     * Relasi ke ScheduleOverride
+     */
+    public function overrides(): HasMany
+    {
+        return $this->hasMany(ScheduleOverride::class);
+    }
+
+    /**
      * Get nama hari dalam bahasa Indonesia
      */
     public function getHariIndonesiaAttribute(): string

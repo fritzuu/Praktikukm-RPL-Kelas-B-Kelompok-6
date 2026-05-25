@@ -1,80 +1,274 @@
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import MahasiswaLayout from '../../Layouts/MahasiswaLayout';
+import {
+    Calendar,
+    FileText,
+    CheckCircle,
+    XCircle,
+    Clock,
+    TrendingUp,
+    ArrowRight,
+    BookOpen,
+    DoorOpen,
+    AlertCircle,
+} from 'lucide-react';
+import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
+import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
+import LiveClockCard from '../../Components/Shared/LiveClockCard';
+import SyncStatusCard from '../../Components/Shared/SyncStatusCard';
 
-export default function MahasiswaDashboard() {
+const HARI_MAP = {
+    senin: 'Senin',
+    selasa: 'Selasa',
+    rabu: 'Rabu',
+    kamis: 'Kamis',
+    jumat: 'Jumat',
+    sabtu: 'Sabtu',
+};
+
+const STATUS_STYLES = {
+    PENDING_ASLAB: { bg: 'bg-warning/10', text: 'text-warning', label: 'Pending Aslab' },
+    PENDING_ADMIN: { bg: 'bg-info/10', text: 'text-info', label: 'Pending Admin' },
+    APPROVED: { bg: 'bg-success/10', text: 'text-success', label: 'Disetujui' },
+    REJECTED_ASLAB: { bg: 'bg-danger/10', text: 'text-danger', label: 'Ditolak Aslab' },
+    REJECTED_ADMIN: { bg: 'bg-danger/10', text: 'text-danger', label: 'Ditolak Admin' },
+    CANCELLED: { bg: 'bg-text-muted/10', text: 'text-text-muted', label: 'Dibatalkan' },
+};
+
+const TIPE_COLORS = {
+    baseline: 'bg-primary-500/10 border-primary-500/30 text-primary-600',
+    temp: 'bg-cyan-50 border-cyan-300 text-cyan-700',
+    permanent: 'bg-warning/10 border-warning/50 text-amber-800',
+};
+
+export default function MahasiswaDashboard({
+    stats = { totalRequests: 0, pendingRequests: 0, approvedRequests: 0, rejectedRequests: 0 },
+    semester = null,
+    recentRequests = [],
+    schedules = [],
+    rooms = [],
+}) {
     const { auth } = usePage().props;
-    const user = auth.user;
-
-    function handleLogout() {
-        router.post(route('logout'));
-    }
+    const user = auth?.user;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#3b0764] via-[#6b21a8] to-[#7c3aed] flex items-center justify-center font-[Inter,sans-serif] px-4">
-            <div className="text-center space-y-8">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-5 py-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-violet-300 animate-pulse"></div>
-                    <span className="text-white/80 text-sm font-medium tracking-wide">Mahasiswa</span>
+        <>
+            {/* ── Welcome Header ───────────────────────────────────── */}
+            <WelcomeHeader
+                user={user}
+                subtitle="Minggu ini dalam satu pandangan."
+            >
+                <div className="flex items-stretch gap-3 shrink-0">
+                    <SyncStatusCard />
+                    <LiveClockCard />
                 </div>
+            </WelcomeHeader>
 
-                {/* Icon */}
-                <div className="flex justify-center">
-                    <div className="w-24 h-24 bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl flex items-center justify-center shadow-2xl">
-                        <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 5.523-4.477 10-9 10S3 18.523 3 13a12.083 12.083 0 012.84-7.578L12 14z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zM12 14v7M12 14l6.16-3.422M3.84 10.578L12 14" />
-                        </svg>
-                    </div>
+            {/* ── Stats Cards ──────────────────────────────────────── */}
+            <section className="mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+                    <StatCard
+                        icon={FileText}
+                        label="Total Requests"
+                        value={stats.totalRequests}
+                        color="text-primary-500"
+                        bgColor="bg-primary-500/10"
+                    />
+                    <StatCard
+                        icon={Clock}
+                        label="Pending"
+                        value={stats.pendingRequests}
+                        color="text-warning"
+                        bgColor="bg-warning/10"
+                    />
+                    <StatCard
+                        icon={CheckCircle}
+                        label="Disetujui"
+                        value={stats.approvedRequests}
+                        color="text-success"
+                        bgColor="bg-success/10"
+                    />
+                    <StatCard
+                        icon={XCircle}
+                        label="Ditolak"
+                        value={stats.rejectedRequests}
+                        color="text-danger"
+                        bgColor="bg-danger/10"
+                    />
                 </div>
+            </section>
 
-                {/* Title */}
-                <div>
-                    <h1 className="text-5xl font-extrabold text-white tracking-tight">
-                        Mahasiswa Dashboard
-                    </h1>
-                    <p className="text-white/60 mt-3 text-lg">
-                        Selamat datang, <span className="text-white font-semibold">{user?.name ?? 'Mahasiswa'}</span>
-                    </p>
-                    <p className="text-white/40 text-sm mt-1">{user?.email}</p>
-                </div>
+            {/* ── Weekly Calendar Preview ───────────────────────────── */}
+            <div className="mb-6">
+                <ScheduleGrid 
+                    jadwalItems={schedules} 
+                    rooms={rooms}
+                />
+            </div>
 
-                {/* Info Card */}
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 inline-block text-left space-y-3 min-w-72">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="text-white/50 text-xs">Role</p>
-                            <p className="text-white font-semibold text-sm">Mahasiswa</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="text-white/50 text-xs">Status</p>
-                            <p className="text-violet-300 font-semibold text-sm">Berhasil Masuk</p>
-                        </div>
-                    </div>
-                </div>
+            {/* ── Bottom Section: Request Form ────────── */}
+            <div className="w-full">
+                <RequestFormPreview schedules={schedules} rooms={rooms} />
+            </div>
+        </>
+    );
+}
 
-                {/* Logout */}
-                <div>
-                    <button
-                        onClick={handleLogout}
-                        className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium px-8 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-                    >
-                        Keluar
-                    </button>
-                </div>
+/* ── Stat Card Component ──────────────────────────────────────────────────── */
+function StatCard({ icon: Icon, label, value, color, bgColor }) {
+    return (
+        <div className="bg-card border border-border rounded-xl px-5 py-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className={`w-11 h-11 rounded-xl ${bgColor} flex items-center justify-center shrink-0`}>
+                <Icon size={20} className={color} />
+            </div>
+            <div>
+                <p className="text-2xl font-bold text-text-primary">{value}</p>
+                <p className="text-[11px] text-text-muted font-medium">{label}</p>
             </div>
         </div>
     );
 }
+
+/* ── Request Form Preview Component ───────────────────────────────────────── */
+function RequestFormPreview({ schedules = [], rooms = [] }) {
+    const [formData, setFormData] = useState({
+        nama: '',
+        nim: '',
+        kelas: '',
+        mataKuliah: '',
+        ruangan: '',
+        reason: ''
+    });
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Extract unique courses from schedule
+    const uniqueCourses = [...new Map((schedules || []).map(item =>
+        [item.kode, item]
+    )).values()];
+
+    // Extract unique classes from schedule
+    const uniqueClasses = [...new Set((schedules || []).map(item => item.kelas).filter(c => c && c !== '-'))].sort();
+
+    return (
+        <div className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center">
+                    <FileText size={20} className="text-primary-500" />
+                </div>
+                <div>
+                    <h3 className="text-base font-bold text-text-primary">Request Schedule Change</h3>
+                    <p className="text-xs text-text-secondary">Please fill in the details below to request a slot modification.</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Full Name</label>
+                    <input
+                        type="text"
+                        name="nama"
+                        value={formData.nama}
+                        onChange={handleChange}
+                        placeholder="Enter your full name"
+                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                    />
+                </div>
+                <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">NIM (Student ID)</label>
+                    <input
+                        type="text"
+                        name="nim"
+                        value={formData.nim}
+                        onChange={handleChange}
+                        placeholder="e.g. 21004567"
+                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Class</label>
+                    <select
+                        name="kelas"
+                        value={formData.kelas}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled>Select your class</option>
+                        {uniqueClasses.map(cls => (
+                            <option key={cls} value={cls}>Kelas {cls}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Mata Kuliah</label>
+                    <select
+                        name="mataKuliah"
+                        value={formData.mataKuliah}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled>Pilih Mata Kuliah</option>
+                        {uniqueCourses.map(course => (
+                            <option key={course.kode} value={course.kode}>
+                                {course.kode} - {course.nama}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Ruangan Request</label>
+                    <select
+                        name="ruangan"
+                        value={formData.ruangan}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="" disabled>Pilih Ruangan</option>
+                        {rooms?.map(room => {
+                            const roomCode = typeof room === 'object' && room !== null ? (room.code || room.name) : room;
+                            const roomLabel = typeof room === 'object' && room !== null ? (room.name || room.code) : room;
+                            return (
+                                <option key={typeof room === 'object' && room !== null ? room.id : roomCode} value={roomCode}>
+                                    {roomLabel}
+                                </option>
+                            );
+                        })}
+                    </select>
+                </div>
+            </div>
+
+            <div className="mb-5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Reason for Request</label>
+                <textarea
+                    name="reason"
+                    value={formData.reason}
+                    onChange={handleChange}
+                    placeholder="Explain why you need a schedule change (e.g., laboratory conflict, research duty)..."
+                    rows={3}
+                    className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
+                />
+            </div>
+
+            <div className="flex items-center gap-3 justify-end">
+                <button className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
+                    Cancel
+                </button>
+                <button
+                    onClick={() => { try { window.location.href = route('mahasiswa.requests'); } catch { } }}
+                    className="px-6 py-2.5 bg-danger hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                >
+                    Submit Request
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// Inertia persistent layout
+MahasiswaDashboard.layout = (page) => <MahasiswaLayout>{page}</MahasiswaLayout>;
