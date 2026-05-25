@@ -146,54 +146,10 @@ class DatabaseSeeder extends Seeder
             ['user_id' => 7, 'role_id' => 3, 'assigned_at' => $now, 'assigned_by' => 1],     // Fajar = Mahasiswa
         ]);
 
-        // =============================================
-        // 4. SEMESTERS
-        // =============================================
-        DB::table('semesters')->insert([
-            [
-                'name' => 'Semester Ganjil 2024/2025',
-                'academic_year' => '2024/2025',
-                'term' => 'GANJIL',
-                'start_date' => '2024-09-02',
-                'end_date' => '2025-01-31',
-                'is_active' => false,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'name' => 'Semester Genap 2024/2025',
-                'academic_year' => '2024/2025',
-                'term' => 'GENAP',
-                'start_date' => '2025-02-10',
-                'end_date' => '2025-06-30',
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-
-        // =============================================
-        // 5. CALL REAL SCHEDULE SEEDER
-        // =============================================
+        // Jadwal + ruangan + mata kuliah (tanpa penugasan dosen — admin tentukan lewat UI)
         $this->call([
             RealScheduleSeeder::class,
         ]);
-
-        // =============================================
-        // 6. ASSIGN SOME SCHEDULES TO DOSEN (For testing)
-        // =============================================
-        // We will assign a few schedules so that the Dosen login will have data
-        $schedules = DB::table('schedules')->pluck('id')->toArray();
-        if (count($schedules) >= 5) {
-            DB::table('teaching_assignments')->insert([
-                ['schedule_id' => $schedules[0], 'user_id' => 2, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Siti
-                ['schedule_id' => $schedules[1], 'user_id' => 3, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Ahmad
-                ['schedule_id' => $schedules[2], 'user_id' => 2, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Siti
-                ['schedule_id' => $schedules[3], 'user_id' => 3, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Ahmad
-                ['schedule_id' => $schedules[4], 'user_id' => 2, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Siti
-                ['schedule_id' => $schedules[4], 'user_id' => 4, 'role_in_class' => 'ASISTEN',  'assigned_at' => $now], // Reza Aslab
-            ]);
-        }
     }
 }
 

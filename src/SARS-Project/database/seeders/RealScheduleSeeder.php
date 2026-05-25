@@ -13,17 +13,44 @@ class RealScheduleSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // Ensure we have a semester to use (e.g., Genap 2024/2025)
-        $semesterId = DB::table('semesters')->where('term', 'GENAP')->first()->id ?? DB::table('semesters')->insertGetId([
-            'name' => 'Semester Genap 2024/2025',
-            'academic_year' => '2024/2025',
-            'term' => 'GENAP',
-            'start_date' => '2025-02-10',
-            'end_date' => '2025-06-30',
-            'is_active' => true,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        if (DB::table('semesters')->count() === 0) {
+            DB::table('semesters')->insert([
+                [
+                    'name' => 'Semester Ganjil 2024/2025',
+                    'academic_year' => '2024/2025',
+                    'term' => 'GANJIL',
+                    'start_date' => '2024-09-02',
+                    'end_date' => '2025-01-31',
+                    'is_active' => false,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'name' => 'Semester Genap 2024/2025',
+                    'academic_year' => '2024/2025',
+                    'term' => 'GENAP',
+                    'start_date' => '2025-02-10',
+                    'end_date' => '2025-06-30',
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+        }
+
+        $semesterId = DB::table('semesters')->where('term', 'GENAP')->value('id');
+        if (!$semesterId) {
+            $semesterId = DB::table('semesters')->insertGetId([
+                'name' => 'Semester Genap 2024/2025',
+                'academic_year' => '2024/2025',
+                'term' => 'GENAP',
+                'start_date' => '2025-02-10',
+                'end_date' => '2025-06-30',
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
 
         $rawData = <<<EOT
 📅 Senin
