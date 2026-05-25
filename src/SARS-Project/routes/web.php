@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+
 use App\Http\Controllers\Aslab\AslabDashboardController;
 use App\Http\Controllers\Aslab\AslabJadwalController;
 use App\Http\Controllers\Aslab\AslabValidationController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Dosen\DosenSettingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminJadwalController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -96,8 +98,19 @@ Route::middleware('auth')->group(function () {
         Route::delete('/notifikasi/{id}',                [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
     });
 
-    // Mahasiswa dashboard
-    Route::middleware('role:mahasiswa')
-        ->get('/mahasiswa/dashboard', fn () => Inertia::render('Dashboard/Mahasiswa'))
-        ->name('mahasiswa.dashboard');
+    // ─── Mahasiswa routes ────────────────────────────────────────────────
+    Route::middleware('role:mahasiswa')->prefix('mahasiswa')->group(function () {
+        Route::get('/dashboard',      [MahasiswaController::class, 'dashboard'])->name('mahasiswa.dashboard');
+        Route::get('/jadwal',         [MahasiswaController::class, 'jadwal'])->name('mahasiswa.jadwal');
+        Route::get('/requests',       [MahasiswaController::class, 'requests'])->name('mahasiswa.requests');
+        Route::post('/requests',      [MahasiswaController::class, 'submitRequest'])->name('mahasiswa.requests.submit');
+        Route::get('/notifications',  [MahasiswaController::class, 'notifications'])->name('mahasiswa.notifications');
+        Route::get('/settings',       [MahasiswaController::class, 'settings'])->name('mahasiswa.settings');
+        Route::put('/settings',       [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
+        Route::put('/settings/password', [MahasiswaController::class, 'updatePassword'])->name('mahasiswa.settings.password');
+
+        // API-style endpoints (JSON)
+        Route::post('/cek-slot',              [MahasiswaController::class, 'cekSlot'])->name('mahasiswa.cekSlot');
+        Route::post('/ai-query',              [MahasiswaController::class, 'aiQuery'])->name('mahasiswa.aiQuery');
+    });
 });

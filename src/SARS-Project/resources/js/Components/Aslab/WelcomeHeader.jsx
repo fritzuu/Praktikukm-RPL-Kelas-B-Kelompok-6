@@ -1,37 +1,20 @@
-import { useState, useEffect } from 'react';
 import { ClipboardCheck, Clock } from 'lucide-react';
+import useServerTime, { getJakartaTimeParts } from '../Shared/useServerTime';
+import LiveClockCard from '../Shared/LiveClockCard';
 
 export default function WelcomeHeader({ 
     user = {}, 
     stats = { pendingValidasi: 0 },
     syncStatus = { status: 'terkini', lastUpload: 'Hari ini, 08:42' } 
 }) {
-    const [now, setNow] = useState(new Date());
+    const now = useServerTime();
+    const { hour } = getJakartaTimeParts(now);
 
-    useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const hour = now.getHours();
+    const hourInt = parseInt(hour);
     let greeting = 'Selamat pagi';
-    if (hour >= 12 && hour < 15) greeting = 'Selamat siang';
-    else if (hour >= 15 && hour < 18) greeting = 'Selamat sore';
-    else if (hour >= 18) greeting = 'Selamat malam';
-
-    const timeString = now.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-    });
-
-    const dateString = now.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    });
+    if (hourInt >= 12 && hourInt < 15) greeting = 'Selamat siang';
+    else if (hourInt >= 15 && hourInt < 18) greeting = 'Selamat sore';
+    else if (hourInt >= 18) greeting = 'Selamat malam';
 
     const statusStyles = {
         terkini: 'bg-success/10 text-success',
@@ -102,16 +85,8 @@ export default function WelcomeHeader({
                         </div>
                     </div>
 
-                    {/* Live Clock Card */}
-                    <div className="bg-card border border-border rounded-xl px-5 py-3 text-right hidden sm:flex flex-col justify-center items-end shadow-sm">
-                        <div className="flex items-center gap-2 justify-end mb-0.5">
-                            <Clock size={14} className="text-primary-500" />
-                            <span className="text-2xl font-bold text-text-primary tracking-tight font-mono">
-                                {timeString}
-                            </span>
-                        </div>
-                        <p className="text-xs text-text-muted">{dateString}</p>
-                    </div>
+                    {/* Live Clock */}
+                    <LiveClockCard />
                 </div>
             </div>
 
