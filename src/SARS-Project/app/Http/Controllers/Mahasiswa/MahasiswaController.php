@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Services\Dashboard\CampusActivityService;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
@@ -16,6 +17,10 @@ use Inertia\Inertia;
 
 class MahasiswaController extends Controller
 {
+    public function __construct(
+        private readonly CampusActivityService $campusActivity
+    ) {}
+
     /**
      * Dashboard overview — main page.
      */
@@ -54,6 +59,7 @@ class MahasiswaController extends Controller
             'recentRequests' => $recentRequests,
             'schedules' => $schedules,
             'rooms' => $rooms,
+            'campusWidgets' => $this->campusActivity->buildPayload($semester),
         ]);
     }
 
@@ -392,6 +398,18 @@ class MahasiswaController extends Controller
         ]);
 
         return back()->with('success', 'Password berhasil diubah.');
+    }
+
+    /**
+     * Dashboard widgets data — empty rooms + live campus stats (JSON refresh).
+     */
+    public function dashboardWidgets(Request $request)
+    {
+        $semester = Semester::active();
+
+        return response()->json(
+            $this->campusActivity->buildPayload($semester)
+        );
     }
 
     /**

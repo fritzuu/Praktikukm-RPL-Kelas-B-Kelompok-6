@@ -79,7 +79,7 @@ function ColumnResizer({ width, onResize }) {
 
     return (
         <div 
-            className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary-500/50 active:bg-primary-500 z-50 group"
+            className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary-500/50 active:bg-primary-500 z-20 group"
             onMouseDown={handleMouseDown}
         >
             <div className="absolute right-[1px] top-1/2 -translate-y-1/2 w-0.5 h-4 bg-border group-hover:bg-primary-500 rounded-full" />
@@ -123,34 +123,40 @@ function ScheduleCard({ item, isConflict, onCardClick, variants }) {
         appliedStyle = getColorForMatkul(item.nama);
     }
 
+    const bgClasses = appliedStyle.split(' ').filter(c => c.startsWith('bg-')).join(' ');
+    const otherClasses = appliedStyle.split(' ').filter(c => !c.startsWith('bg-')).join(' ');
+
     return (
         <motion.div
             variants={variants}
             onClick={() => onCardClick?.(item)}
-            className={`relative z-10 mx-1 rounded-md border p-2 flex flex-col justify-center overflow-hidden transition-[box-shadow,border-color] duration-300 hover:z-20 hover:shadow-md ${appliedStyle} ${isConflict ? 'ring-2 ring-danger/30' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
+            className={`relative z-10 mx-1 min-w-0 rounded-md border flex flex-col justify-center overflow-hidden transition-[box-shadow,border-color] duration-300 hover:z-20 hover:shadow-md bg-card ${otherClasses} ${isConflict ? 'ring-2 ring-danger/30' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
             style={{
-                gridColumnStart: item.sesiMulai,
-                gridColumnEnd: `span ${item.durasi}`
+                gridColumnStart: parseInt(item.sesiMulai) || 1,
+                gridColumnEnd: `span ${parseInt(item.durasi) || 1}`
             }}
         >
-            <div className="flex items-start justify-between gap-1 mb-1">
-                <span className="font-bold text-[10px] leading-none truncate opacity-80">
-                    {item.semesterNum || item.kelas ? `${item.semesterNum || ''} - Kelas ${item.kelas || '-'}` : item.kode}
-                </span>
-                {(isConflict || item.tipe === 'konflik') && (
-                    <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />
-                )}
+            <div className={`absolute inset-0 pointer-events-none ${bgClasses}`} />
+            <div className="relative z-10 p-2 flex flex-col h-full justify-center">
+                <div className="flex items-start justify-between gap-1 mb-1">
+                    <span className="font-bold text-[10px] leading-none truncate opacity-80">
+                        {item.semesterNum || item.kelas ? `${item.semesterNum || ''} - Kelas ${item.kelas || '-'}` : item.kode}
+                    </span>
+                    {(isConflict || item.tipe === 'konflik') && (
+                        <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />
+                    )}
+                </div>
+                <p className="text-[11px] leading-tight font-semibold opacity-90 truncate">
+                    {item.nama}
+                </p>
+                <p className="text-[10px] mt-0.5 opacity-70 truncate">
+                    {!item.dosen || item.dosen === '-' ? 'Belum Ditentukan' : item.dosen}
+                </p>
+                <p className="text-[9px] mt-1 font-semibold opacity-85 truncate">
+                    Sesi {item.sesiMulai}{item.durasi > 1 ? ` - ${item.sesiMulai + item.durasi - 1}` : ''}
+                    {item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
+                </p>
             </div>
-            <p className="text-[11px] leading-tight font-semibold opacity-90 truncate">
-                {item.nama}
-            </p>
-            <p className="text-[10px] mt-0.5 opacity-70 truncate">
-                {item.dosen}
-            </p>
-            <p className="text-[9px] mt-1 font-semibold opacity-85 truncate">
-                Sesi {item.sesiMulai}{item.durasi > 1 ? ` - ${item.sesiMulai + item.durasi - 1}` : ''}
-                {item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
-            </p>
         </motion.div>
     );
 }
@@ -474,7 +480,7 @@ export default function ScheduleGrid({
                                         }}
                                     >
                                         {/* Background Grid Lines for visual separation */}
-                                        <div className="absolute inset-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
+                                        <div className="absolute inset-0 z-0 grid pointer-events-none" style={{ gridTemplateColumns: colWidths.map(w => `${w}px`).join(' ') }}>
                                             {Array.from({ length: 11 }, (_, i) => (
                                                 <div key={i} className="border-r border-border/40 last:border-r-0 h-full"></div>
                                             ))}

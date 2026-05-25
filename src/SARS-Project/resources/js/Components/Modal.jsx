@@ -1,8 +1,14 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 export default function Modal({ isOpen, onClose, title, children, maxWidth = '2xl' }) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     useEffect(() => {
         const handleEsc = (e) => {
             if (e.key === 'Escape') onClose();
@@ -29,7 +35,9 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '2x
         'full': 'max-w-full mx-4',
     };
 
-    return (
+    if (!mounted) return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
@@ -72,6 +80,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '2x
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

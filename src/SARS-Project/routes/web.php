@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
 
         // API-style endpoints (JSON)
         Route::post('/cek-slot',              [MahasiswaController::class, 'cekSlot'])->name('mahasiswa.cekSlot');
+        Route::get('/dashboard-widgets',      [MahasiswaController::class, 'dashboardWidgets'])->name('mahasiswa.dashboardWidgets');
         Route::post('/ai-query',              [MahasiswaController::class, 'aiQuery'])->name('mahasiswa.aiQuery');
     });
 });
