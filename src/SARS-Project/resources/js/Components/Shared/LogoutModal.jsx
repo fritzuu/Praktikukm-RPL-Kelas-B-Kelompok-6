@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LogOut, AlertTriangle } from 'lucide-react';
 import { router } from '@inertiajs/react';
+import { createPortal } from 'react-dom';
 
 export default function LogoutModal({ isOpen, onClose }) {
     const [loading, setLoading] = useState(false);
 
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
 
     function handleLogout() {
         setLoading(true);
@@ -14,7 +21,7 @@ export default function LogoutModal({ isOpen, onClose }) {
         });
     }
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
@@ -70,6 +77,7 @@ export default function LogoutModal({ isOpen, onClose }) {
                 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
                 @keyframes scaleIn { from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) } }
             `}</style>
-        </div>
+        </div>,
+        document.body
     );
 }
