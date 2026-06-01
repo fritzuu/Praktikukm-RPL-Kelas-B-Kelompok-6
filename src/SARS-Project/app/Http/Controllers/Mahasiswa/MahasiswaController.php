@@ -303,7 +303,7 @@ class MahasiswaController extends Controller
             : collect();
 
         $schedules = $semester
-            ? Schedule::with(['course', 'room'])
+            ? Schedule::with(['course', 'room', 'teachingAssignments.user'])
                 ->where('semester_id', $semester->id)
                 ->where('is_active', true)
                 ->get()

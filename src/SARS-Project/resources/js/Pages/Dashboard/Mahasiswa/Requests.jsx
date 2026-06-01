@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import MahasiswaLayout from '../../../Layouts/MahasiswaLayout';
 import { FileText, Plus, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle, Clock, ArrowRight } from 'lucide-react';
@@ -78,6 +78,11 @@ const getScheduleOptionLabel = (s) => {
     return `${s.course?.name || ''}${classStr} — ${s.day_of_week}, ${sessionStr}${roomStr}`;
 };
 
+const formatDayName = (day) => {
+    if (!day) return '';
+    return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+};
+
 export default function Requests({
     requests: propRequests,
     schedules: propSchedules,
@@ -97,6 +102,94 @@ export default function Requests({
     });
     const [submitting, setSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
+
+    // Hierarchical selection and search helpers
+    const [selectedSemester, setSelectedSemester] = useState('');
+    const [selectedClass, setSelectedClass] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isComboboxOpen, setIsComboboxOpen] = useState(false);
+    const comboboxRef = useRef(null);
+
+    // Auto-select Semester and Class if schedule_id is set
+    useEffect(() => {
+        if (form.schedule_id) {
+            const selectedSchedule = schedules.find(s => String(s.id) === String(form.schedule_id));
+            if (selectedSchedule) {
+                if (selectedSchedule.course?.description && selectedSemester !== selectedSchedule.course.description) {
+                    setSelectedSemester(selectedSchedule.course.description);
+                }
+                if (selectedSchedule.course?.class_name && selectedClass !== selectedSchedule.course.class_name) {
+                    setSelectedClass(selectedSchedule.course.class_name);
+                }
+            }
+        }
+    }, [form.schedule_id, schedules]);
+
+    // Parse unique numeric semesters and sort them
+    const semesters = Array.from(
+        new Set(schedules.map(s => s.course?.description).filter(Boolean))
+    ).sort((a, b) => {
+        const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+        return numA - numB;
+    });
+
+    // Filter classes based on selected semester
+    const classesForSemester = selectedSemester
+        ? Array.from(
+            new Set(
+                schedules
+                    .filter(s => s.course?.description === selectedSemester)
+                    .map(s => s.course?.class_name)
+                    .filter(Boolean)
+            )
+        ).sort()
+        : [];
+
+    // Filter schedules based on semester and class
+    const filteredSchedules = schedules.filter(s => 
+        s.course?.description === selectedSemester &&
+        s.course?.class_name === selectedClass
+    );
+
+    // Filter displayed schedules based on search query
+    const displayedSchedules = filteredSchedules.filter(s => {
+        const courseName = (s.course?.name || '').toLowerCase();
+        const courseCode = (s.course?.code || '').toLowerCase();
+        const lecturers = s.teaching_assignments || s.teachingAssignments || [];
+        const lecturerMatch = lecturers.some(ta => 
+            (ta.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        return courseName.includes(searchQuery.toLowerCase()) ||
+               courseCode.includes(searchQuery.toLowerCase()) ||
+               lecturerMatch;
+    });
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (comboboxRef.current && !comboboxRef.current.contains(event.target)) {
+                setIsComboboxOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    // Helper to toggle and reset form
+    const toggleForm = () => {
+        if (showForm) {
+            setStartSession('');
+            setEndSession('');
+            setSelectedSemester('');
+            setSelectedClass('');
+            setSearchQuery('');
+            setForm({ schedule_id: '', request_type: 'TEMPORARY', target_date: '', effective_from_date: '', proposed_day: '', proposed_start_time: '', proposed_end_time: '', proposed_room_id: '', reason: '' });
+        }
+        setShowForm(!showForm);
+    };
 
     function handleChange(field, value) {
         setForm(prev => ({ ...prev, [field]: value }));
@@ -159,12 +252,17 @@ export default function Requests({
                     setShowForm(false); 
                     setStartSession('');
                     setEndSession('');
+                    setSelectedSemester('');
+                    setSelectedClass('');
+                    setSearchQuery('');
                     setForm({ schedule_id: '', request_type: 'TEMPORARY', target_date: '', effective_from_date: '', proposed_day: '', proposed_start_time: '', proposed_end_time: '', proposed_room_id: '', reason: '' }); 
                 },
                 onError: (errors) => { setFormErrors(errors); setSubmitting(false); },
             });
         } catch { setSubmitting(false); }
     }
+
+    const selectedSchedule = schedules.find(s => String(s.id) === String(form.schedule_id));
 
     return (
         <>
@@ -174,7 +272,7 @@ export default function Requests({
                         <FileText size={22} className="text-text-primary" />
                         <h1 className="text-xl font-bold text-text-primary">Requests</h1>
                     </div>
-                    <button onClick={() => setShowForm(!showForm)} className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${showForm ? 'bg-danger text-white' : 'bg-primary-500 hover:bg-primary-600 text-white'}`}>
+                    <button onClick={toggleForm} className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${showForm ? 'bg-danger text-white' : 'bg-primary-500 hover:bg-primary-600 text-white'}`}>
                         {showForm ? <XCircle size={16} /> : <Plus size={16} />}
                         {showForm ? 'Tutup Form' : 'Ajukan Request Baru'}
                     </button>
@@ -186,47 +284,157 @@ export default function Requests({
                     <h3 className="text-base font-bold text-text-primary mb-5">Form Pengajuan Request</h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Semester *</label>
+                                    <select 
+                                        value={selectedSemester} 
+                                        onChange={e => {
+                                            setSelectedSemester(e.target.value);
+                                            setSelectedClass('');
+                                            handleChange('schedule_id', '');
+                                            setSearchQuery('');
+                                        }} 
+                                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all text-text-primary"
+                                    >
+                                        <option value="">Pilih Semester...</option>
+                                        {semesters.map(sem => <option key={sem} value={sem}>{sem}</option>)}
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Kelas *</label>
+                                    <select 
+                                        value={selectedClass} 
+                                        onChange={e => {
+                                            setSelectedClass(e.target.value);
+                                            handleChange('schedule_id', '');
+                                            setSearchQuery('');
+                                        }} 
+                                        disabled={!selectedSemester}
+                                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-primary"
+                                    >
+                                        <option value="">Pilih Kelas...</option>
+                                        {classesForSemester.map(cls => (
+                                            <option key={cls} value={cls}>Kelas {cls}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Jadwal *</label>
-                                <select value={form.schedule_id} onChange={e => handleChange('schedule_id', e.target.value)} className={`w-full px-3 py-2.5 bg-surface border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all ${formErrors.schedule_id ? 'border-danger' : 'border-border'}`}>
-                                    <option value="">Pilih jadwal...</option>
-                                    {schedules.map(s => <option key={s.id} value={s.id}>{getScheduleOptionLabel(s)}</option>)}
-                                </select>
+                                
+                                <div className="relative" ref={comboboxRef}>
+                                    <input
+                                        type="text"
+                                        placeholder={!selectedSemester || !selectedClass ? "Pilih semester dan kelas terlebih dahulu..." : "Cari mata kuliah..."}
+                                        value={isComboboxOpen ? searchQuery : (selectedSchedule ? selectedSchedule.course?.name : '')}
+                                        onChange={e => {
+                                            setSearchQuery(e.target.value);
+                                            if (!isComboboxOpen) setIsComboboxOpen(true);
+                                        }}
+                                        onFocus={() => {
+                                            if (selectedSemester && selectedClass) {
+                                                setIsComboboxOpen(true);
+                                                setSearchQuery('');
+                                            }
+                                        }}
+                                        disabled={!selectedSemester || !selectedClass}
+                                        className={`w-full pl-3 pr-10 py-2.5 bg-surface border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all ${
+                                            formErrors.schedule_id ? 'border-danger' : 'border-border'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed text-text-primary`}
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted flex items-center gap-1.5">
+                                        {selectedSchedule && (
+                                            <button 
+                                                type="button" 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleChange('schedule_id', '');
+                                                    setSearchQuery('');
+                                                }}
+                                                className="hover:text-text-primary p-0.5 rounded-full"
+                                                title="Hapus pilihan"
+                                            >
+                                                <XCircle size={14} />
+                                            </button>
+                                        )}
+                                        <ChevronDown size={16} className="pointer-events-none" />
+                                    </div>
+
+                                    {isComboboxOpen && selectedSemester && selectedClass && (
+                                        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto panel-scroll py-1">
+                                            {displayedSchedules.length > 0 ? (
+                                                displayedSchedules.map(s => {
+                                                    const isSelected = String(s.id) === String(form.schedule_id);
+                                                    const lecturersList = s.teaching_assignments || s.teachingAssignments || [];
+                                                    const lecturerName = lecturersList.find(ta => ta.role_in_class === 'PENGAJAR')?.user?.name;
+                                                    return (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleChange('schedule_id', s.id);
+                                                                setIsComboboxOpen(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2 text-sm hover:bg-primary-50 dark:hover:bg-primary-500/10 flex flex-col transition-colors ${
+                                                                isSelected ? 'bg-primary-500/10 border-l-2 border-primary-500' : ''
+                                                            }`}
+                                                        >
+                                                            <span className="font-semibold text-text-primary">{s.course?.name}</span>
+                                                            <span className="text-xs text-text-secondary mt-0.5 flex items-center gap-1">
+                                                                <span>{formatDayName(s.day_of_week)} • Sesi {s.session_start}{s.session_duration > 1 ? `-${s.session_start + s.session_duration - 1}` : ''}</span>
+                                                                {lecturerName && (
+                                                                    <>
+                                                                        <span className="text-text-muted">•</span>
+                                                                        <span className="italic text-text-muted truncate max-w-[150px]">{lecturerName}</span>
+                                                                    </>
+                                                                )}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="py-3 px-4 text-center text-sm text-text-muted">
+                                                    Tidak ada jadwal tersedia
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                
                                 {formErrors.schedule_id && <p className="text-[10px] text-danger mt-1">{formErrors.schedule_id}</p>}
                                 
-                                {(() => {
-                                    const selectedSchedule = schedules.find(s => String(s.id) === String(form.schedule_id));
-                                    if (!selectedSchedule) return null;
-                                    return (
-                                        <div className="mt-3 p-4 bg-surface border border-border/80 rounded-xl flex flex-col gap-1 text-xs text-text-secondary shadow-sm">
-                                            <p className="font-bold text-text-primary mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-primary-500">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                                                Detail Jadwal Asal
-                                            </p>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                <div>
-                                                    <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">MATA KULIAH</span>
-                                                    <span className="font-semibold text-text-primary truncate block" title={selectedSchedule.course?.name}>{selectedSchedule.course?.name || '-'}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">KELAS & KODE</span>
-                                                    <span className="font-semibold text-text-primary block">{selectedSchedule.course?.class_name ? `Kelas ${selectedSchedule.course.class_name}` : '-'} ({selectedSchedule.course?.code || '-'})</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">HARI & SESI</span>
-                                                    <span className="font-semibold text-text-primary block">
-                                                        {selectedSchedule.day_of_week}, Sesi {selectedSchedule.session_start}
-                                                        {selectedSchedule.session_duration > 1 ? ` - ${selectedSchedule.session_start + selectedSchedule.session_duration - 1}` : ''}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">RUANGAN</span>
-                                                    <span className="font-semibold text-text-primary block">{selectedSchedule.room?.name || selectedSchedule.room?.code || '-'}</span>
-                                                </div>
+                                {selectedSchedule && (
+                                    <div className="mt-3 p-4 bg-surface border border-border/80 rounded-xl flex flex-col gap-1 text-xs text-text-secondary shadow-sm">
+                                        <p className="font-bold text-text-primary mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-primary-500">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                                            Detail Jadwal Asal
+                                        </p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                            <div>
+                                                <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">MATA KULIAH</span>
+                                                <span className="font-semibold text-text-primary truncate block" title={selectedSchedule.course?.name}>{selectedSchedule.course?.name || '-'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">KELAS & KODE</span>
+                                                <span className="font-semibold text-text-primary block">{selectedSchedule.course?.class_name ? `Kelas ${selectedSchedule.course.class_name}` : '-'} ({selectedSchedule.course?.code || '-'})</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">HARI & SESI</span>
+                                                <span className="font-semibold text-text-primary block">
+                                                    {selectedSchedule.day_of_week}, Sesi {selectedSchedule.session_start}
+                                                    {selectedSchedule.session_duration > 1 ? ` - ${selectedSchedule.session_start + selectedSchedule.session_duration - 1}` : ''}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-text-muted block text-[9px] font-bold uppercase tracking-wider mb-0.5">RUANGAN</span>
+                                                <span className="font-semibold text-text-primary block">{selectedSchedule.room?.name || selectedSchedule.room?.code || '-'}</span>
                                             </div>
                                         </div>
-                                    );
-                                })()}
+                                    </div>
+                                )}
                             </div>
                             
                             <div>
@@ -315,7 +523,7 @@ export default function Requests({
                             </div>
                         </div>
                         <div className="flex gap-3 justify-end pt-2">
-                            <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Batal</button>
+                            <button type="button" onClick={toggleForm} className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Batal</button>
                             <button type="submit" disabled={submitting} className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
                                 {submitting ? 'Mengirim...' : 'Kirim Request'}
                             </button>
