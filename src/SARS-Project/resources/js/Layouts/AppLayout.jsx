@@ -71,7 +71,7 @@ export default function AppLayout({ navItems, branding, topBarActions, children 
                             key="ai-panel"
                             isOpen={aiPanelOpen}
                             onClose={() => setAiPanelOpen(false)}
-                            role={user?.role}
+                            role={user?.primaryRole || user?.role}
                         />
                     )}
                 </AnimatePresence>

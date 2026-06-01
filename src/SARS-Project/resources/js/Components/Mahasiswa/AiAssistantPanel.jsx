@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { X, Bot, Sparkles, Send, Calendar, Search as SearchIcon } from 'lucide-react';
 
-export default function MahasiswaAiPanel({ isOpen, onClose }) {
+export default function MahasiswaAiPanel({ isOpen, onClose, ref }) {
     const [chatInput, setChatInput] = useState('');
     const [messages, setMessages] = useState([
         {
@@ -65,10 +66,17 @@ export default function MahasiswaAiPanel({ isOpen, onClose }) {
         }
     }
 
-    if (!isOpen) return null;
-
     return (
-        <aside className="w-80 shrink-0 border-l border-border bg-card flex flex-col h-[calc(100vh-57px)] sticky top-[57px]">
+        <motion.aside
+            ref={ref}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 320, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+            className="shrink-0 border-l border-border bg-card flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-40 overflow-hidden"
+        >
+            {/* Fixed width mask wrapper to prevent content squishing during transition */}
+            <div className="w-[320px] flex flex-col h-full shrink-0">
             {/* ── Header ───────────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
                 <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center">
@@ -160,6 +168,7 @@ export default function MahasiswaAiPanel({ isOpen, onClose }) {
                     </button>
                 </div>
             </div>
-        </aside>
+            </div>
+        </motion.aside>
     );
 }

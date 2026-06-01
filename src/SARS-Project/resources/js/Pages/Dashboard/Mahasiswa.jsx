@@ -6,8 +6,6 @@ import {
     CheckCircle,
     XCircle,
     Clock,
-    Trash2,
-    AlertTriangle,
 } from 'lucide-react';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
@@ -63,9 +61,7 @@ export default function MahasiswaDashboard({
     const { auth } = usePage().props;
     const user = auth?.user;
 
-    const [selectedSchedule, setSelectedSchedule] = useState(null);
-    const [scheduleToDelete, setScheduleToDelete] = useState(null);
-    const [deleteLoading, setDeleteLoading] = useState(false);
+        const [selectedSchedule, setSelectedSchedule] = useState(null);
 
     const [widgetData, setWidgetData] = useState(campusWidgets);
     const [widgetLoading, setWidgetLoading] = useState(false);
@@ -88,21 +84,6 @@ export default function MahasiswaDashboard({
 
     const handleCardClick = (item) => {
         setSelectedSchedule(item);
-    };
-
-    const confirmDelete = () => {
-        if (!scheduleToDelete) return;
-        setDeleteLoading(true);
-        router.delete(route('admin.jadwal.destroy', scheduleToDelete.id), {
-            onSuccess: () => {
-                setDeleteLoading(false);
-                setScheduleToDelete(null);
-                setSelectedSchedule(null);
-            },
-            onError: () => {
-                setDeleteLoading(false);
-            }
-        });
     };
 
     return (
@@ -258,12 +239,6 @@ export default function MahasiswaDashboard({
 
                             <div className="flex items-center gap-3 mt-2">
                                 <button
-                                    onClick={() => setScheduleToDelete(selectedSchedule)}
-                                    className="flex-1 py-3 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl text-sm font-bold transition-colors flex justify-center items-center gap-2"
-                                >
-                                    <Trash2 size={16} /> Hapus Jadwal
-                                </button>
-                                <button
                                     onClick={() => setSelectedSchedule(null)}
                                     className="flex-1 py-3 bg-surface hover:bg-card border border-border text-text-secondary rounded-xl text-sm font-bold transition-colors"
                                 >
@@ -273,44 +248,6 @@ export default function MahasiswaDashboard({
                         </div>
                     </div>
                 )}
-            </Modal>
-
-            {/* Confirm Delete Modal */}
-            <Modal
-                isOpen={!!scheduleToDelete}
-                onClose={() => !deleteLoading && setScheduleToDelete(null)}
-                maxWidth="sm"
-            >
-                <div className="relative p-2 text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-4">
-                        <AlertTriangle size={28} className="text-danger" />
-                    </div>
-                    <h3 className="text-lg font-bold text-text-primary mb-1">Hapus Jadwal?</h3>
-                    <p className="text-sm text-text-secondary mb-6 leading-relaxed">
-                        Apakah Anda yakin ingin menghapus jadwal <strong>{scheduleToDelete?.nama} ({scheduleToDelete?.kode})</strong>? Tindakan ini akan menghapus permanen data jadwal tersebut.
-                    </p>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setScheduleToDelete(null)}
-                            disabled={deleteLoading}
-                            className="flex-1 px-4 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-text-primary hover:bg-card transition-colors"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            onClick={confirmDelete}
-                            disabled={deleteLoading}
-                            className="flex-1 px-4 py-2.5 bg-danger hover:bg-danger/90 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            {deleteLoading ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <Trash2 size={16} />
-                            )}
-                            {deleteLoading ? 'Menghapus...' : 'Ya, Hapus'}
-                        </button>
-                    </div>
-                </div>
             </Modal>
         </>
     );

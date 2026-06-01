@@ -77,7 +77,8 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
     }, []);
 
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'U';
-    const roleLabel = ROLE_LABELS[user?.role] || user?.role || 'User';
+    const activeRole = user?.primaryRole || user?.role;
+    const roleLabel = ROLE_LABELS[activeRole] || activeRole || 'User';
 
     return (
         <header

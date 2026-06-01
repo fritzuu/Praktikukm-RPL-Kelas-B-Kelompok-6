@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Download, CalendarDays, AlertTriangle, Filter, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePage } from '@inertiajs/react';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -113,6 +114,8 @@ const getColorForMatkul = (nama) => {
 };
 
 function ScheduleCard({ item, isConflict, onCardClick, variants }) {
+    const { auth } = usePage().props;
+    const isMahasiswa = auth?.user?.primaryRole === 'mahasiswa' || auth?.user?.role === 'mahasiswa';
     let appliedStyle = '';
     
     if (isConflict || item.tipe === 'konflik') {
@@ -154,7 +157,7 @@ function ScheduleCard({ item, isConflict, onCardClick, variants }) {
                 </p>
                 <p className="text-[9px] mt-1 font-semibold opacity-85 truncate">
                     Sesi {item.sesiMulai}{item.durasi > 1 ? ` - ${item.sesiMulai + item.durasi - 1}` : ''}
-                    {item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
+                    {!isMahasiswa && item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
                 </p>
             </div>
         </motion.div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import MahasiswaSidebar from '../Components/Mahasiswa/Sidebar';
 import MahasiswaTopBar from '../Components/Mahasiswa/TopBar';
 import MahasiswaAiPanel from '../Components/Mahasiswa/AiAssistantPanel';
@@ -72,18 +73,23 @@ export default function MahasiswaLayout({ children }) {
                 </main>
 
                 {/* Right AI Panel */}
-                {aiPanelOpen && (
-                    <MahasiswaAiPanel
-                        isOpen={aiPanelOpen}
-                        onClose={() => setAiPanelOpen(false)}
-                    />
-                )}
+                <AnimatePresence>
+                    {aiPanelOpen && (
+                        <MahasiswaAiPanel
+                            key="ai-panel"
+                            isOpen={aiPanelOpen}
+                            onClose={() => setAiPanelOpen(false)}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* FAB when AI panel is closed */}
-            {!aiPanelOpen && (
-                <MahasiswaAiAssistantFab onClick={() => setAiPanelOpen(true)} />
-            )}
+            <AnimatePresence>
+                {!aiPanelOpen && (
+                    <MahasiswaAiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
