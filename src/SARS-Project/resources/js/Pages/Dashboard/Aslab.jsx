@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import AslabLayout from '../../Layouts/AslabLayout';
 import WelcomeHeader from '../../Components/Aslab/WelcomeHeader';
+import RequestAlerts from '../../Components/Aslab/RequestAlerts';
 import Modal from '../../Components/Modal';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 
@@ -9,6 +10,7 @@ export default function AslabDashboard({
     stats = { pendingVerification: 0, validation: 0, accepted: 0, rejected: 0 },
     jadwal = [],
     rooms = [],
+    pendingRequests = [],
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -22,6 +24,9 @@ export default function AslabDashboard({
     return (
         <>
             <WelcomeHeader user={user} stats={stats} />
+
+            {/* Pengajuan Masuk — only shows when mahasiswa have pending requests */}
+            <RequestAlerts requests={pendingRequests} />
 
             {/* Schedule Grid — identical to Admin */}
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden p-6">
@@ -106,3 +111,4 @@ export default function AslabDashboard({
 
 // Inertia persistent layout
 AslabDashboard.layout = (page) => <AslabLayout>{page}</AslabLayout>;
+
