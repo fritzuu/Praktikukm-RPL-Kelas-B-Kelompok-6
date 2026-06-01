@@ -15,11 +15,11 @@ class RealScheduleSeeder extends Seeder
 
         // Ensure we have a semester to use (e.g., Genap 2024/2025)
         $semesterId = DB::table('semesters')->where('term', 'GENAP')->first()->id ?? DB::table('semesters')->insertGetId([
-            'name' => 'Semester Genap 2024/2025',
-            'academic_year' => '2024/2025',
+            'name' => 'Semester Genap 2025/2026',
+            'academic_year' => '2025/2026',
             'term' => 'GENAP',
-            'start_date' => '2025-02-10',
-            'end_date' => '2025-06-30',
+            'start_date' => '2026-02-10',
+            'end_date' => '2026-07-15',
             'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,

@@ -85,11 +85,11 @@ class AdminJadwalController extends Controller
             $semesterId = DB::table('semesters')->where('is_active', true)->value('id');
             if (!$semesterId) {
                 $semesterId = DB::table('semesters')->insertGetId([
-                    'name' => 'Semester Genap 2024/2025',
-                    'academic_year' => '2024/2025',
+                    'name' => 'Semester Genap 2025/2026',
+                    'academic_year' => '2025/2026',
                     'term' => 'GENAP',
-                    'start_date' => '2025-02-10',
-                    'end_date' => '2025-06-30',
+                    'start_date' => '2026-02-10',
+                    'end_date' => '2026-06-30',
                     'is_active' => true,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -236,7 +236,7 @@ class AdminJadwalController extends Controller
                             'end_time' => $endTime,
                             'session_start' => $startSession,
                             'session_duration' => $sessionDuration,
-                            'effective_from' => '2025-02-10',
+                            'effective_from' => '2026-02-10',
                             'is_active' => true,
                             'created_at' => $now,
                             'updated_at' => $now,
@@ -274,7 +274,7 @@ class AdminJadwalController extends Controller
                                 'end_time' => $endTime,
                                 'session_start' => $startSession,
                                 'session_duration' => $sessionDuration,
-                                'effective_from' => '2025-02-10',
+                                'effective_from' => '2026-02-10',
                                 'is_active' => true,
                                 'created_at' => $now,
                                 'updated_at' => $now,
