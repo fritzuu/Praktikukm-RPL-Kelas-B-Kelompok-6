@@ -133,7 +133,7 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
                                             <div className="min-w-0">
                                                 <p className="text-sm font-medium text-text-primary truncate">{item.nama}</p>
                                                 <p className="text-[11px] text-text-muted">
-                                                    {item.kode} • {item.ruangan} • {item.hari.toUpperCase()} Sesi {item.sesiMulai} ({item.mulai}-{item.selesai})
+                                                    {item.kode} • {item.ruangan} • {item.hari.toUpperCase()} Sesi {item.sesiMulai}
                                                 </p>
                                             </div>
                                         </div>

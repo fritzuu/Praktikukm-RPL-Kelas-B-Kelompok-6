@@ -60,11 +60,11 @@ const formatTimesToSessions = (day, startTime, endTime) => {
     
     if (startSesi && endSesi) {
         return startSesi === endSesi 
-            ? `Sesi ${startSesi} (${start} - ${end})` 
-            : `Sesi ${startSesi} - ${endSesi} (${start} - ${end})`;
+            ? `Sesi ${startSesi}` 
+            : `Sesi ${startSesi} - ${endSesi}`;
     }
     
-    return `${start} - ${end}`;
+    return '-';
 };
 
 const getScheduleOptionLabel = (s) => {
@@ -279,11 +279,9 @@ export default function Requests({
                                 >
                                     <option value="">Pilih sesi mulai...</option>
                                     {Array.from({ length: 11 }, (_, i) => i + 1).map(s => {
-                                        const isFriday = form.proposed_day === 'JUMAT';
-                                        const t = isFriday ? SESSION_TIMES_JUMAT[s] : SESSION_TIMES_NORMAL[s];
                                         return (
                                             <option key={s} value={s}>
-                                                Sesi {s} ({t.start} - {t.end})
+                                                Sesi {s}
                                             </option>
                                         );
                                     })}
@@ -298,11 +296,9 @@ export default function Requests({
                                 >
                                     <option value="">Pilih sesi selesai...</option>
                                     {Array.from({ length: 11 }, (_, i) => i + 1).map(s => {
-                                        const isFriday = form.proposed_day === 'JUMAT';
-                                        const t = isFriday ? SESSION_TIMES_JUMAT[s] : SESSION_TIMES_NORMAL[s];
                                         return (
                                             <option key={s} value={s} disabled={startSession && s < parseInt(startSession)}>
-                                                Sesi {s} ({t.start} - {t.end})
+                                                Sesi {s}
                                             </option>
                                         );
                                     })}
@@ -310,11 +306,6 @@ export default function Requests({
                             </div>
                         </div>
                         {formErrors.session && <p className="text-[10px] text-danger mt-1">{formErrors.session}</p>}
-                        {(form.proposed_start_time || form.proposed_end_time) && (
-                            <p className="text-[11px] text-text-secondary mt-1">
-                                Waktu Terhitung: <strong className="text-primary-500 font-semibold">{form.proposed_start_time || '--:--'}</strong> s/d <strong className="text-primary-500 font-semibold">{form.proposed_end_time || '--:--'}</strong>
-                            </p>
-                        )}
                         <div>
                             <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Alasan * (min 20 karakter)</label>
                             <textarea value={form.reason} onChange={e => handleChange('reason', e.target.value)} rows={3} placeholder="Jelaskan alasan perubahan jadwal..." className={`w-full px-3 py-2.5 bg-surface border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all resize-none ${formErrors.reason ? 'border-danger' : 'border-border'}`} />
