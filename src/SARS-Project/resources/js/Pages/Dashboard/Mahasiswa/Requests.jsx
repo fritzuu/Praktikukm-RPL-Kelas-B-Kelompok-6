@@ -78,7 +78,9 @@ const formatDayName = (day) => {
 const formatDateIndo = (dateStr) => {
     if (!dateStr) return '';
     const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    const d = new Date(dateStr + 'T00:00:00');
+    const cleanDateStr = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0];
+    const d = new Date(cleanDateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '-';
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 

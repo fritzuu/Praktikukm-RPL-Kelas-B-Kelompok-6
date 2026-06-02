@@ -50,7 +50,6 @@ export default function MahasiswaLayout({ children }) {
             <MahasiswaSidebar
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                onAiToggle={() => setAiPanelOpen(!aiPanelOpen)}
                 unreadCount={unreadCount}
             />
 
