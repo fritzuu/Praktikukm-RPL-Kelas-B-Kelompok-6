@@ -1,5 +1,3 @@
-import { Calendar, AlertTriangle, CheckCircle, BellOff } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, AlertTriangle, CheckCircle, Info, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';

@@ -102,6 +102,9 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'pendingAdminCount' => $request->user() && in_array('admin', $request->user()->roles()->pluck('slug')->toArray())
+                ? \App\Models\ChangeRequest::where('status', 'PENDING_ADMIN')->count()
+                : 0,
             'serverTime' => now()->timestamp * 1000,
         ]);
     }

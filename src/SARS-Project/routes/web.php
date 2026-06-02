@@ -14,6 +14,9 @@ use App\Http\Controllers\Dosen\DosenNotifikasiController;
 use App\Http\Controllers\Dosen\DosenSettingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminJadwalController;
+use App\Http\Controllers\Admin\AdminPersetujuanController;
+use App\Http\Controllers\Admin\AdminStatistikController;
+use App\Http\Controllers\Admin\AdminSettingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use Illuminate\Support\Facades\Route;
@@ -50,17 +53,35 @@ Route::middleware('auth')->group(function () {
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     // Admin routes
-    Route::middleware('role:admin')->group(function () {
-        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
-            ->name('admin.dashboard');
-        Route::get('/admin/jadwal', [AdminJadwalController::class, 'index'])
-            ->name('admin.jadwal');
-        Route::post('/admin/jadwal/import', [AdminJadwalController::class, 'import'])
-            ->name('admin.jadwal.import');
-        Route::delete('/admin/jadwal/{id}', [AdminJadwalController::class, 'destroy'])
-            ->name('admin.jadwal.destroy');
-        Route::post('/admin/jadwal/resolve-conflicts', [AdminJadwalController::class, 'resolveAllConflicts'])
-            ->name('admin.jadwal.resolve-conflicts');
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+        Route::get('/jadwal', [AdminJadwalController::class, 'index'])
+            ->name('jadwal');
+        Route::post('/jadwal/import', [AdminJadwalController::class, 'import'])
+            ->name('jadwal.import');
+        Route::delete('/jadwal/{id}', [AdminJadwalController::class, 'destroy'])
+            ->name('jadwal.destroy');
+        Route::post('/jadwal/resolve-conflicts', [AdminJadwalController::class, 'resolveAllConflicts'])
+            ->name('jadwal.resolve-conflicts');
+
+        // Persetujuan (Approval) routes
+        Route::get('/persetujuan', [AdminPersetujuanController::class, 'index'])
+            ->name('persetujuan');
+        Route::post('/persetujuan/{id}/approve', [AdminPersetujuanController::class, 'approve'])
+            ->name('persetujuan.approve');
+        Route::post('/persetujuan/{id}/reject', [AdminPersetujuanController::class, 'reject'])
+            ->name('persetujuan.reject');
+
+        // Statistik routes
+        Route::get('/statistik', [AdminStatistikController::class, 'index'])
+            ->name('statistik');
+
+        // Pengaturan (Setting) routes
+        Route::get('/pengaturan', [AdminSettingController::class, 'index'])
+            ->name('pengaturan');
+        Route::post('/pengaturan', [AdminSettingController::class, 'updateProfile'])
+            ->name('pengaturan.update');
     });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
