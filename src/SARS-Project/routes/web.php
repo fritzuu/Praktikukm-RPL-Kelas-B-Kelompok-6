@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\AdminPersetujuanController;
+use App\Http\Controllers\Admin\AdminStatistikController;
 use App\Http\Controllers\Admin\AdminSettingController;
 use App\Http\Controllers\Aslab\AslabDashboardController;
 use App\Http\Controllers\Aslab\AslabJadwalController;
@@ -47,6 +48,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/persetujuan', [AdminPersetujuanController::class, 'index'])->name('persetujuan');
         Route::post('/persetujuan/{id}/approve', [AdminPersetujuanController::class, 'approve'])->name('persetujuan.approve');
         Route::post('/persetujuan/{id}/reject', [AdminPersetujuanController::class, 'reject'])->name('persetujuan.reject');
+        Route::get('/statistik', [AdminStatistikController::class, 'index'])->name('statistik');
         Route::get('/pengaturan', [AdminSettingController::class, 'index'])->name('pengaturan');
         Route::post('/pengaturan', [AdminSettingController::class, 'updateProfile'])->name('pengaturan.update');
     });
