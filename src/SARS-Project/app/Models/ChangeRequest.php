@@ -5,9 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class ChangeRequest extends Model
 {
+    /**
+     * Generate a unique request code like CR-20260602-A3X7.
+     */
+    public static function generateCode(): string
+    {
+        do {
+            $code = 'CR-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
+        } while (self::where('request_code', $code)->exists());
+
+        return $code;
+    }
+
     protected $fillable = [
         'request_code',
         'requester_id',

@@ -6,7 +6,6 @@ import {
     FileText,
     Bell,
     Settings,
-    Bot,
     LogOut,
     ChevronLeft,
     ChevronRight,
@@ -21,7 +20,7 @@ const NAV_ITEMS = [
     { label: 'Pengaturan', icon: Settings, route: 'mahasiswa.settings' },
 ];
 
-export default function MahasiswaSidebar({ isCollapsed, onToggle, onAiToggle, unreadCount = 0 }) {
+export default function MahasiswaSidebar({ isCollapsed, onToggle, unreadCount = 0 }) {
     const { url } = usePage();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -114,20 +113,6 @@ export default function MahasiswaSidebar({ isCollapsed, onToggle, onAiToggle, un
 
             {/* ── Bottom Section ────────────────────────────────────── */}
             <div className="px-2 pb-4 space-y-1">
-                {/* AI Assistant Toggle */}
-                <button
-                    onClick={onAiToggle}
-                    title={isCollapsed ? 'AI Assistant' : undefined}
-                    className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                        text-sm font-medium text-white/60
-                        hover:bg-primary-500/20 hover:text-white transition-all duration-150
-                        ${isCollapsed ? 'justify-center' : ''}
-                    `}
-                >
-                    <Bot size={20} className="shrink-0" />
-                    {!isCollapsed && <span>AI Assistant</span>}
-                </button>
 
                 {/* Logout */}
                 <button
