@@ -8,6 +8,7 @@ use App\Models\Semester;
 use App\Models\TeachingAssignment;
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,57 +32,94 @@ class DosenJadwalController extends Controller
             ]);
         }
 
-        // Ambil semua schedule_id yang ditugaskan ke dosen ini (PENGAJAR)
-        $assignedScheduleIds = TeachingAssignment::where('user_id', $user->id)
+        $assignedScheduleIds = DB::table('teaching_assignments')
+            ->where('user_id', $user->id)
             ->where('role_in_class', 'PENGAJAR')
             ->pluck('schedule_id');
 
-        // Ambil jadwal lengkap dosen di semester aktif
-        $schedules = Schedule::whereIn('id', $assignedScheduleIds)
-            ->where('semester_id', $semester->id)
-            ->where('is_active', true)
-            ->with(['course', 'room'])
+        $schedulesData = DB::table('schedules')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
+            ->whereIn('schedules.id', $assignedScheduleIds)
+            ->where('schedules.semester_id', $semester->id)
+            ->where('schedules.is_active', true)
+            ->select(
+                'schedules.id',
+                'courses.code as kode',
+                'courses.name as nama',
+                'courses.class_name as kelas',
+                'courses.description as semesterNum',
+                'courses.credits',
+                'schedules.course_id',
+                'rooms.code as ruangan',
+                'rooms.capacity as mahasiswa',
+                'schedules.day_of_week as hari',
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
+                'schedules.start_time as jamMulai',
+                'schedules.end_time as jamAkhir'
+            )
             ->get();
 
-        // Transform jadwal ke format frontend (semua hari)
-        $jadwal = $schedules->map(fn (Schedule $s) => [
-            'id'        => (string) $s->id,
-            'kode'      => $s->course->code,
-            'nama'      => $s->course->name,
-            'kelas'     => $s->course->class_name,
-            'ruangan'   => $s->room->code,
-            'hari'      => strtolower($s->day_of_week),
-            'sesiMulai' => $s->session_start,
-            'durasi'    => $s->session_duration,
-            'mahasiswa' => $s->room->capacity,
-            'tipe'      => 'resmi',
-            'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
-        ])->values();
-
-        // Ambil SEMUA jadwal di semester aktif untuk grid ketersediaan (Full Schedule)
-        $allSchedules = Schedule::where('semester_id', $semester->id)
-            ->where('is_active', true)
-            ->with(['course', 'room', 'teachingAssignments.user'])
-            ->get()
-            ->map(fn (Schedule $s) => [
+        $jadwal = $schedulesData->map(function ($s) {
+            return [
                 'id'        => (string) $s->id,
-                'kode'      => $s->course->code,
-                'nama'      => $s->course->name,
-                'dosen'     => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->first()?->user->name ?? '-',
-                'ruangan_id'=> $s->room_id,
-                'hari'      => strtolower($s->day_of_week),
-                'sesiMulai' => $s->session_start,
-                'durasi'    => $s->session_duration,
-                'isOwn'     => $assignedScheduleIds->contains($s->id), // Tandai jika ini jadwal milik dosen yg login
-            ]);
+                'kode'      => $s->kode,
+                'nama'      => $s->nama,
+                'kelas'     => $s->kelas,
+                'semesterNum'=> $s->semesterNum,
+                'ruangan'   => $s->ruangan,
+                'hari'      => strtolower($s->hari),
+                'sesiMulai' => $s->sesiMulai,
+                'durasi'    => $s->durasi,
+                'mahasiswa' => $s->mahasiswa,
+                'tipe'      => 'resmi',
+                'waktu'     => substr($s->jamMulai, 0, 5) . ' - ' . substr($s->jamAkhir, 0, 5),
+            ];
+        })->values();
 
-        $rooms = Room::all(['id', 'code', 'name']);
+        $allSchedules = DB::table('schedules')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->leftJoin('teaching_assignments', function($join) {
+                $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
+                     ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
+            })
+            ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
+            ->where('schedules.semester_id', $semester->id)
+            ->where('schedules.is_active', true)
+            ->select(
+                'schedules.id',
+                'courses.code as kode',
+                'courses.name as nama',
+                'users.name as dosen',
+                'schedules.room_id',
+                'schedules.day_of_week as hari',
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi'
+            )
+            ->get()
+            ->map(function ($s) use ($assignedScheduleIds) {
+                return [
+                    'id'        => (string) $s->id,
+                    'kode'      => $s->kode,
+                    'nama'      => $s->nama,
+                    'dosen'     => $s->dosen ?? '-',
+                    'ruangan_id'=> $s->room_id,
+                    'hari'      => strtolower($s->hari),
+                    'sesiMulai' => $s->sesiMulai,
+                    'durasi'    => $s->durasi,
+                    'isOwn'     => $assignedScheduleIds->contains($s->id),
+                ];
+            });
 
-        // Stats summary
+        $rooms = DB::table('rooms')
+            ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))
+            ->get(['id', 'code', 'name']);
+
         $stats = [
-            'totalMataKuliah' => $schedules->pluck('course_id')->unique()->count(),
-            'totalSks'        => $schedules->pluck('course')->unique('id')->sum('credits'),
-            'totalJadwal'     => $schedules->count(),
+            'totalMataKuliah' => $schedulesData->pluck('course_id')->unique()->count(),
+            'totalSks'        => $schedulesData->unique('course_id')->sum('credits'),
+            'totalJadwal'     => $schedulesData->count(),
         ];
 
         return Inertia::render('Dosen/Jadwal', [

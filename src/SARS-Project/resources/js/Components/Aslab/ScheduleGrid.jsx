@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CalendarDays, Download, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +36,18 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
 
     const dayJadwal = schedules.filter(j => j.hari === selectedDay);
 
+    // Filter rooms to only include rooms that have at least one schedule
+    const displayRooms = useMemo(() => {
+        const roomIdsWithSchedules = new Set(schedules.map(s => s.ruangan_id).filter(Boolean));
+        const roomNamesWithSchedules = new Set(schedules.map(s => s.ruangan).filter(Boolean));
+        
+        return rooms.filter(room => 
+            roomIdsWithSchedules.has(room.id) || 
+            roomNamesWithSchedules.has(room.code) || 
+            roomNamesWithSchedules.has(room.name)
+        );
+    }, [rooms, schedules]);
+
     return (
         <section className="mb-6">
             {/* Header */}
@@ -47,7 +59,7 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
                     </h2>
                 </div>
                 <div className="text-xs text-text-muted">
-                    Semester Genap 2024/2025
+                    Semester Genap 2025/2026
                 </div>
             </div>
 
@@ -75,9 +87,18 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.1 }}
-                        className="flex items-center justify-center py-20 bg-card border border-border rounded-xl shadow-sm"
+                        className="flex flex-col items-center justify-center py-20 animate-fade-in w-full"
                     >
-                        <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="flex flex-col items-center gap-3 bg-card border border-border p-5 rounded-2xl shadow-xl">
+                            <div className="relative flex items-center justify-center">
+                                <div className="w-10 h-10 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                                <CalendarDays className="absolute text-primary-500 animate-pulse" size={16} />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs font-bold text-text-primary">Memproses Jadwal...</p>
+                                <p className="text-[10px] text-text-muted mt-1">Mengambil data terbaru dari database</p>
+                            </div>
+                        </div>
                     </motion.div>
                 ) : dayJadwal.length === 0 ? (
                     <motion.div 
@@ -114,7 +135,7 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
                             </div>
 
                             {/* Rows: Each Room */}
-                            {rooms.map(room => {
+                            {displayRooms.map(room => {
                                 // Find classes for this room on the selected day
                                 const roomClasses = dayJadwal.filter(j => j.ruangan_id === room.id || j.ruangan === room.code);
                                 

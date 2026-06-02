@@ -1,80 +1,274 @@
-import { router, usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
+import { useState, useEffect, useCallback } from 'react';
+import MahasiswaLayout from '../../Layouts/MahasiswaLayout';
+import {
+    FileText,
+    CheckCircle,
+    XCircle,
+    Clock,
+} from 'lucide-react';
+import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
+import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
+import LiveClockCard from '../../Components/Shared/LiveClockCard';
+import SyncStatusCard from '../../Components/Shared/SyncStatusCard';
+import Modal from '../../Components/Modal';
+import EmptyRoomsCard from '../../Components/Mahasiswa/EmptyRoomsCard';
+import LiveCampusActivityCard from '../../Components/Mahasiswa/LiveCampusActivityCard';
 
-export default function MahasiswaDashboard() {
+const HARI_MAP = {
+    senin: 'Senin',
+    selasa: 'Selasa',
+    rabu: 'Rabu',
+    kamis: 'Kamis',
+    jumat: 'Jumat',
+    sabtu: 'Sabtu',
+};
+
+const STATUS_STYLES = {
+    PENDING_ASLAB: { bg: 'bg-warning/10', text: 'text-warning', label: 'Pending Aslab' },
+    PENDING_ADMIN: { bg: 'bg-info/10', text: 'text-info', label: 'Pending Admin' },
+    APPROVED: { bg: 'bg-success/10', text: 'text-success', label: 'Disetujui' },
+    REJECTED_ASLAB: { bg: 'bg-danger/10', text: 'text-danger', label: 'Ditolak Aslab' },
+    REJECTED_ADMIN: { bg: 'bg-danger/10', text: 'text-danger', label: 'Ditolak Admin' },
+    CANCELLED: { bg: 'bg-text-muted/10', text: 'text-text-muted', label: 'Dibatalkan' },
+};
+
+const TIPE_COLORS = {
+    baseline: 'bg-primary-500/10 border-primary-500/30 text-primary-600',
+    temp: 'bg-cyan-50 border-cyan-300 text-cyan-700',
+    permanent: 'bg-warning/10 border-warning/50 text-amber-800',
+};
+
+const EMPTY_CAMPUS_WIDGETS = {
+    emptyRooms: [],
+    stats: { activeSchedules: 0, usedRooms: 0, emptyRooms: 0, totalToday: 0 },
+    currentTime: '',
+    roomTypes: [],
+    hasSemester: false,
+    isWeekend: false,
+    availabilityStatus: 'no_semester',
+    lectureWindow: null,
+};
+
+export default function MahasiswaDashboard({
+    stats = { totalRequests: 0, pendingRequests: 0, approvedRequests: 0, rejectedRequests: 0 },
+    semester = null,
+    recentRequests = [],
+    schedules = [],
+    rooms = [],
+    campusWidgets = EMPTY_CAMPUS_WIDGETS,
+}) {
     const { auth } = usePage().props;
-    const user = auth.user;
+    const user = auth?.user;
 
-    function handleLogout() {
-        router.post(route('logout'));
-    }
+        const [selectedSchedule, setSelectedSchedule] = useState(null);
+
+    const [widgetData, setWidgetData] = useState(campusWidgets);
+    const [widgetLoading, setWidgetLoading] = useState(false);
+
+    const fetchWidgets = useCallback((showSpinner = true) => {
+        if (showSpinner) setWidgetLoading(true);
+        fetch(route('mahasiswa.dashboardWidgets'))
+            .then(res => res.json())
+            .then(data => {
+                setWidgetData(data);
+                setWidgetLoading(false);
+            })
+            .catch(() => setWidgetLoading(false));
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => fetchWidgets(false), 60000);
+        return () => clearInterval(interval);
+    }, [fetchWidgets]);
+
+    const handleCardClick = (item) => {
+        setSelectedSchedule(item);
+    };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#3b0764] via-[#6b21a8] to-[#7c3aed] flex items-center justify-center font-[Inter,sans-serif] px-4">
-            <div className="text-center space-y-8">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-5 py-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-violet-300 animate-pulse"></div>
-                    <span className="text-white/80 text-sm font-medium tracking-wide">Mahasiswa</span>
+        <>
+            {/* ── Welcome Header ───────────────────────────────────── */}
+            <WelcomeHeader
+                user={user}
+                subtitle="Minggu ini dalam satu pandangan."
+            >
+                <div className="flex items-stretch gap-3 shrink-0">
+                    <SyncStatusCard />
+                    <LiveClockCard />
                 </div>
+            </WelcomeHeader>
 
-                {/* Icon */}
-                <div className="flex justify-center">
-                    <div className="w-24 h-24 bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl flex items-center justify-center shadow-2xl">
-                        <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 5.523-4.477 10-9 10S3 18.523 3 13a12.083 12.083 0 012.84-7.578L12 14z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zM12 14v7M12 14l6.16-3.422M3.84 10.578L12 14" />
-                        </svg>
-                    </div>
+            {/* ── Stats Cards ──────────────────────────────────────── */}
+            <section className="mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+                    <StatCard
+                        icon={FileText}
+                        label="Total Requests"
+                        value={stats.totalRequests}
+                        color="text-primary-500"
+                        bgColor="bg-primary-500/10"
+                    />
+                    <StatCard
+                        icon={Clock}
+                        label="Pending"
+                        value={stats.pendingRequests}
+                        color="text-warning"
+                        bgColor="bg-warning/10"
+                    />
+                    <StatCard
+                        icon={CheckCircle}
+                        label="Disetujui"
+                        value={stats.approvedRequests}
+                        color="text-success"
+                        bgColor="bg-success/10"
+                    />
+                    <StatCard
+                        icon={XCircle}
+                        label="Ditolak"
+                        value={stats.rejectedRequests}
+                        color="text-danger"
+                        bgColor="bg-danger/10"
+                    />
                 </div>
+            </section>
 
-                {/* Title */}
-                <div>
-                    <h1 className="text-5xl font-extrabold text-white tracking-tight">
-                        Mahasiswa Dashboard
-                    </h1>
-                    <p className="text-white/60 mt-3 text-lg">
-                        Selamat datang, <span className="text-white font-semibold">{user?.name ?? 'Mahasiswa'}</span>
-                    </p>
-                    <p className="text-white/40 text-sm mt-1">{user?.email}</p>
+            {/* ── Weekly Calendar Preview ───────────────────────────── */}
+            <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden p-6 mb-6">
+                <ScheduleGrid
+                    jadwalItems={schedules}
+                    rooms={rooms}
+                    showConflicts={true}
+                    onCardClick={handleCardClick}
+                />
+            </div>
+
+            {/* ── Bottom Section: Dashboard Widgets ────────── */}
+            <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                <div className="w-full lg:w-[65%]">
+                    <EmptyRoomsCard
+                        rooms={widgetData.emptyRooms ?? []}
+                        roomTypes={widgetData.roomTypes ?? []}
+                        loading={widgetLoading}
+                        hasSemester={widgetData.hasSemester}
+                        isWeekend={widgetData.isWeekend}
+                        availabilityStatus={widgetData.availabilityStatus ?? 'active'}
+                        lectureWindow={widgetData.lectureWindow ?? null}
+                        onRefresh={() => fetchWidgets(true)}
+                    />
                 </div>
+                <div className="w-full lg:w-[35%]">
+                    <LiveCampusActivityCard
+                        stats={widgetData.stats ?? {}}
+                        loading={widgetLoading}
+                        hasSemester={widgetData.hasSemester}
+                        isWeekend={widgetData.isWeekend}
+                    />
+                </div>
+            </div>
 
-                {/* Info Card */}
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 inline-block text-left space-y-3 min-w-72">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
+            {/* Details Modal */}
+            <Modal
+                isOpen={!!selectedSchedule}
+                onClose={() => setSelectedSchedule(null)}
+                title="Detail Jadwal"
+                maxWidth="md"
+            >
+                {selectedSchedule && (
+                    <div className="space-y-4">
                         <div>
-                            <p className="text-white/50 text-xs">Role</p>
-                            <p className="text-white font-semibold text-sm">Mahasiswa</p>
+                            <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Mata Kuliah</h4>
+                            <p className="text-lg font-bold text-text-primary">{selectedSchedule.nama} ({selectedSchedule.kode})</p>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="text-white/50 text-xs">Status</p>
-                            <p className="text-violet-300 font-semibold text-sm">Berhasil Masuk</p>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Logout */}
-                <div>
-                    <button
-                        onClick={handleLogout}
-                        className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium px-8 py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-                    >
-                        Keluar
-                    </button>
-                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Kelas</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.kelas || '-'}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Semester</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.semester || '-'}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Ruangan</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.ruangan}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Hari</h4>
+                                <p className="font-medium text-text-primary capitalize">{selectedSchedule.hari}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Waktu</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedSchedule.jamMulai && selectedSchedule.jamAkhir
+                                        ? `${selectedSchedule.jamMulai.substring(0, 5)} - ${selectedSchedule.jamAkhir.substring(0, 5)}`
+                                        : selectedSchedule.mulai && selectedSchedule.selesai
+                                            ? `${selectedSchedule.mulai.substring(0, 5)} - ${selectedSchedule.selesai.substring(0, 5)}`
+                                            : 'Waktu belum diatur'}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Sesi</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedSchedule.durasi > 1
+                                        ? `Sesi ${selectedSchedule.sesiMulai} - ${selectedSchedule.sesiMulai + selectedSchedule.durasi - 1}`
+                                        : `Sesi ${selectedSchedule.sesiMulai}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border flex flex-col gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Dosen Pengajar</h4>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-lg">
+                                        {selectedSchedule.dosen && selectedSchedule.dosen !== '-' ? selectedSchedule.dosen.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <p className="font-semibold text-text-primary">
+                                        {!selectedSchedule.dosen || selectedSchedule.dosen === '-' ? 'Belum Ditentukan' : selectedSchedule.dosen}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 mt-2">
+                                <button
+                                    onClick={() => setSelectedSchedule(null)}
+                                    className="flex-1 py-3 bg-surface hover:bg-card border border-border text-text-secondary rounded-xl text-sm font-bold transition-colors"
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        </>
+    );
+}
+
+/* ── Stat Card Component ──────────────────────────────────────────────────── */
+function StatCard({ icon: Icon, label, value, color, bgColor }) {
+    return (
+        <div className="bg-card border border-border rounded-xl px-5 py-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className={`w-11 h-11 rounded-xl ${bgColor} flex items-center justify-center shrink-0`}>
+                <Icon size={20} className={color} />
+            </div>
+            <div>
+                <p className="text-2xl font-bold text-text-primary">{value}</p>
+                <p className="text-[11px] text-text-muted font-medium">{label}</p>
             </div>
         </div>
     );
 }
+
+
+
+// Inertia persistent layout
+MahasiswaDashboard.layout = (page) => <MahasiswaLayout>{page}</MahasiswaLayout>;

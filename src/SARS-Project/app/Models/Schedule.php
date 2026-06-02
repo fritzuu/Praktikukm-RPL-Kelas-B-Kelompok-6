@@ -64,6 +64,39 @@ class Schedule extends Model
     }
 
     /**
+     * Relasi ke ScheduleOverride
+     */
+    public function overrides(): HasMany
+    {
+        return $this->hasMany(ScheduleOverride::class);
+    }
+
+    public function scopeActiveForSemester($query, int $semesterId)
+    {
+        return $query->where('semester_id', $semesterId)->where('is_active', true);
+    }
+
+    public function scopeOnDay($query, string $dayOfWeek)
+    {
+        return $query->where('day_of_week', $dayOfWeek);
+    }
+
+    public function scopeEffectiveOnDate($query, string $date)
+    {
+        return $query->where('effective_from', '<=', $date)
+            ->where(function ($q) use ($date) {
+                $q->whereNull('effective_until')
+                    ->orWhere('effective_until', '>=', $date);
+            });
+    }
+
+    public function scopeOverlappingTime($query, string $start, string $end)
+    {
+        return $query->where('start_time', '<', $end)
+            ->where('end_time', '>', $start);
+    }
+
+    /**
      * Get nama hari dalam bahasa Indonesia
      */
     public function getHariIndonesiaAttribute(): string

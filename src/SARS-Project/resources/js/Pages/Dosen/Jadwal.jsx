@@ -12,7 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import DosenLayout from '../../Layouts/DosenLayout';
 import Modal from '../../Components/Modal';
-import FullScheduleGrid from '../../Components/Dosen/FullScheduleGrid';
+import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -26,7 +26,7 @@ export default function DosenJadwal({
     jadwal = [], 
     allSchedules = [],
     rooms = [],
-    semester = { nama: 'Ganjil', tahun: '2024/2025' }
+    semester = { nama: 'Ganjil', tahun: '2025/2026' }
 }) {
     const getTodayKey = () => {
         const jsDay = new Date().getDay();
@@ -37,6 +37,13 @@ export default function DosenJadwal({
     const [selectedDay, setSelectedDay] = useState(getTodayKey());
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedJadwal, setSelectedJadwal] = useState(null);
+    const [isLoadingDay, setIsLoadingDay] = useState(false);
+
+    const handleSelectDay = (day) => {
+        setIsLoadingDay(true);
+        setSelectedDay(day);
+        setTimeout(() => setIsLoadingDay(false), 450);
+    };
 
     const dayJadwal = jadwal.filter(j => 
         j.hari === selectedDay && 
@@ -65,7 +72,7 @@ export default function DosenJadwal({
                             Jadwal Mengajar
                         </h1>
                         <p className="text-text-secondary text-sm">
-                            Semester {semester?.nama || 'Ganjil'} TA {semester?.tahun || '2024/2025'}
+                            Semester {semester?.nama || 'Ganjil'} TA {semester?.tahun || '2025/2026'}
                         </p>
                     </div>
                 </div>
@@ -83,7 +90,7 @@ export default function DosenJadwal({
             </div>
 
             {/* ── Full Availability Grid ───────────────────────────── */}
-            <FullScheduleGrid schedules={allSchedules} rooms={rooms} />
+            <ScheduleGrid jadwalItems={allSchedules} rooms={rooms} />
 
             {/* ── My Schedule Section ──────────────────────────────── */}
             <div className="space-y-6">
@@ -111,7 +118,7 @@ export default function DosenJadwal({
                         {HARI_LIST.map((hari) => (
                             <button
                                 key={hari.key}
-                                onClick={() => setSelectedDay(hari.key)}
+                                onClick={() => handleSelectDay(hari.key)}
                                 className={`
                                     flex-1 min-w-[100px] px-4 py-2.5 rounded-lg text-sm font-bold transition-all relative
                                     ${selectedDay === hari.key
@@ -125,7 +132,7 @@ export default function DosenJadwal({
                         ))}
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-6 relative min-h-[300px]">
                         <AnimatePresence mode="wait">
                             {dayJadwal.length === 0 ? (
                                 <motion.div 
@@ -197,6 +204,21 @@ export default function DosenJadwal({
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                        
+                        {isLoadingDay && (
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex flex-col items-center justify-center z-40 animate-fade-in rounded-b-2xl">
+                                <div className="flex flex-col items-center gap-3 bg-card border border-border p-5 rounded-2xl shadow-xl">
+                                    <div className="relative flex items-center justify-center">
+                                        <div className="w-10 h-10 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                                        <CalendarDays className="absolute text-primary-500 animate-pulse" size={16} />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-xs font-bold text-text-primary">Memproses Jadwal...</p>
+                                        <p className="text-[10px] text-text-muted mt-1">Mengambil data terbaru dari database</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

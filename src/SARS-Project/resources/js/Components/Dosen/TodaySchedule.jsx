@@ -37,9 +37,17 @@ export default function TodaySchedule({ schedules = [] }) {
     const formattedDate = today.toLocaleDateString('id-ID', options);
 
     const LoadingSpinner = () => (
-        <div className="bg-card border border-border rounded-xl p-12 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-3" />
-            <p className="text-sm font-medium text-text-secondary">Memuat jadwal...</p>
+        <div className="flex flex-col items-center justify-center py-12 animate-fade-in w-full">
+            <div className="flex flex-col items-center gap-3 bg-card border border-border p-5 rounded-2xl shadow-xl">
+                <div className="relative flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                    <Clock className="absolute text-primary-500 animate-pulse" size={16} />
+                </div>
+                <div className="text-center">
+                    <p className="text-xs font-bold text-text-primary">Memproses Jadwal...</p>
+                    <p className="text-[10px] text-text-muted mt-1">Mengambil data terbaru dari database</p>
+                </div>
+            </div>
         </div>
     );
 

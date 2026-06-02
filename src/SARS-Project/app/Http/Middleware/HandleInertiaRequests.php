@@ -43,26 +43,66 @@ class HandleInertiaRequests extends Middleware
                     'roles'       => $user->roles()->pluck('slug')->toArray(),
                     'primaryRole' => $user->primaryRole(),
                 ] : null,
+                'notifications' => $request->user() ? \Illuminate\Support\Facades\DB::table('notification_recipients')
+                    ->join('notifications', 'notification_recipients.notification_id', '=', 'notifications.id')
+                    ->where('notification_recipients.recipient_id', $request->user()->id)
+                    ->where('notification_recipients.channel', 'IN_APP')
+                    ->orderBy('notifications.id', 'desc')
+                    ->select(
+                        'notifications.id',
+                        'notifications.title as judul',
+                        'notifications.body as pesan',
+                        'notifications.created_at',
+                        'notifications.type as tipe',
+                        'notification_recipients.is_read as dibaca'
+                    )
+                    ->limit(50)
+                    ->get()
+                    ->map(function ($n) {
+                        $createdAt = \Carbon\Carbon::parse($n->created_at);
+                        $tipeMap = [
+                            'STATUS_CHANGE'  => 'jadwal',
+                            'CONFLICT_ALERT' => 'validasi',
+                            'SYSTEM'         => 'sistem',
+                            'REMINDER'       => 'info',
+                        ];
+                        return [
+                            'id' => (string)$n->id,
+                            'judul' => $n->judul,
+                            'pesan' => $n->pesan,
+                            'waktu' => $createdAt->diffForHumans(),
+                            'tipe' => $tipeMap[$n->tipe] ?? 'info',
+                            'dibaca' => (bool)$n->dibaca,
+                        ];
+                    })->toArray() : [],
             ],
+            'unreadCount' => $request->user()
+                ? \App\Models\NotificationRecipient::where('recipient_id', $request->user()->id)
+                    ->where('is_read', false)
+                    ->count()
+                : 0,
+            'notifikasi' => $request->user()
+                ? \App\Models\NotificationRecipient::where('recipient_id', $request->user()->id)
+                    ->where('channel', 'IN_APP')
+                    ->with('notification')
+                    ->orderByDesc('notification_id')
+                    ->limit(10)
+                    ->get()
+                    ->map(fn ($nr) => [
+                        'id'     => (string) $nr->notification_id,
+                        'judul'  => $nr->notification->title,
+                        'pesan'  => $nr->notification->body,
+                        'waktu'  => $nr->notification->created_at->diffForHumans(),
+                        'dibaca' => (bool) $nr->is_read,
+                        'tipe'   => strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
+                                  : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info'),
+                    ])->values()->toArray()
+                : [],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
-
-            // ── Shared: notification bell data ────────────────────────
-            'notifications'            => fn () => $user ? $this->getNotifications($user->id) : [],
-            'unreadNotificationsCount' => fn () => $user
-                ? NotificationRecipient::where('recipient_id', $user->id)
-                    ->where('channel', 'IN_APP')
-                    ->where('is_read', false)
-                    ->count()
-                : 0,
-
-            // ── Shared: admin pending count (for sidebar badge) ───────
-            'pendingAdminCount' => fn () =>
-                ($user && $user->primaryRole() === 'admin')
-                    ? ChangeRequest::where('status', 'PENDING_ADMIN')->count()
-                    : 0,
+            'serverTime' => now()->timestamp * 1000,
         ]);
     }
 

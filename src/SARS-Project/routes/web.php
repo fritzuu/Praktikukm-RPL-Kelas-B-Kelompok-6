@@ -1,9 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Admin\AdminPersetujuanController;
-use App\Http\Controllers\Admin\AdminStatistikController;
-use App\Http\Controllers\Admin\AdminSettingController;
+
 use App\Http\Controllers\Aslab\AslabDashboardController;
 use App\Http\Controllers\Aslab\AslabJadwalController;
 use App\Http\Controllers\Aslab\AslabValidationController;
@@ -14,6 +12,10 @@ use App\Http\Controllers\Dosen\DosenJadwalController;
 use App\Http\Controllers\Dosen\DosenNotificationController;
 use App\Http\Controllers\Dosen\DosenNotifikasiController;
 use App\Http\Controllers\Dosen\DosenSettingController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminJadwalController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -42,15 +44,23 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // ── Admin routes ─────────────────────────────────────────────────────────
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/persetujuan', [AdminPersetujuanController::class, 'index'])->name('persetujuan');
-        Route::post('/persetujuan/{id}/approve', [AdminPersetujuanController::class, 'approve'])->name('persetujuan.approve');
-        Route::post('/persetujuan/{id}/reject', [AdminPersetujuanController::class, 'reject'])->name('persetujuan.reject');
-        Route::get('/statistik', [AdminStatistikController::class, 'index'])->name('statistik');
-        Route::get('/pengaturan', [AdminSettingController::class, 'index'])->name('pengaturan');
-        Route::post('/pengaturan', [AdminSettingController::class, 'updateProfile'])->name('pengaturan.update');
+    // Shared Notification routes
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Admin routes
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('admin.dashboard');
+        Route::get('/admin/jadwal', [AdminJadwalController::class, 'index'])
+            ->name('admin.jadwal');
+        Route::post('/admin/jadwal/import', [AdminJadwalController::class, 'import'])
+            ->name('admin.jadwal.import');
+        Route::delete('/admin/jadwal/{id}', [AdminJadwalController::class, 'destroy'])
+            ->name('admin.jadwal.destroy');
+        Route::post('/admin/jadwal/resolve-conflicts', [AdminJadwalController::class, 'resolveAllConflicts'])
+            ->name('admin.jadwal.resolve-conflicts');
     });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
@@ -88,8 +98,25 @@ Route::middleware('auth')->group(function () {
         Route::delete('/notifikasi/{id}', [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
     });
 
-    // Mahasiswa dashboard
-    Route::middleware('role:mahasiswa')
-        ->get('/mahasiswa/dashboard', fn() => Inertia::render('Dashboard/Mahasiswa'))
-        ->name('mahasiswa.dashboard');
+    // ─── Mahasiswa routes ────────────────────────────────────────────────
+    Route::middleware('role:mahasiswa')->prefix('mahasiswa')->group(function () {
+        Route::get('/dashboard',      [MahasiswaController::class, 'dashboard'])->name('mahasiswa.dashboard');
+        Route::get('/jadwal',         [MahasiswaController::class, 'jadwal'])->name('mahasiswa.jadwal');
+        Route::get('/requests',       [MahasiswaController::class, 'requests'])->name('mahasiswa.requests');
+        Route::post('/requests',      [MahasiswaController::class, 'submitRequest'])->name('mahasiswa.requests.submit');
+        Route::get('/notifications',  [MahasiswaController::class, 'notifications'])->name('mahasiswa.notifications');
+        Route::get('/settings',       [MahasiswaController::class, 'settings'])->name('mahasiswa.settings');
+        Route::put('/settings',       [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
+        Route::put('/settings/password', [MahasiswaController::class, 'updatePassword'])->name('mahasiswa.settings.password');
+
+        // API-style endpoints (JSON)
+        Route::post('/cek-slot',              [MahasiswaController::class, 'cekSlot'])->name('mahasiswa.cekSlot');
+        Route::get('/dashboard-widgets',      [MahasiswaController::class, 'dashboardWidgets'])->name('mahasiswa.dashboardWidgets');
+        Route::post('/ai-query',              [MahasiswaController::class, 'aiQuery'])->name('mahasiswa.aiQuery');
+        Route::post('/recommend-schedule',    [MahasiswaController::class, 'recommendSchedules'])->name('mahasiswa.recommendSchedules');
+        Route::post('/cek-sesi-availabilitas', [MahasiswaController::class, 'cekSesiAvailabilitas'])->name('mahasiswa.cekSesiAvailabilitas');
+        Route::post('/meeting-dates',          [MahasiswaController::class, 'meetingDates'])->name('mahasiswa.meetingDates');
+        Route::post('/available-rooms',        [MahasiswaController::class, 'availableRoomsForSlot'])->name('mahasiswa.availableRooms');
+        Route::post('/matrix-availability',    [MahasiswaController::class, 'matrixAvailabilityBulk'])->name('mahasiswa.matrixAvailability');
+    });
 });
