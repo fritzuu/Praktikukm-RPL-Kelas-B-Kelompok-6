@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ScheduleOverride extends Model
 {
+    // Migration only defines created_at, no updated_at column
+    const UPDATED_AT = null;
+
     protected $fillable = [
         'schedule_id',
         'request_id',

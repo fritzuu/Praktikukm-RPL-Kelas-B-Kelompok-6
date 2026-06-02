@@ -24,11 +24,11 @@ Route::get('/', function () {
     if (auth()->check()) {
         $role = auth()->user()->primaryRole();
         return match ($role) {
-            'admin'     => redirect()->route('admin.dashboard'),
-            'aslab'     => redirect()->route('aslab.dashboard'),
-            'dosen'     => redirect()->route('dosen.dashboard'),
+            'admin' => redirect()->route('admin.dashboard'),
+            'aslab' => redirect()->route('aslab.dashboard'),
+            'dosen' => redirect()->route('dosen.dashboard'),
             'mahasiswa' => redirect()->route('mahasiswa.dashboard'),
-            default     => redirect()->route('login'),
+            default => redirect()->route('login'),
         };
     }
     return redirect()->route('login');
@@ -65,23 +65,23 @@ Route::middleware('auth')->group(function () {
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
     Route::middleware('role:aslab')->prefix('aslab')->name('aslab.')->group(function () {
-        Route::get('/dashboard',             [AslabDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/jadwal',                [AslabJadwalController::class, 'index'])->name('jadwal');
-        Route::get('/validasi',              [AslabValidationController::class, 'index'])->name('validasi');
-        Route::post('/validasi/{id}/forward',[AslabValidationController::class, 'forward'])->name('validasi.forward');
+        Route::get('/dashboard', [AslabDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/jadwal', [AslabJadwalController::class, 'index'])->name('jadwal');
+        Route::get('/validasi', [AslabValidationController::class, 'index'])->name('validasi');
+        Route::post('/validasi/{id}/forward', [AslabValidationController::class, 'forward'])->name('validasi.forward');
         Route::post('/validasi/{id}/reject', [AslabValidationController::class, 'reject'])->name('validasi.reject');
-        Route::get('/notifikasi',            [AslabNotifikasiController::class, 'index'])->name('notifikasi');
+        Route::get('/notifikasi', [AslabNotifikasiController::class, 'index'])->name('notifikasi');
         Route::post('/notifikasi/{id}/read', [AslabNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
-        Route::post('/notifikasi/read-all',  [AslabNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
-        Route::delete('/notifikasi/{id}',    [AslabNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
-        Route::get('/pengaturan',            [AslabSettingController::class, 'index'])->name('pengaturan');
-        Route::post('/pengaturan',           [AslabSettingController::class, 'updateProfile'])->name('pengaturan.update');
+        Route::post('/notifikasi/read-all', [AslabNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{id}', [AslabNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+        Route::get('/pengaturan', [AslabSettingController::class, 'index'])->name('pengaturan');
+        Route::post('/pengaturan', [AslabSettingController::class, 'updateProfile'])->name('pengaturan.update');
     });
 
     // ── Dosen routes ─────────────────────────────────────────────────────────
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/jadwal',    [DosenJadwalController::class, 'index'])->name('jadwal');
+        Route::get('/jadwal', [DosenJadwalController::class, 'index'])->name('jadwal');
         Route::post('/jadwal/request', [DosenJadwalController::class, 'storeRequest'])->name('jadwal.request');
         Route::get('/pengaturan', [DosenSettingController::class, 'index'])->name('pengaturan');
         Route::post('/pengaturan', [DosenSettingController::class, 'updateProfile'])->name('pengaturan.update');
@@ -92,10 +92,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/notification/{notification}', [DosenNotificationController::class, 'destroy'])->name('notification.destroy');
 
         // ── Notifikasi (Notification Branch) ──────────────────────────────────
-        Route::get('/notifikasi',                        [DosenNotifikasiController::class, 'index'])->name('notifikasi');
-        Route::post('/notifikasi/{id}/read',             [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
-        Route::post('/notifikasi/read-all',              [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
-        Route::delete('/notifikasi/{id}',                [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+        Route::get('/notifikasi', [DosenNotifikasiController::class, 'index'])->name('notifikasi');
+        Route::post('/notifikasi/{id}/read', [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
+        Route::post('/notifikasi/read-all', [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{id}', [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
     });
 
     // ─── Mahasiswa routes ────────────────────────────────────────────────

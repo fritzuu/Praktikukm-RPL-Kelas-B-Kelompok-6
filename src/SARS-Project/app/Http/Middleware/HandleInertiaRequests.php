@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\ChangeRequest;
+use App\Models\NotificationRecipient;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -28,14 +30,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user() ? [
-                    'id'          => $request->user()->id,
-                    'name'        => $request->user()->name,
-                    'email'       => $request->user()->email,
-                    'roles'       => $request->user()->roles()->pluck('slug')->toArray(),
-                    'primaryRole' => $request->user()->primaryRole(),
+                'user' => $user ? [
+                    'id'          => $user->id,
+                    'name'        => $user->name,
+                    'email'       => $user->email,
+                    'nim_nip'     => $user->nim_nip,
+                    'avatar_url'  => $user->avatar_url,
+                    'roles'       => $user->roles()->pluck('slug')->toArray(),
+                    'primaryRole' => $user->primaryRole(),
                 ] : null,
                 'notifications' => $request->user() ? \Illuminate\Support\Facades\DB::table('notification_recipients')
                     ->join('notifications', 'notification_recipients.notification_id', '=', 'notifications.id')
@@ -98,5 +104,35 @@ class HandleInertiaRequests extends Middleware
             ],
             'serverTime' => now()->timestamp * 1000,
         ]);
+    }
+
+    /**
+     * Fetch recent in-app notifications for the bell dropdown.
+     */
+    private function getNotifications(int $userId): array
+    {
+        return NotificationRecipient::where('recipient_id', $userId)
+            ->where('channel', 'IN_APP')
+            ->with('notification')
+            ->orderByDesc('notification_id')
+            ->limit(10)
+            ->get()
+            ->map(function ($nr) {
+                $notif = $nr->notification;
+                return [
+                    'id'     => (string) $notif->id,
+                    'judul'  => $notif->title,
+                    'pesan'  => $notif->body,
+                    'waktu'  => $notif->created_at->diffForHumans(),
+                    'dibaca' => $nr->is_read,
+                    'tipe'   => match ($notif->type) {
+                        'STATUS_CHANGE', 'CONFLICT_ALERT' => 'jadwal',
+                        'SYSTEM'                          => 'sistem',
+                        default                           => 'info',
+                    },
+                ];
+            })
+            ->values()
+            ->toArray();
     }
 }

@@ -5,10 +5,10 @@ import { usePage } from '@inertiajs/react';
 import NotificationDropdown from './NotificationDropdown';
 
 const ROLE_LABELS = {
-    admin: 'Admin Fakultas',
-    dosen: 'Dosen Mata Kuliah',
-    aslab: 'Asisten Lab',
-    mahasiswa: 'Mahasiswa',
+    admin: "Admin Fakultas",
+    dosen: "Dosen Mata Kuliah",
+    aslab: "Asisten Lab",
+    mahasiswa: "Mahasiswa",
 };
 
 export default function TopBar({ user, sidebarCollapsed, actions }) {
@@ -52,7 +52,7 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
         if (unreadCount === 0) return;
         bellControls.start({
             rotate: [0, -15, 12, -8, 6, -3, 0],
-            transition: { duration: 0.5, ease: "easeInOut" }
+            transition: { duration: 0.5, ease: "easeInOut" },
         });
     };
 
@@ -72,8 +72,9 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 setNotifOpen(false);
             }
         }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'U';
@@ -86,12 +87,15 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 sticky top-0 z-40 bg-card border-b border-border
                 flex items-center gap-4 px-6 py-3
                 transition-all duration-250
-                ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
+                ${sidebarCollapsed ? "ml-16" : "ml-60"}
             `}
         >
             {/* ── Search ───────────────────────────────────────────── */}
             <div className="relative flex-1 max-w-md">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+                />
                 <input
                     type="text"
                     placeholder="Cari jadwal, ruangan, atau dosen..."
@@ -154,8 +158,10 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 </div>
 
                 {/* ── Help Icon ─────────────────────────────────────────── */}
-                <button className="p-2 rounded-lg text-text-secondary hover:bg-surface
-                                   hover:text-text-primary transition-colors">
+                <button
+                    className="p-2 rounded-lg text-text-secondary hover:bg-surface
+                                   hover:text-text-primary transition-colors"
+                >
                     <HelpCircle size={20} />
                 </button>
 
@@ -163,14 +169,16 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 <div className="flex items-center gap-3 pl-3 border-l border-border">
                     <div className="text-right hidden md:block">
                         <p className="text-sm font-semibold text-text-primary leading-tight">
-                            {user?.name || 'User'}
+                            {user?.name || "User"}
                         </p>
                         <p className="text-[11px] text-text-muted uppercase tracking-wide">
                             {roleLabel}
                         </p>
                     </div>
-                    <div className="w-9 h-9 rounded-full bg-primary-500 text-white
-                                    flex items-center justify-center font-bold text-sm shrink-0">
+                    <div
+                        className="w-9 h-9 rounded-full bg-primary-500 text-white
+                                    flex items-center justify-center font-bold text-sm shrink-0"
+                    >
                         {initial}
                     </div>
                 </div>
