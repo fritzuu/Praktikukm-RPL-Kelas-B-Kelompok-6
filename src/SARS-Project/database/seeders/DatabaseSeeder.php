@@ -99,6 +99,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Fahmy',            'email' => 'fahmy@sars.test',        'nim_nip' => 'DSN017'],
             ['name' => 'Thofiq Odhi',      'email' => 'thofiq@sars.test',       'nim_nip' => 'DSN018'],
             ['name' => 'Shofie',           'email' => 'shofie@sars.test',       'nim_nip' => 'DSN019'],
+            ['name' => 'Wisnu',            'email' => 'wisnu@sars.test',        'nim_nip' => 'DSN020'],
+            ['name' => 'Aziz',             'email' => 'aziz@sars.test',         'nim_nip' => 'DSN021'],
+            ['name' => 'Herdito',          'email' => 'herdito@sars.test',      'nim_nip' => 'DSN022'],
+            ['name' => 'Wiharto',          'email' => 'wiharto@sars.test',      'nim_nip' => 'DSN023'],
+            ['name' => 'Haryono',          'email' => 'haryono@sars.test',      'nim_nip' => 'DSN024'],
+            ['name' => 'Zuhdi',            'email' => 'zuhdi@sars.test',        'nim_nip' => 'DSN025'],
+            ['name' => 'Ristu',            'email' => 'ristu@sars.test',        'nim_nip' => 'DSN026'],
         ];
 
         foreach ($dosenList as $d) {
