@@ -99,7 +99,6 @@ class RealScheduleSeeder extends Seeder
             ['SENIN', 1, 2, 'Jaringan Komputer', 'C', 'LAB-B4.05', null],
             ['SENIN', 1, 3, 'Proyek Perangkat Lunak', 'A', 'PASCA-1301', null],
             ['SENIN', 1, 3, 'Metode Penelitian', 'B', 'PASCA-1304', null],
-            ['SENIN', 1, 3, 'Matematika Diskrit I', 'C', 'B4-10', null],
             ['SENIN', 3, 5, 'Kecerdasan Buatan', 'D', 'B4-11', null],
             ['SENIN', 4, 5, 'Organisasi Sistem Komputer', 'A', 'B4-10', null],
             ['SENIN', 4, 5, 'Pengembangan Aplikasi', 'C', 'LAB4-TIK', null],
