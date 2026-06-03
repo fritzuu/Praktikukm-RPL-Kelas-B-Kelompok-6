@@ -2,198 +2,156 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
+use App\Models\Room;
+use App\Models\Semester;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        $now = Carbon::now();
+        // ═══════════════════════════════════════════
+        // ROLES
+        // ═══════════════════════════════════════════
+        $roles = [
+            ['name' => 'Admin',      'slug' => 'admin',      'description' => 'Administrator sistem'],
+            ['name' => 'Dosen',      'slug' => 'dosen',      'description' => 'Dosen pengajar'],
+            ['name' => 'Aslab',      'slug' => 'aslab',      'description' => 'Asisten laboratorium'],
+            ['name' => 'Mahasiswa',  'slug' => 'mahasiswa',  'description' => 'Mahasiswa'],
+        ];
 
-        // =============================================
-        // 1. ROLES
-        // =============================================
-        DB::table('roles')->insert([
-            ['name' => 'Admin Fakultas',            'slug' => 'admin',     'description' => 'Administrator fakultas dengan akses penuh ke manajemen jadwal', 'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'Asisten Lab / Asisten Dosen','slug' => 'aslab',     'description' => 'Asisten laboratorium yang memvalidasi pengajuan perubahan jadwal', 'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'Mahasiswa',                  'slug' => 'mahasiswa', 'description' => 'Mahasiswa yang dapat mengajukan perubahan jadwal', 'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'Dosen Mata Kuliah',          'slug' => 'dosen',     'description' => 'Dosen pengajar mata kuliah', 'created_at' => $now, 'updated_at' => $now],
-        ]);
-
-        // =============================================
-        // 2. USERS
-        // =============================================
-        $password = Hash::make('password123');
-
-        DB::table('users')->insert([
-            // ID 1 - Admin
-            [
-                'name' => 'Dr. Budi Santoso',
-                'email' => 'admin@university.ac.id',
-                'password' => $password,
-                'nim_nip' => '198501012010011001',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            // ID 2 - Dosen 1
-            [
-                'name' => 'Prof. Siti Rahayu, M.Kom',
-                'email' => 'siti.rahayu@university.ac.id',
-                'password' => $password,
-                'nim_nip' => '197803152005012001',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            // ID 3 - Dosen 2
-            [
-                'name' => 'Dr. Ahmad Fauzi, S.T., M.T.',
-                'email' => 'ahmad.fauzi@university.ac.id',
-                'password' => $password,
-                'nim_nip' => '198206202008011002',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            // ID 4 - Aslab
-            [
-                'name' => 'Reza Pratama',
-                'email' => 'reza.pratama@university.ac.id',
-                'password' => $password,
-                'nim_nip' => '2023001001',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            // ID 5 - Mahasiswa 1
-            [
-                'name' => 'Andi Wijaya',
-                'email' => 'andi.wijaya@student.university.ac.id',
-                'password' => $password,
-                'nim_nip' => '2023001010',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            // ID 6 - Mahasiswa 2
-            [
-                'name' => 'Dewi Lestari',
-                'email' => 'dewi.lestari@student.university.ac.id',
-                'password' => $password,
-                'nim_nip' => '2023001011',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            // ID 7 - Mahasiswa 3
-            [
-                'name' => 'Fajar Nugroho',
-                'email' => 'fajar.nugroho@student.university.ac.id',
-                'password' => $password,
-                'nim_nip' => '2023001012',
-                'avatar_url' => null,
-                'fcm_token' => null,
-                'email_verified_at' => $now,
-                'is_active' => true,
-                'remember_token' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-
-        // =============================================
-        // 3. USER_ROLES
-        // =============================================
-        DB::table('user_roles')->insert([
-            ['user_id' => 1, 'role_id' => 1, 'assigned_at' => $now, 'assigned_by' => null],  // Budi = Admin
-            ['user_id' => 2, 'role_id' => 4, 'assigned_at' => $now, 'assigned_by' => 1],     // Siti = Dosen
-            ['user_id' => 3, 'role_id' => 4, 'assigned_at' => $now, 'assigned_by' => 1],     // Ahmad = Dosen
-            ['user_id' => 4, 'role_id' => 2, 'assigned_at' => $now, 'assigned_by' => 1],     // Reza = Aslab
-            ['user_id' => 4, 'role_id' => 3, 'assigned_at' => $now, 'assigned_by' => 1],     // Reza juga Mahasiswa
-            ['user_id' => 5, 'role_id' => 3, 'assigned_at' => $now, 'assigned_by' => 1],     // Andi = Mahasiswa
-            ['user_id' => 6, 'role_id' => 3, 'assigned_at' => $now, 'assigned_by' => 1],     // Dewi = Mahasiswa
-            ['user_id' => 7, 'role_id' => 3, 'assigned_at' => $now, 'assigned_by' => 1],     // Fajar = Mahasiswa
-        ]);
-
-        // =============================================
-        // 4. SEMESTERS
-        // =============================================
-        DB::table('semesters')->insert([
-            [
-                'name' => 'Semester Ganjil 2024/2025',
-                'academic_year' => '2024/2025',
-                'term' => 'GANJIL',
-                'start_date' => '2024-09-02',
-                'end_date' => '2025-01-31',
-                'is_active' => false,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'name' => 'Semester Genap 2025/2026',
-                'academic_year' => '2025/2026',
-                'term' => 'GENAP',
-                'start_date' => '2025-02-10',
-                'end_date' => '2026-07-15',
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-
-        // =============================================
-        // 5. CALL REAL SCHEDULE SEEDER
-        // =============================================
-        $this->call([
-            RealScheduleSeeder::class,
-        ]);
-
-        // =============================================
-        // 6. ASSIGN SOME SCHEDULES TO DOSEN (For testing)
-        // =============================================
-        // We will assign a few schedules so that the Dosen login will have data
-        $schedules = DB::table('schedules')->pluck('id')->toArray();
-        if (count($schedules) >= 5) {
-            DB::table('teaching_assignments')->insert([
-                ['schedule_id' => $schedules[0], 'user_id' => 2, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Siti
-                ['schedule_id' => $schedules[1], 'user_id' => 3, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Ahmad
-                ['schedule_id' => $schedules[2], 'user_id' => 2, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Siti
-                ['schedule_id' => $schedules[3], 'user_id' => 3, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Ahmad
-                ['schedule_id' => $schedules[4], 'user_id' => 2, 'role_in_class' => 'PENGAJAR', 'assigned_at' => $now], // Siti
-                ['schedule_id' => $schedules[4], 'user_id' => 4, 'role_in_class' => 'ASISTEN',  'assigned_at' => $now], // Reza Aslab
-            ]);
+        foreach ($roles as $r) {
+            Role::firstOrCreate(['slug' => $r['slug']], $r);
         }
+
+        $adminRole      = Role::where('slug', 'admin')->first();
+        $dosenRole      = Role::where('slug', 'dosen')->first();
+        $aslabRole      = Role::where('slug', 'aslab')->first();
+        $mahasiswaRole  = Role::where('slug', 'mahasiswa')->first();
+
+        // ═══════════════════════════════════════════
+        // MAIN ACCOUNTS (4 user utama)
+        // ═══════════════════════════════════════════
+        $mainUsers = [
+            [
+                'name'     => 'Revan',
+                'email'    => 'revan@sars.test',
+                'password' => 'password',
+                'nim_nip'  => 'ADM001',
+                'role'     => $adminRole,
+            ],
+            [
+                'name'     => 'Bagas',
+                'email'    => 'bagas@sars.test',
+                'password' => 'password',
+                'nim_nip'  => 'DSN001',
+                'role'     => $dosenRole,
+            ],
+            [
+                'name'     => 'Faris',
+                'email'    => 'faris@sars.test',
+                'password' => 'password',
+                'nim_nip'  => 'ASL001',
+                'role'     => $aslabRole,
+            ],
+            [
+                'name'     => 'Zendin',
+                'email'    => 'zendin@sars.test',
+                'password' => 'password',
+                'nim_nip'  => 'MHS001',
+                'role'     => $mahasiswaRole,
+            ],
+        ];
+
+        foreach ($mainUsers as $mu) {
+            $role = $mu['role'];
+            unset($mu['role']);
+            $user = User::firstOrCreate(
+                ['email' => $mu['email']],
+                $mu
+            );
+            $user->roles()->syncWithoutDetaching([$role->id]);
+        }
+
+        // ═══════════════════════════════════════════
+        // DOSEN PENGAMPU (16 dosen)
+        // ═══════════════════════════════════════════
+        $dosenList = [
+            ['name' => 'Umi',              'email' => 'umi@sars.test',          'nim_nip' => 'DSN002'],
+            ['name' => 'Heri',             'email' => 'heri@sars.test',         'nim_nip' => 'DSN003'],
+            ['name' => 'Bambang',          'email' => 'bambang@sars.test',      'nim_nip' => 'DSN004'],
+            ['name' => 'Esti',             'email' => 'esti@sars.test',         'nim_nip' => 'DSN005'],
+            ['name' => 'Wiranto',          'email' => 'wiranto@sars.test',      'nim_nip' => 'DSN006'],
+            ['name' => 'Fajar',            'email' => 'fajar@sars.test',        'nim_nip' => 'DSN007'],
+            ['name' => 'Ery',              'email' => 'ery@sars.test',          'nim_nip' => 'DSN008'],
+            ['name' => 'Dewi',             'email' => 'dewi@sars.test',         'nim_nip' => 'DSN009'],
+            ['name' => 'Brilyan',          'email' => 'brilyan@sars.test',      'nim_nip' => 'DSN010'],
+            ['name' => 'Afrizal',          'email' => 'afrizal@sars.test',      'nim_nip' => 'DSN011'],
+            ['name' => 'Rini',             'email' => 'rini@sars.test',         'nim_nip' => 'DSN012'],
+            ['name' => 'Endra',            'email' => 'endra@sars.test',        'nim_nip' => 'DSN013'],
+            ['name' => 'Arif',             'email' => 'arif@sars.test',         'nim_nip' => 'DSN014'],
+            ['name' => 'BaWi',             'email' => 'bawi@sars.test',         'nim_nip' => 'DSN015'],
+            ['name' => 'Akhmad',           'email' => 'akhmad@sars.test',       'nim_nip' => 'DSN016'],
+            ['name' => 'Fahmy',            'email' => 'fahmy@sars.test',        'nim_nip' => 'DSN017'],
+            ['name' => 'Thofiq Odhi',      'email' => 'thofiq@sars.test',       'nim_nip' => 'DSN018'],
+            ['name' => 'Shofie',           'email' => 'shofie@sars.test',       'nim_nip' => 'DSN019'],
+            ['name' => 'Wisnu',            'email' => 'wisnu@sars.test',        'nim_nip' => 'DSN020'],
+            ['name' => 'Aziz',             'email' => 'aziz@sars.test',         'nim_nip' => 'DSN021'],
+            ['name' => 'Herdito',          'email' => 'herdito@sars.test',      'nim_nip' => 'DSN022'],
+            ['name' => 'Wiharto',          'email' => 'wiharto@sars.test',      'nim_nip' => 'DSN023'],
+            ['name' => 'Haryono',          'email' => 'haryono@sars.test',      'nim_nip' => 'DSN024'],
+            ['name' => 'Zuhdi',            'email' => 'zuhdi@sars.test',        'nim_nip' => 'DSN025'],
+            ['name' => 'Ristu',            'email' => 'ristu@sars.test',        'nim_nip' => 'DSN026'],
+        ];
+
+        foreach ($dosenList as $d) {
+            $user = User::firstOrCreate(
+                ['email' => $d['email']],
+                array_merge($d, ['password' => 'password'])
+            );
+            $user->roles()->syncWithoutDetaching([$dosenRole->id]);
+        }
+
+        // ═══════════════════════════════════════════
+        // SEMESTER AKTIF
+        // ═══════════════════════════════════════════
+        Semester::firstOrCreate(
+            ['academic_year' => '2025/2026', 'term' => 'GENAP'],
+            [
+                'name'       => 'Semester Genap 2025/2026',
+                'start_date' => '2026-02-01',
+                'end_date'   => '2026-07-31',
+                'is_active'  => true,
+            ]
+        );
+
+        // ═══════════════════════════════════════════
+        // RUANGAN
+        // ═══════════════════════════════════════════
+        $rooms = [
+            ['code' => 'B4-10',        'name' => 'Ruang B4-10',              'capacity' => 40, 'building' => 'B4', 'floor' => 1, 'type' => 'KELAS'],
+            ['code' => 'B4-11',        'name' => 'Ruang B4-11',              'capacity' => 40, 'building' => 'B4', 'floor' => 1, 'type' => 'KELAS'],
+            ['code' => 'B4.06',        'name' => 'Ruang B4.06',              'capacity' => 40, 'building' => 'B4', 'floor' => 0, 'type' => 'KELAS'],
+            ['code' => 'LAB4-TIK',     'name' => 'Lab .4 TIK Lt.4',          'capacity' => 30, 'building' => 'TIK', 'floor' => 4, 'type' => 'LABORATORIUM'],
+            ['code' => 'LAB3-TIK',     'name' => 'Lab 3 TIK Lt.3',           'capacity' => 30, 'building' => 'TIK', 'floor' => 3, 'type' => 'LABORATORIUM'],
+            ['code' => 'LAB-B4.04',    'name' => 'Lab B4.04',                'capacity' => 30, 'building' => 'B4', 'floor' => 0, 'type' => 'LABORATORIUM'],
+            ['code' => 'LAB-B4.05',    'name' => 'Lab B4.05',                'capacity' => 30, 'building' => 'B4', 'floor' => 0, 'type' => 'LABORATORIUM'],
+            ['code' => 'PASCA-1301',   'name' => 'Pasca 1301',               'capacity' => 40, 'building' => 'Pascasarjana', 'floor' => 3, 'type' => 'KELAS'],
+            ['code' => 'PASCA-1304',   'name' => 'Pasca 1304',               'capacity' => 40, 'building' => 'Pascasarjana', 'floor' => 3, 'type' => 'KELAS'],
+            ['code' => 'PASCA-1312',   'name' => 'Pasca 1312',               'capacity' => 40, 'building' => 'Pascasarjana', 'floor' => 3, 'type' => 'KELAS'],
+        ];
+
+        foreach ($rooms as $rm) {
+            Room::firstOrCreate(['code' => $rm['code']], $rm);
+        }
+
+        // ═══════════════════════════════════════════
+        // CALL SCHEDULE SEEDER
+        // ═══════════════════════════════════════════
+        $this->call(RealScheduleSeeder::class);
     }
 }
-
