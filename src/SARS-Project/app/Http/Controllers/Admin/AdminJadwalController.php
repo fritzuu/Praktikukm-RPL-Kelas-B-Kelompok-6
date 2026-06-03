@@ -198,7 +198,7 @@ class AdminJadwalController extends Controller
                     $content = trim($content);
 
                     preg_match('/(.*?) \(semester (.*?)\) \(kelas (.*?)\)( P)?/', $content, $courseMatch);
-                    
+
                     if ($courseMatch) {
                         $courseName = trim($courseMatch[1]);
                         $courseSemester = trim($courseMatch[2]);
@@ -212,7 +212,7 @@ class AdminJadwalController extends Controller
 
                         $courseCode = substr('MK-' . strtoupper(Str::slug($courseName)), 0, 20);
                         $courseId = DB::table('courses')->where('name', $courseName)->where('class_name', $className)->value('id');
-                        
+
                         if (!$courseId) {
                             $courseId = DB::table('courses')->insertGetId([
                                 'semester_id' => $semesterId,
@@ -250,7 +250,7 @@ class AdminJadwalController extends Controller
 
                             $courseCode = substr('MK-' . strtoupper(Str::slug($courseName)), 0, 20);
                             $courseId = DB::table('courses')->where('name', $courseName)->where('class_name', $className)->value('id');
-                            
+
                             if (!$courseId) {
                                 $courseId = DB::table('courses')->insertGetId([
                                     'semester_id' => $semesterId,
@@ -294,9 +294,11 @@ class AdminJadwalController extends Controller
             );
 
             // Send notification to Admin and all Lecturers and Aslabs
-            $recipientIds = DB::table('user_roles')
-                ->whereIn('role_id', [1, 2, 4]) // Admin (1), Aslab (2), Dosen (4)
-                ->pluck('user_id')
+            $recipientIds = DB::table('users')
+                ->join('user_roles', 'users.id', '=', 'user_roles.user_id')
+                ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+                ->whereIn('roles.slug', ['admin', 'aslab', 'dosen'])
+                ->pluck('users.id')
                 ->unique()
                 ->toArray();
 
@@ -329,7 +331,7 @@ class AdminJadwalController extends Controller
         try {
             DB::table('teaching_assignments')->where('schedule_id', $id)->delete();
             DB::table('schedules')->where('id', $id)->delete();
-            
+
             DB::commit();
 
             if ($scheduleInfo) {
@@ -375,17 +377,17 @@ class AdminJadwalController extends Controller
             foreach ($schedulesList as $s1) {
                 foreach ($schedulesList as $s2) {
                     if ($s1->id === $s2->id) continue;
-                    
+
                     $pairKey = min($s1->id, $s2->id) . '-' . max($s1->id, $s2->id);
                     if (in_array($pairKey, $checked)) continue;
-                    
+
                     $sameDay = strtolower($s1->day_of_week) === strtolower($s2->day_of_week);
                     $sameRoom = $s1->room_id === $s2->room_id;
-                    
+
                     if ($sameDay && $sameRoom) {
                         $overlap = ($s1->session_start >= $s2->session_start && $s1->session_start < $s2->session_start + $s2->session_duration) ||
                                    ($s2->session_start >= $s1->session_start && $s2->session_start < $s1->session_start + $s1->session_duration);
-                        
+
                         if ($overlap) {
                             $checked[] = $pairKey;
                             $toDelete[] = $s2->id;
@@ -445,5 +447,13 @@ class AdminJadwalController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menyelesaikan konflik: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Override parent logActivity — Activity model not yet implemented.
+     */
+    protected function logActivity(int $userId, string $action, string $status = 'disetujui'): void
+    {
+        // No-op: Activity model/table not yet created.
     }
 }
