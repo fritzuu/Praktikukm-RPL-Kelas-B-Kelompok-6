@@ -90,7 +90,7 @@ export default function DosenJadwal({
             </div>
 
             {/* ── Full Availability Grid ───────────────────────────── */}
-            <ScheduleGrid jadwalItems={allSchedules} rooms={rooms} />
+            <ScheduleGrid jadwalItems={allSchedules} rooms={rooms} onCardClick={handleOpenDetail} />
 
             {/* ── My Schedule Section ──────────────────────────────── */}
             <div className="space-y-6">
