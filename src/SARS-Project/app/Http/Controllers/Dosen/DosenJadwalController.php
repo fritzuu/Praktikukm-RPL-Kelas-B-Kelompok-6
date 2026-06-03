@@ -80,6 +80,7 @@ class DosenJadwalController extends Controller
 
         $allSchedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
             ->leftJoin('teaching_assignments', function($join) {
                 $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
                      ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
@@ -93,6 +94,7 @@ class DosenJadwalController extends Controller
                 'courses.name as nama',
                 'users.name as dosen',
                 'schedules.room_id',
+                'rooms.code as ruangan',
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
                 'schedules.session_duration as durasi'
@@ -105,6 +107,7 @@ class DosenJadwalController extends Controller
                     'nama'      => $s->nama,
                     'dosen'     => $s->dosen ?? '-',
                     'ruangan_id'=> $s->room_id,
+                    'ruangan'   => $s->ruangan,
                     'hari'      => strtolower($s->hari),
                     'sesiMulai' => $s->sesiMulai,
                     'durasi'    => $s->durasi,
