@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Aslab;
 use App\Http\Controllers\Controller;
 use App\Models\Approval;
 use App\Models\ChangeRequest;
+use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -96,6 +97,17 @@ class AslabValidationController extends Controller
         // Update change request status
         $cr->update(['status' => 'PENDING_ADMIN']);
 
+        Notification::create([
+            'user_id'      => $cr->requester_id,
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'title'        => 'Request Diteruskan',
+            'message'      => "Pengajuan perubahan jadwal {$cr->request_code} telah divalidasi Aslab dan diteruskan ke Admin.",
+            'type'         => 'system',
+            'category'     => 'change_request',
+            'action_url'   => route('mahasiswa.requests'),
+        ]);
+
         return redirect()->back()->with('success', 'Request berhasil diteruskan ke Admin.');
     }
 
@@ -124,6 +136,17 @@ class AslabValidationController extends Controller
         ]);
 
         $cr->update(['status' => 'REJECTED']);
+
+        Notification::create([
+            'user_id'      => $cr->requester_id,
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'title'        => 'Request Ditolak Aslab',
+            'message'      => "Pengajuan perubahan jadwal {$cr->request_code} ditolak oleh Aslab. Alasan: {$request->notes}",
+            'type'         => 'system',
+            'category'     => 'change_request',
+            'action_url'   => route('mahasiswa.requests'),
+        ]);
 
         return redirect()->back()->with('success', 'Request berhasil ditolak.');
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Approval;
 use App\Models\ChangeRequest;
+use App\Models\Notification;
 use App\Models\ScheduleOverride;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -181,6 +182,17 @@ class AdminPersetujuanController extends Controller
             $cr->update(['status' => 'APPROVED']);
         });
 
+        Notification::create([
+            'user_id'      => $cr->requester_id,
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'title'        => 'Request Disetujui Admin',
+            'message'      => "Pengajuan perubahan jadwal {$cr->request_code} telah disetujui oleh Admin.",
+            'type'         => 'system',
+            'category'     => 'change_request',
+            'action_url'   => route('mahasiswa.requests'),
+        ]);
+
         return back()->with('success', 'Pengajuan berhasil disetujui.');
     }
 
@@ -212,6 +224,17 @@ class AdminPersetujuanController extends Controller
         ]);
 
         $cr->update(['status' => 'REJECTED_ADMIN']);
+
+        Notification::create([
+            'user_id'      => $cr->requester_id,
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'title'        => 'Request Ditolak Admin',
+            'message'      => "Pengajuan perubahan jadwal {$cr->request_code} ditolak oleh Admin. Alasan: {$request->notes}",
+            'type'         => 'system',
+            'category'     => 'change_request',
+            'action_url'   => route('mahasiswa.requests'),
+        ]);
 
         return back()->with('success', 'Pengajuan berhasil ditolak.');
     }
