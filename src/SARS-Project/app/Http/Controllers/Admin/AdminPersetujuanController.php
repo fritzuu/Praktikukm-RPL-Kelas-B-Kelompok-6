@@ -193,6 +193,24 @@ class AdminPersetujuanController extends Controller
             'action_url'   => route('mahasiswa.requests'),
         ]);
 
+        // Notify lecturers assigned to the schedule
+        $lecturerIds = \DB::table('teaching_assignments')
+            ->where('schedule_id', $cr->schedule_id)
+            ->pluck('user_id');
+
+        foreach ($lecturerIds as $lecturerId) {
+            Notification::create([
+                'user_id'      => $lecturerId,
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'title'        => 'Perubahan Jadwal Kelas',
+                'message'      => "Jadwal kelas {$cr->schedule->course->name} ({$cr->schedule->course->class_name}) telah diubah oleh Admin.",
+                'type'         => 'system',
+                'category'     => 'change_request',
+                'action_url'   => route('dosen.jadwal'),
+            ]);
+        }
+
         return back()->with('success', 'Pengajuan berhasil disetujui.');
     }
 
