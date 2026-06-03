@@ -1,11 +1,38 @@
-import { useState } from 'react';
-import { Upload } from 'lucide-react';
-import AppLayout from './AppLayout';
-import FileUploadModal from '../Components/Shared/FileUploadModal';
-import { ADMIN_NAV_ITEMS, ADMIN_BRANDING } from '../Components/Admin/AdminNavConfig';
+import { useState } from "react";
+import { Upload } from "lucide-react";
+import { router } from "@inertiajs/react";
+import AppLayout from "./AppLayout";
+import FileUploadModal from "../Components/Shared/FileUploadModal";
+import {
+    ADMIN_NAV_ITEMS,
+    ADMIN_BRANDING,
+} from "../Components/Admin/AdminNavConfig";
 
 export default function AdminLayout({ children }) {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    /**
+     * Read the dropped/selected file as plain text and POST to jadwal.import.
+     * Works for .txt and .csv files that follow the raw-text schedule format.
+     */
+    const handleFileSubmit = (file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setUploading(true);
+            router.post(
+                route("admin.jadwal.import"),
+                { raw_text: e.target.result, overwrite: false },
+                {
+                    onFinish: () => {
+                        setUploading(false);
+                        setUploadModalOpen(false);
+                    },
+                },
+            );
+        };
+        reader.readAsText(file);
+    };
 
     const topBarActions = (
         <button
@@ -27,10 +54,14 @@ export default function AdminLayout({ children }) {
         >
             {children}
 
-            {/* Admin-specific: Upload Modal */}
+            {/* Admin-specific: Upload Modal — wired to jadwal.import */}
             <FileUploadModal
                 isOpen={uploadModalOpen}
-                onClose={() => setUploadModalOpen(false)}
+                onClose={() => !uploading && setUploadModalOpen(false)}
+                title="Import Jadwal Kuliah"
+                subtitle="Upload file teks/CSV berformat jadwal sesi"
+                submitLabel={uploading ? "Mengunggah..." : "Unggah Jadwal"}
+                onSubmit={handleFileSubmit}
             />
         </AppLayout>
     );
