@@ -13,10 +13,10 @@ export default function Notifications({ notifications: propNotifs }) {
     const notifData = propNotifs?.data || propNotifs || [];
     const [notifs, setNotifs] = useState(notifData);
 
-    function markAsRead(id) {
-        setNotifs(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    function markAsRead(notif) {
+        setNotifs(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
         try {
-            fetch(route('mahasiswa.notif.read', { id }), {
+            fetch(route('notifications.read', { id: notif.notif_id }), {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '', 'Accept': 'application/json' },
             });
@@ -26,7 +26,7 @@ export default function Notifications({ notifications: propNotifs }) {
     function markAllRead() {
         setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
         try {
-            fetch(route('mahasiswa.notif.readAll'), {
+            fetch(route('notifications.readAll'), {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '', 'Accept': 'application/json' },
             });
@@ -63,7 +63,7 @@ export default function Notifications({ notifications: propNotifs }) {
                     return (
                         <div
                             key={notif.id}
-                            onClick={() => !notif.is_read && markAsRead(notif.id)}
+                            onClick={() => !notif.is_read && markAsRead(notif)}
                             className={`bg-card border border-border rounded-xl px-5 py-4 flex items-start gap-4 transition-all hover:shadow-sm cursor-pointer ${!notif.is_read ? 'border-l-4 border-l-primary-500 bg-primary-50/30' : ''}`}
                         >
                             <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center shrink-0`}>

@@ -12,31 +12,31 @@ const ICON_MAP = {
 };
 
 const dropdownVariants = {
-    hidden: { 
-        opacity: 0, 
-        scale: 0.92, 
-        y: -10 
+    hidden: {
+        opacity: 0,
+        scale: 0.92,
+        y: -10,
     },
-    visible: { 
-        opacity: 1, 
-        scale: 1, 
+    visible: {
+        opacity: 1,
+        scale: 1,
         y: 0,
-        transition: { 
-            type: 'spring', 
-            stiffness: 400, 
+        transition: {
+            type: "spring",
+            stiffness: 400,
             damping: 30,
-            mass: 0.8
-        }
+            mass: 0.8,
+        },
     },
-    exit: { 
-        opacity: 0, 
-        scale: 0.95, 
+    exit: {
+        opacity: 0,
+        scale: 0.95,
         y: -6,
-        transition: { 
-            duration: 0.15, 
-            ease: 'easeOut' 
-        }
-    }
+        transition: {
+            duration: 0.15,
+            ease: "easeOut",
+        },
+    },
 };
 
 const listVariants = {
@@ -45,17 +45,17 @@ const listVariants = {
         transition: {
             staggerChildren: 0.05,
             delayChildren: 0.05,
-        }
-    }
+        },
+    },
 };
 
 const itemVariants = {
     hidden: { opacity: 0, x: -12 },
-    visible: { 
-        opacity: 1, 
+    visible: {
+        opacity: 1,
         x: 0,
-        transition: { type: 'spring', stiffness: 300, damping: 25 }
-    }
+        transition: { type: "spring", stiffness: 300, damping: 25 },
+    },
 };
 
 export default function NotificationDropdown({ onClose, notifications = [] }) {
@@ -83,7 +83,9 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
             className="absolute right-0 top-full mt-2 w-80 bg-card rounded-xl border border-border shadow-lg shadow-black/5 overflow-hidden z-50"
         >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold text-text-primary">Notifikasi</h3>
+                <h3 className="text-sm font-semibold text-text-primary">
+                    Notifikasi
+                </h3>
                 <span className="text-[10px] font-bold bg-danger/10 text-danger px-2 py-0.5 rounded-full">
                     {unreadCount} baru
                 </span>

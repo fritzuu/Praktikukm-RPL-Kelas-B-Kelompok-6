@@ -147,6 +147,36 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Jadwal + ruangan + mata kuliah (tanpa penugasan dosen — admin tentukan lewat UI)
+
+        // =============================================
+        // 4. SEMESTERS
+        // =============================================
+        DB::table('semesters')->insert([
+            [
+                'name' => 'Semester Ganjil 2024/2025',
+                'academic_year' => '2024/2025',
+                'term' => 'GANJIL',
+                'start_date' => '2024-09-02',
+                'end_date' => '2025-01-31',
+                'is_active' => false,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'name' => 'Semester Genap 2025/2026',
+                'academic_year' => '2025/2026',
+                'term' => 'GENAP',
+                'start_date' => '2025-02-10',
+                'end_date' => '2026-07-15',
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+
+        // =============================================
+        // 5. CALL REAL SCHEDULE SEEDER
+        // =============================================
         $this->call([
             RealScheduleSeeder::class,
         ]);

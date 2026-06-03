@@ -7,7 +7,7 @@ Smart Academic Schedule & Room Change System (SARS) adalah sistem manajemen jadw
 | Nama | NIM | Role |
 | :--- | :--- | :--- |
 | **Revan Alifian Zhafran** | L0124154 | Project Manager & Tech Lead |
-| **Bagas Aditama Suryo Nugroho** | L0124137 | Frontend Developer |
+| **Bagas Aditama Suryo Nugroho** | L0124042 | Frontend Developer |
 | **Mufti Faris Murtadho** | L0124133 | Backend Developer |
 | **Zendinan Okbah Hasan** | L0124126 | Backend Developer / QA |
 

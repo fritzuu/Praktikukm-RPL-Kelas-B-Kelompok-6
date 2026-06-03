@@ -1,12 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Upload, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 export default function FileUploadModal({ isOpen, onClose, title = 'Import Jadwal Prodi', subtitle = 'Unggah file jadwal semester terbaru', submitLabel = 'Unggah Jadwal', onSubmit }) {
     const [dragOver, setDragOver] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);
 
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
 
     function handleDragOver(e) { e.preventDefault(); setDragOver(true); }
     function handleDragLeave() { setDragOver(false); }
@@ -47,9 +54,9 @@ export default function FileUploadModal({ isOpen, onClose, title = 'Import Jadwa
 
     function handleClose() { setSelectedFile(null); onClose(); }
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]" onClick={handleClose} />
             <div className="relative bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md mx-4 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -107,6 +114,7 @@ export default function FileUploadModal({ isOpen, onClose, title = 'Import Jadwa
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

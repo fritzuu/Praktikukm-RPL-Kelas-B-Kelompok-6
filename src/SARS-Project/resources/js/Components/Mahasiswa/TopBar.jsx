@@ -69,7 +69,7 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
         <>
             <header
                 className={`
-                    sticky top-0 z-30 bg-card border-b border-border
+                    sticky top-0 z-40 bg-card border-b border-border
                     flex items-center gap-4 px-6 py-3
                     transition-all duration-250
                     ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
@@ -133,7 +133,7 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
                                             <div className="min-w-0">
                                                 <p className="text-sm font-medium text-text-primary truncate">{item.nama}</p>
                                                 <p className="text-[11px] text-text-muted">
-                                                    {item.kode} • {item.ruangan} • {item.hari.toUpperCase()} Sesi {item.sesiMulai} ({item.mulai}-{item.selesai})
+                                                    {item.kode} • {item.ruangan} • {item.hari.toUpperCase()} Sesi {item.sesiMulai}
                                                 </p>
                                             </div>
                                         </div>

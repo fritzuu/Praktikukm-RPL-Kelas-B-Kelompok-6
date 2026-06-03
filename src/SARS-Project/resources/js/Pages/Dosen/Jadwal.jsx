@@ -72,7 +72,7 @@ export default function DosenJadwal({
                             Jadwal Mengajar
                         </h1>
                         <p className="text-text-secondary text-sm">
-                            Semester {semester?.nama || 'Ganjil'} TA {semester?.tahun || '2024/2025'}
+                            Semester {semester?.nama || 'Ganjil'} TA {semester?.tahun || '2025/2026'}
                         </p>
                     </div>
                 </div>

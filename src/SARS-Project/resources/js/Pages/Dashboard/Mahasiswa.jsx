@@ -1,22 +1,19 @@
-import { usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { usePage, router } from '@inertiajs/react';
+import { useState, useEffect, useCallback } from 'react';
 import MahasiswaLayout from '../../Layouts/MahasiswaLayout';
 import {
-    Calendar,
     FileText,
     CheckCircle,
     XCircle,
     Clock,
-    TrendingUp,
-    ArrowRight,
-    BookOpen,
-    DoorOpen,
-    AlertCircle,
 } from 'lucide-react';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
 import LiveClockCard from '../../Components/Shared/LiveClockCard';
 import SyncStatusCard from '../../Components/Shared/SyncStatusCard';
+import Modal from '../../Components/Modal';
+import EmptyRoomsCard from '../../Components/Mahasiswa/EmptyRoomsCard';
+import LiveCampusActivityCard from '../../Components/Mahasiswa/LiveCampusActivityCard';
 
 const HARI_MAP = {
     senin: 'Senin',
@@ -42,15 +39,52 @@ const TIPE_COLORS = {
     permanent: 'bg-warning/10 border-warning/50 text-amber-800',
 };
 
+const EMPTY_CAMPUS_WIDGETS = {
+    emptyRooms: [],
+    stats: { activeSchedules: 0, usedRooms: 0, emptyRooms: 0, totalToday: 0 },
+    currentTime: '',
+    roomTypes: [],
+    hasSemester: false,
+    isWeekend: false,
+    availabilityStatus: 'no_semester',
+    lectureWindow: null,
+};
+
 export default function MahasiswaDashboard({
     stats = { totalRequests: 0, pendingRequests: 0, approvedRequests: 0, rejectedRequests: 0 },
     semester = null,
     recentRequests = [],
     schedules = [],
     rooms = [],
+    campusWidgets = EMPTY_CAMPUS_WIDGETS,
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
+
+        const [selectedSchedule, setSelectedSchedule] = useState(null);
+
+    const [widgetData, setWidgetData] = useState(campusWidgets);
+    const [widgetLoading, setWidgetLoading] = useState(false);
+
+    const fetchWidgets = useCallback((showSpinner = true) => {
+        if (showSpinner) setWidgetLoading(true);
+        fetch(route('mahasiswa.dashboardWidgets'))
+            .then(res => res.json())
+            .then(data => {
+                setWidgetData(data);
+                setWidgetLoading(false);
+            })
+            .catch(() => setWidgetLoading(false));
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => fetchWidgets(false), 60000);
+        return () => clearInterval(interval);
+    }, [fetchWidgets]);
+
+    const handleCardClick = (item) => {
+        setSelectedSchedule(item);
+    };
 
     return (
         <>
@@ -100,17 +134,121 @@ export default function MahasiswaDashboard({
             </section>
 
             {/* ── Weekly Calendar Preview ───────────────────────────── */}
-            <div className="mb-6">
-                <ScheduleGrid 
-                    jadwalItems={schedules} 
+            <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden p-6 mb-6">
+                <ScheduleGrid
+                    jadwalItems={schedules}
                     rooms={rooms}
+                    showConflicts={true}
+                    onCardClick={handleCardClick}
                 />
             </div>
 
-            {/* ── Bottom Section: Request Form ────────── */}
-            <div className="w-full">
-                <RequestFormPreview schedules={schedules} rooms={rooms} />
+            {/* ── Bottom Section: Dashboard Widgets ────────── */}
+            <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                <div className="w-full lg:w-[65%]">
+                    <EmptyRoomsCard
+                        rooms={widgetData.emptyRooms ?? []}
+                        roomTypes={widgetData.roomTypes ?? []}
+                        loading={widgetLoading}
+                        hasSemester={widgetData.hasSemester}
+                        isWeekend={widgetData.isWeekend}
+                        availabilityStatus={widgetData.availabilityStatus ?? 'active'}
+                        lectureWindow={widgetData.lectureWindow ?? null}
+                        onRefresh={() => fetchWidgets(true)}
+                    />
+                </div>
+                <div className="w-full lg:w-[35%]">
+                    <LiveCampusActivityCard
+                        stats={widgetData.stats ?? {}}
+                        loading={widgetLoading}
+                        hasSemester={widgetData.hasSemester}
+                        isWeekend={widgetData.isWeekend}
+                    />
+                </div>
             </div>
+
+            {/* Details Modal */}
+            <Modal
+                isOpen={!!selectedSchedule}
+                onClose={() => setSelectedSchedule(null)}
+                title="Detail Jadwal"
+                maxWidth="md"
+            >
+                {selectedSchedule && (
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Mata Kuliah</h4>
+                            <p className="text-lg font-bold text-text-primary">{selectedSchedule.nama} ({selectedSchedule.kode})</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Kelas</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.kelas || '-'}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Semester</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.semester || '-'}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Ruangan</h4>
+                                <p className="font-medium text-text-primary">{selectedSchedule.ruangan}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Hari</h4>
+                                <p className="font-medium text-text-primary capitalize">{selectedSchedule.hari}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Waktu</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedSchedule.jamMulai && selectedSchedule.jamAkhir
+                                        ? `${selectedSchedule.jamMulai.substring(0, 5)} - ${selectedSchedule.jamAkhir.substring(0, 5)}`
+                                        : selectedSchedule.mulai && selectedSchedule.selesai
+                                            ? `${selectedSchedule.mulai.substring(0, 5)} - ${selectedSchedule.selesai.substring(0, 5)}`
+                                            : 'Waktu belum diatur'}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Sesi</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedSchedule.durasi > 1
+                                        ? `Sesi ${selectedSchedule.sesiMulai} - ${selectedSchedule.sesiMulai + selectedSchedule.durasi - 1}`
+                                        : `Sesi ${selectedSchedule.sesiMulai}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border flex flex-col gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Dosen Pengajar</h4>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-lg">
+                                        {selectedSchedule.dosen && selectedSchedule.dosen !== '-' ? selectedSchedule.dosen.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <p className="font-semibold text-text-primary">
+                                        {!selectedSchedule.dosen || selectedSchedule.dosen === '-' ? 'Belum Ditentukan' : selectedSchedule.dosen}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 mt-2">
+                                <button
+                                    onClick={() => setSelectedSchedule(null)}
+                                    className="flex-1 py-3 bg-surface hover:bg-card border border-border text-text-secondary rounded-xl text-sm font-bold transition-colors"
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </>
     );
 }
@@ -130,145 +268,7 @@ function StatCard({ icon: Icon, label, value, color, bgColor }) {
     );
 }
 
-/* ── Request Form Preview Component ───────────────────────────────────────── */
-function RequestFormPreview({ schedules = [], rooms = [] }) {
-    const [formData, setFormData] = useState({
-        nama: '',
-        nim: '',
-        kelas: '',
-        mataKuliah: '',
-        ruangan: '',
-        reason: ''
-    });
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    // Extract unique courses from schedule
-    const uniqueCourses = [...new Map((schedules || []).map(item =>
-        [item.kode, item]
-    )).values()];
-
-    // Extract unique classes from schedule
-    const uniqueClasses = [...new Set((schedules || []).map(item => item.kelas).filter(c => c && c !== '-'))].sort();
-
-    return (
-        <div className="bg-card border border-border rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center">
-                    <FileText size={20} className="text-primary-500" />
-                </div>
-                <div>
-                    <h3 className="text-base font-bold text-text-primary">Request Schedule Change</h3>
-                    <p className="text-xs text-text-secondary">Please fill in the details below to request a slot modification.</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Full Name</label>
-                    <input
-                        type="text"
-                        name="nama"
-                        value={formData.nama}
-                        onChange={handleChange}
-                        placeholder="Enter your full name"
-                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                    />
-                </div>
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">NIM (Student ID)</label>
-                    <input
-                        type="text"
-                        name="nim"
-                        value={formData.nim}
-                        onChange={handleChange}
-                        placeholder="e.g. 21004567"
-                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                    />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Class</label>
-                    <select
-                        name="kelas"
-                        value={formData.kelas}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none cursor-pointer"
-                    >
-                        <option value="" disabled>Select your class</option>
-                        {uniqueClasses.map(cls => (
-                            <option key={cls} value={cls}>Kelas {cls}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Mata Kuliah</label>
-                    <select
-                        name="mataKuliah"
-                        value={formData.mataKuliah}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none cursor-pointer"
-                    >
-                        <option value="" disabled>Pilih Mata Kuliah</option>
-                        {uniqueCourses.map(course => (
-                            <option key={course.kode} value={course.kode}>
-                                {course.kode} - {course.nama}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Ruangan Request</label>
-                    <select
-                        name="ruangan"
-                        value={formData.ruangan}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none cursor-pointer"
-                    >
-                        <option value="" disabled>Pilih Ruangan</option>
-                        {rooms?.map(room => {
-                            const roomCode = typeof room === 'object' && room !== null ? (room.code || room.name) : room;
-                            const roomLabel = typeof room === 'object' && room !== null ? (room.name || room.code) : room;
-                            return (
-                                <option key={typeof room === 'object' && room !== null ? room.id : roomCode} value={roomCode}>
-                                    {roomLabel}
-                                </option>
-                            );
-                        })}
-                    </select>
-                </div>
-            </div>
-
-            <div className="mb-5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Reason for Request</label>
-                <textarea
-                    name="reason"
-                    value={formData.reason}
-                    onChange={handleChange}
-                    placeholder="Explain why you need a schedule change (e.g., laboratory conflict, research duty)..."
-                    rows={3}
-                    className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
-                />
-            </div>
-
-            <div className="flex items-center gap-3 justify-end">
-                <button className="px-5 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
-                    Cancel
-                </button>
-                <button
-                    onClick={() => { try { window.location.href = route('mahasiswa.requests'); } catch { } }}
-                    className="px-6 py-2.5 bg-danger hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-                >
-                    Submit Request
-                </button>
-            </div>
-        </div>
-    );
-}
 
 // Inertia persistent layout
 MahasiswaDashboard.layout = (page) => <MahasiswaLayout>{page}</MahasiswaLayout>;

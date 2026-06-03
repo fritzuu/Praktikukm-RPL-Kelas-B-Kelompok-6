@@ -59,7 +59,7 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
                     </h2>
                 </div>
                 <div className="text-xs text-text-muted">
-                    Semester Genap 2024/2025
+                    Semester Genap 2025/2026
                 </div>
             </div>
 

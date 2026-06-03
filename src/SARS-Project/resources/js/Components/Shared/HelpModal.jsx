@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { HelpCircle, Keyboard, X, Calendar, Search as SearchIcon, Bell, Moon, MessageSquare } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 const SHORTCUTS = [
     { keys: ['Ctrl', 'K'], desc: 'Fokus ke Search Bar' },
@@ -15,9 +17,15 @@ const FEATURES = [
 ];
 
 export default function HelpModal({ isOpen, onClose }) {
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
 
-    return (
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
+
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]" onClick={onClose} />
@@ -95,6 +103,7 @@ export default function HelpModal({ isOpen, onClose }) {
                 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
                 @keyframes scaleIn { from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) } }
             `}</style>
-        </div>
+        </div>,
+        document.body
     );
 }
