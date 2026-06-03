@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Approval;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
+use App\Models\NotificationRecipient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -97,7 +98,7 @@ class AslabValidationController extends Controller
         // Update change request status
         $cr->update(['status' => 'PENDING_ADMIN']);
 
-        Notification::create([
+        $notif = Notification::create([
             'user_id'      => $cr->requester_id,
             'request_id'   => $cr->id,
             'triggered_by' => $request->user()->id,
@@ -106,6 +107,14 @@ class AslabValidationController extends Controller
             'type'         => 'system',
             'category'     => 'change_request',
             'action_url'   => route('mahasiswa.requests'),
+        ]);
+
+        NotificationRecipient::create([
+            'notification_id' => $notif->id,
+            'recipient_id'    => $cr->requester_id,
+            'channel'         => 'database',
+            'is_sent'         => true,
+            'sent_at'         => Carbon::now(),
         ]);
 
         return redirect()->back()->with('success', 'Request berhasil diteruskan ke Admin.');
@@ -137,7 +146,7 @@ class AslabValidationController extends Controller
 
         $cr->update(['status' => 'REJECTED']);
 
-        Notification::create([
+        $notif = Notification::create([
             'user_id'      => $cr->requester_id,
             'request_id'   => $cr->id,
             'triggered_by' => $request->user()->id,
@@ -146,6 +155,14 @@ class AslabValidationController extends Controller
             'type'         => 'system',
             'category'     => 'change_request',
             'action_url'   => route('mahasiswa.requests'),
+        ]);
+
+        NotificationRecipient::create([
+            'notification_id' => $notif->id,
+            'recipient_id'    => $cr->requester_id,
+            'channel'         => 'database',
+            'is_sent'         => true,
+            'sent_at'         => Carbon::now(),
         ]);
 
         return redirect()->back()->with('success', 'Request berhasil ditolak.');

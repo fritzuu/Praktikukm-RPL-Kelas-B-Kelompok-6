@@ -74,9 +74,7 @@ class AdminJadwalController extends Controller
         try {
             if ($overwrite) {
                 // Clear existing schedules and courses
-                DB::table('teaching_assignments')->delete();
                 DB::table('schedules')->delete();
-                DB::table('courses')->delete();
             }
 
             $now = Carbon::now();

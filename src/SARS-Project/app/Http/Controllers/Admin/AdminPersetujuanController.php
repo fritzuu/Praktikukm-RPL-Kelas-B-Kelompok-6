@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Approval;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
+use App\Models\NotificationRecipient;
 use App\Models\ScheduleOverride;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -182,7 +183,7 @@ class AdminPersetujuanController extends Controller
             $cr->update(['status' => 'APPROVED']);
         });
 
-        Notification::create([
+        $notifMahasiswa = Notification::create([
             'user_id'      => $cr->requester_id,
             'request_id'   => $cr->id,
             'triggered_by' => $request->user()->id,
@@ -192,6 +193,23 @@ class AdminPersetujuanController extends Controller
             'category'     => 'change_request',
             'action_url'   => route('mahasiswa.requests'),
         ]);
+        NotificationRecipient::create(['notification_id' => $notifMahasiswa->id, 'recipient_id' => $cr->requester_id, 'channel' => 'database', 'is_sent' => true, 'sent_at' => Carbon::now()]);
+
+        // Notify Aslab who validated it
+        $aslabApproval = \DB::table('approvals')->where('request_id', $cr->id)->where('stage', 'ASLAB_CHECK')->first();
+        if ($aslabApproval) {
+            $notifAslab = Notification::create([
+                'user_id'      => $aslabApproval->actor_id,
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'title'        => 'Request Disetujui Admin',
+                'message'      => "Pengajuan perubahan jadwal {$cr->request_code} yang Anda validasi telah disetujui oleh Admin.",
+                'type'         => 'system',
+                'category'     => 'change_request',
+                'action_url'   => route('aslab.notifikasi'), // Or whatever Aslab notification route is
+            ]);
+            NotificationRecipient::create(['notification_id' => $notifAslab->id, 'recipient_id' => $aslabApproval->actor_id, 'channel' => 'database', 'is_sent' => true, 'sent_at' => Carbon::now()]);
+        }
 
         // Notify lecturers assigned to the schedule
         $lecturerIds = \DB::table('teaching_assignments')
@@ -199,7 +217,7 @@ class AdminPersetujuanController extends Controller
             ->pluck('user_id');
 
         foreach ($lecturerIds as $lecturerId) {
-            Notification::create([
+            $notifDosen = Notification::create([
                 'user_id'      => $lecturerId,
                 'request_id'   => $cr->id,
                 'triggered_by' => $request->user()->id,
@@ -209,6 +227,7 @@ class AdminPersetujuanController extends Controller
                 'category'     => 'change_request',
                 'action_url'   => route('dosen.jadwal'),
             ]);
+            NotificationRecipient::create(['notification_id' => $notifDosen->id, 'recipient_id' => $lecturerId, 'channel' => 'database', 'is_sent' => true, 'sent_at' => Carbon::now()]);
         }
 
         return back()->with('success', 'Pengajuan berhasil disetujui.');
@@ -243,7 +262,7 @@ class AdminPersetujuanController extends Controller
 
         $cr->update(['status' => 'REJECTED_ADMIN']);
 
-        Notification::create([
+        $notifMahasiswa = Notification::create([
             'user_id'      => $cr->requester_id,
             'request_id'   => $cr->id,
             'triggered_by' => $request->user()->id,
@@ -253,6 +272,23 @@ class AdminPersetujuanController extends Controller
             'category'     => 'change_request',
             'action_url'   => route('mahasiswa.requests'),
         ]);
+        NotificationRecipient::create(['notification_id' => $notifMahasiswa->id, 'recipient_id' => $cr->requester_id, 'channel' => 'database', 'is_sent' => true, 'sent_at' => Carbon::now()]);
+
+        // Notify Aslab who validated it
+        $aslabApproval = \DB::table('approvals')->where('request_id', $cr->id)->where('stage', 'ASLAB_CHECK')->first();
+        if ($aslabApproval) {
+            $notifAslab = Notification::create([
+                'user_id'      => $aslabApproval->actor_id,
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'title'        => 'Request Ditolak Admin',
+                'message'      => "Pengajuan perubahan jadwal {$cr->request_code} yang Anda validasi ditolak oleh Admin.",
+                'type'         => 'system',
+                'category'     => 'change_request',
+                'action_url'   => route('aslab.notifikasi'),
+            ]);
+            NotificationRecipient::create(['notification_id' => $notifAslab->id, 'recipient_id' => $aslabApproval->actor_id, 'channel' => 'database', 'is_sent' => true, 'sent_at' => Carbon::now()]);
+        }
 
         return back()->with('success', 'Pengajuan berhasil ditolak.');
     }
