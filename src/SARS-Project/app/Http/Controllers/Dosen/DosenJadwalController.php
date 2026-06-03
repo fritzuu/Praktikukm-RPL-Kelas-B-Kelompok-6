@@ -97,7 +97,11 @@ class DosenJadwalController extends Controller
                 'rooms.code as ruangan',
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
-                'schedules.session_duration as durasi'
+                'schedules.session_duration as durasi',
+                'courses.class_name as kelas',
+                'courses.description as semesterNum',
+                'schedules.start_time as jamMulai',
+                'schedules.end_time as jamAkhir'
             )
             ->get()
             ->map(function ($s) use ($assignedScheduleIds) {
@@ -111,6 +115,10 @@ class DosenJadwalController extends Controller
                     'hari'      => strtolower($s->hari),
                     'sesiMulai' => $s->sesiMulai,
                     'durasi'    => $s->durasi,
+                    'kelas'     => $s->kelas,
+                    'semesterNum'=> $s->semesterNum,
+                    'jamMulai'  => $s->jamMulai,
+                    'jamAkhir'  => $s->jamAkhir,
                     'isOwn'     => $assignedScheduleIds->contains($s->id),
                 ];
             });
