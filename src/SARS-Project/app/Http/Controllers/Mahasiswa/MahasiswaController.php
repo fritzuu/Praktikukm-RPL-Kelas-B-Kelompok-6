@@ -14,6 +14,7 @@ use App\Models\Semester;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class MahasiswaController extends Controller
@@ -450,30 +451,36 @@ class MahasiswaController extends Controller
     public function settings(Request $request)
     {
         return Inertia::render('Dashboard/Mahasiswa/Settings', [
-            'user' => [
-                'id'         => $request->user()->id,
-                'name'       => $request->user()->name,
-                'email'      => $request->user()->email,
-                'nim_nip'    => $request->user()->nim_nip,
-                'avatar_url' => $request->user()->avatar_url,
-                'fcm_token'  => $request->user()->fcm_token ? true : false,
-            ],
+            'user' => $request->user(),
         ]);
     }
 
     /**
-     * Update settings (profile).
+     * Update settings (profile + photo).
      */
     public function updateSettings(Request $request)
     {
-        $validated = $request->validate([
-            'name'  => 'required|string|max:150',
-            'email' => 'required|email|max:191|unique:users,email,' . $request->user()->id,
+        $user = $request->user();
+
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $request->user()->update($validated);
+        $user->name = $request->name;
 
-        return back()->with('success', 'Profil berhasil diperbarui.');
+        if ($request->hasFile('photo')) {
+            if ($user->avatar_url && str_contains($user->avatar_url, '/storage/avatars/')) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar_url));
+            }
+
+            $path = $request->file('photo')->store('avatars', 'public');
+            $user->avatar_url = Storage::url($path);
+        }
+
+        $user->save();
+
+        return redirect()->back()->with('success', 'Profil berhasil diperbarui.');
     }
 
     /**
@@ -563,6 +570,11 @@ class MahasiswaController extends Controller
     /**
      * Checks if a proposed slot has conflicts.
      * Returns null if clean, or a string describing the conflict reason if there is one.
+     *
+     * Bug fixes applied:
+     * - Time values normalized to HH:MM:SS for consistent SQL comparison
+     * - Outgoing overrides: baseline schedules that are overridden OUT of the room
+     *   on the given $date are skipped (they no longer occupy the original slot)
      */
     private function checkSlotConflict(
         int $scheduleId,
@@ -573,10 +585,24 @@ class MahasiswaController extends Controller
         int $roomId,
         ?string $date = null
     ): ?string {
+        // Normalize times to HH:MM:SS for consistent DB comparison
+        $startTime = $this->normalizeTimeToFull($startTime);
+        $endTime = $this->normalizeTimeToFull($endTime);
+
         $schedule = Schedule::with('course')->findOrFail($scheduleId);
 
+        // Build list of schedule IDs that have outgoing overrides on this date
+        // (these baselines are moved AWAY from their original room/day, so they don't conflict)
+        $outgoingOverrideIds = [];
+        if ($date) {
+            $outgoingOverrideIds = ScheduleOverride::where('is_active', true)
+                ->where('override_date', $date)
+                ->pluck('schedule_id')
+                ->toArray();
+        }
+
         // 1. Room conflict check
-        $roomConflict = Schedule::where('semester_id', $semesterId)
+        $roomConflictQuery = Schedule::where('semester_id', $semesterId)
             ->where('is_active', true)
             ->where('room_id', $roomId)
             ->where('day_of_week', $day)
@@ -584,8 +610,14 @@ class MahasiswaController extends Controller
             ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
                   ->where('end_time', '>', $startTime);
-            })
-            ->first();
+            });
+
+        // Skip baselines that are overridden out on this date
+        if (!empty($outgoingOverrideIds)) {
+            $roomConflictQuery->whereNotIn('id', $outgoingOverrideIds);
+        }
+
+        $roomConflict = $roomConflictQuery->first();
 
         if ($roomConflict) {
             return "Bentrok Ruangan: digunakan oleh {$roomConflict->course->name} ({$roomConflict->course->class_name})";
@@ -613,7 +645,7 @@ class MahasiswaController extends Controller
             ->pluck('user_id');
 
         if ($lecturerIds->isNotEmpty()) {
-            $lecturerConflict = Schedule::where('semester_id', $semesterId)
+            $lecturerConflictQuery = Schedule::where('semester_id', $semesterId)
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
@@ -623,8 +655,13 @@ class MahasiswaController extends Controller
                 })
                 ->whereHas('teachingAssignments', function ($q) use ($lecturerIds) {
                     $q->whereIn('user_id', $lecturerIds);
-                })
-                ->first();
+                });
+
+            if (!empty($outgoingOverrideIds)) {
+                $lecturerConflictQuery->whereNotIn('id', $outgoingOverrideIds);
+            }
+
+            $lecturerConflict = $lecturerConflictQuery->first();
 
             if ($lecturerConflict) {
                 return "Bentrok Dosen: mengajar {$lecturerConflict->course->name} ({$lecturerConflict->course->class_name})";
@@ -652,7 +689,7 @@ class MahasiswaController extends Controller
         // 3. Student / Class conflict check
         $course = $schedule->course;
         if ($course && $course->description && $course->class_name) {
-            $classConflict = Schedule::where('semester_id', $semesterId)
+            $classConflictQuery = Schedule::where('semester_id', $semesterId)
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
@@ -663,8 +700,13 @@ class MahasiswaController extends Controller
                 ->whereHas('course', function ($q) use ($course) {
                     $q->where('description', $course->description)
                       ->where('class_name', $course->class_name);
-                })
-                ->first();
+                });
+
+            if (!empty($outgoingOverrideIds)) {
+                $classConflictQuery->whereNotIn('id', $outgoingOverrideIds);
+            }
+
+            $classConflict = $classConflictQuery->first();
 
             if ($classConflict) {
                 return "Bentrok Kelas: jadwal untuk {$classConflict->course->name} ({$classConflict->course->class_name})";
@@ -699,6 +741,17 @@ class MahasiswaController extends Controller
         $start = $times[$sessionStart][0] ?? '00:00';
         $end = $times[$sessionStart + $duration - 1][1] ?? '00:00';
         return [$start, $end];
+    }
+
+    /**
+     * Normalize time to HH:MM:SS for consistent SQL comparison.
+     */
+    private function normalizeTimeToFull(string $time): string
+    {
+        if (strlen($time) === 5) {
+            return $time . ':00';
+        }
+        return $time;
     }
 
     /**
@@ -741,6 +794,65 @@ class MahasiswaController extends Controller
         }
 
         return response()->json(['sessions' => $results]);
+    }
+
+    /**
+     * Full-range availability check endpoint.
+     * Checks conflict using actual time range from session_start to session_start + duration - 1
+     * in a single query, instead of per-session individual checks.
+     * This avoids missing conflicts that span session boundaries.
+     */
+    public function cekKetersediaanSlot(Request $request)
+    {
+        $request->validate([
+            'schedule_id'      => 'required|exists:schedules,id',
+            'proposed_day'     => 'required|in:SENIN,SELASA,RABU,KAMIS,JUMAT',
+            'target_date'      => 'nullable|date',
+            'proposed_room_id' => 'required|exists:rooms,id',
+            'session_start'    => 'required|integer|min:1|max:11',
+        ]);
+
+        $semester = Semester::active();
+        if (!$semester) {
+            return response()->json(['error' => 'Tidak ada semester aktif.'], 400);
+        }
+
+        $scheduleId = $request->schedule_id;
+        $day = $request->proposed_day;
+        $date = $request->target_date;
+        $roomId = $request->proposed_room_id;
+        $sessionStart = $request->session_start;
+
+        $originalSchedule = Schedule::findOrFail($scheduleId);
+        $duration = $originalSchedule->session_duration;
+
+        // Get full time range for the entire duration block
+        list($startTime, $endTime) = $this->getSessionTimes($day, $sessionStart, $duration);
+
+        if ($startTime === '00:00' || $endTime === '00:00') {
+            return response()->json([
+                'available' => false,
+                'reason' => 'Sesi yang dipilih melampaui batas sesi yang tersedia.',
+            ]);
+        }
+
+        $conflict = $this->checkSlotConflict(
+            $scheduleId,
+            $semester->id,
+            $day,
+            $startTime,
+            $endTime,
+            $roomId,
+            $date
+        );
+
+        return response()->json([
+            'available' => is_null($conflict),
+            'reason' => $conflict,
+            'time_range' => "{$startTime} - {$endTime}",
+            'session_start' => $sessionStart,
+            'session_end' => $sessionStart + $duration - 1,
+        ]);
     }
 
     /**

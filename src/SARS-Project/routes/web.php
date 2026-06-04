@@ -127,8 +127,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/requests',      [MahasiswaController::class, 'submitRequest'])->name('mahasiswa.requests.submit');
         Route::get('/notifications',  [MahasiswaController::class, 'notifications'])->name('mahasiswa.notifications');
         Route::get('/settings',       [MahasiswaController::class, 'settings'])->name('mahasiswa.settings');
-        Route::put('/settings',       [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
-        Route::put('/settings/password', [MahasiswaController::class, 'updatePassword'])->name('mahasiswa.settings.password');
+        Route::post('/settings',      [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
 
         // API-style endpoints (JSON)
         Route::post('/cek-slot',              [MahasiswaController::class, 'cekSlot'])->name('mahasiswa.cekSlot');
@@ -139,5 +138,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/meeting-dates',          [MahasiswaController::class, 'meetingDates'])->name('mahasiswa.meetingDates');
         Route::post('/available-rooms',        [MahasiswaController::class, 'availableRoomsForSlot'])->name('mahasiswa.availableRooms');
         Route::post('/matrix-availability',    [MahasiswaController::class, 'matrixAvailabilityBulk'])->name('mahasiswa.matrixAvailability');
+        Route::post('/cek-ketersediaan-slot',  [MahasiswaController::class, 'cekKetersediaanSlot'])->name('mahasiswa.cekKetersediaanSlot');
     });
 });

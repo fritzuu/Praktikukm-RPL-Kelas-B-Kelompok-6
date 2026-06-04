@@ -1,188 +1,254 @@
-import { useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { useState, useRef, useEffect } from 'react';
+import { useForm, usePage } from '@inertiajs/react';
+import {
+    User,
+    Camera,
+    Shield,
+    Moon,
+    Sun,
+    Monitor,
+    CheckCircle,
+    AlertCircle,
+    Save,
+    Image as ImageIcon,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import MahasiswaLayout from '../../../Layouts/MahasiswaLayout';
-import { Settings as SettingsIcon, User, Lock, Bell, Shield, Save, Eye, EyeOff } from 'lucide-react';
 
-export default function Settings({ user: propUser }) {
-    const { auth } = usePage().props;
-    const userData = propUser || auth?.user || {};
+export default function Settings({ user }) {
+    const [previewUrl, setPreviewUrl] = useState(user.avatar_url);
+    const [activeTheme, setActiveTheme] = useState(
+        () => localStorage.getItem('theme') || 'light'
+    );
+    const fileInputRef = useRef();
 
-    const [activeTab, setActiveTab] = useState('profile');
-    const [profile, setProfile] = useState({ name: userData.name || '', email: userData.email || '' });
-    const [password, setPassword] = useState({ current_password: '', password: '', password_confirmation: '' });
-    const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
-    const [saving, setSaving] = useState(false);
-    const [successMsg, setSuccessMsg] = useState('');
-
-    const [notifPrefs, setNotifPrefs] = useState({
-        pushEnabled: !!userData.fcm_token,
-        emailEnabled: true,
-        statusChanges: true,
-        scheduleUpdates: true,
-        reminders: true,
+    const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
+        name: user.name || '',
+        photo: null,
     });
 
-    function handleProfileSave(e) {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            router.put(route('mahasiswa.settings.update'), profile, {
-                onSuccess: () => { setSuccessMsg('Profil berhasil diperbarui!'); setTimeout(() => setSuccessMsg(''), 3000); },
-                onFinish: () => setSaving(false),
-            });
-        } catch { setSaving(false); setSuccessMsg('Profil berhasil diperbarui! (mock)'); setTimeout(() => setSuccessMsg(''), 3000); }
-    }
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { alert('Ukuran file maksimal 2MB'); return; }
+            setData('photo', file);
+            const reader = new FileReader();
+            reader.onloadend = () => setPreviewUrl(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
 
-    function handlePasswordSave(e) {
+    const handleSubmit = (e) => {
         e.preventDefault();
-        if (password.password.length < 8) return;
-        if (password.password !== password.password_confirmation) return;
-        setSaving(true);
-        try {
-            router.put(route('mahasiswa.settings.password'), password, {
-                onSuccess: () => { setSuccessMsg('Password berhasil diubah!'); setPassword({ current_password: '', password: '', password_confirmation: '' }); setTimeout(() => setSuccessMsg(''), 3000); },
-                onFinish: () => setSaving(false),
-            });
-        } catch { setSaving(false); setSuccessMsg('Password berhasil diubah! (mock)'); setTimeout(() => setSuccessMsg(''), 3000); }
-    }
+        post(route('mahasiswa.settings.update'), { forceFormData: true, preserveScroll: true });
+    };
 
-    const tabs = [
-        { key: 'profile', label: 'Profil', icon: User },
-        { key: 'security', label: 'Keamanan', icon: Lock },
-        { key: 'notifications', label: 'Notifikasi', icon: Bell },
-    ];
+    const handleThemeChange = (theme) => {
+        setActiveTheme(theme);
+        localStorage.setItem('theme', theme);
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+        else if (theme === 'light') document.documentElement.classList.remove('dark');
+        else {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+                document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+    };
+
+    useEffect(() => { handleThemeChange(localStorage.getItem('theme') || 'light'); }, []);
 
     return (
-        <>
-            <section className="mb-6">
-                <div className="flex items-center gap-2">
-                    <SettingsIcon size={22} className="text-text-primary" />
-                    <h1 className="text-xl font-bold text-text-primary">Pengaturan</h1>
+        <div className="max-w-4xl mx-auto space-y-8 pb-12">
+            {/* Header */}
+            <div className="flex items-center gap-4 px-1">
+                <div className="w-12 h-12 rounded-2xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
+                    <User className="text-white" size={24} />
                 </div>
-                <p className="text-sm text-text-secondary mt-1">Kelola profil, keamanan, dan preferensi notifikasi.</p>
-            </section>
-
-            {successMsg && (
-                <div className="mb-4 bg-success/10 border border-success/20 text-success text-sm font-medium px-4 py-3 rounded-xl flex items-center gap-2">
-                    <Shield size={16} /> {successMsg}
-                </div>
-            )}
-
-            <div className="flex gap-6">
-                {/* Sidebar Tabs */}
-                <div className="w-48 shrink-0 space-y-1">
-                    {tabs.map(tab => {
-                        const Icon = tab.icon;
-                        return (
-                            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key ? 'bg-primary-500/10 text-primary-500' : 'text-text-secondary hover:bg-surface hover:text-text-primary'}`}>
-                                <Icon size={18} /> {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1">
-                    {activeTab === 'profile' && (
-                        <div className="bg-card border border-border rounded-xl p-6">
-                            <h2 className="text-base font-bold text-text-primary mb-5">Informasi Profil</h2>
-                            <form onSubmit={handleProfileSave} className="space-y-4">
-                                <div className="flex items-center gap-5 mb-6">
-                                    <div className="w-16 h-16 rounded-full bg-primary-500 text-white flex items-center justify-center text-2xl font-bold shrink-0">
-                                        {profile.name?.charAt(0)?.toUpperCase() || 'M'}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-text-primary">{profile.name}</p>
-                                        <p className="text-xs text-text-muted">NIM: {userData.nim_nip || '—'}</p>
-                                        <p className="text-[10px] text-text-muted mt-0.5">Mahasiswa • Informatika</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Nama Lengkap</label>
-                                    <input type="text" value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">Email</label>
-                                    <input type="email" value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
-                                </div>
-                                <div className="pt-2">
-                                    <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
-                                        <Save size={16} /> {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {activeTab === 'security' && (
-                        <div className="bg-card border border-border rounded-xl p-6">
-                            <h2 className="text-base font-bold text-text-primary mb-5">Ubah Password</h2>
-                            <form onSubmit={handlePasswordSave} className="space-y-4 max-w-md">
-                                {[
-                                    { key: 'current_password', label: 'Password Saat Ini', showKey: 'current' },
-                                    { key: 'password', label: 'Password Baru', showKey: 'new' },
-                                    { key: 'password_confirmation', label: 'Konfirmasi Password Baru', showKey: 'confirm' },
-                                ].map(field => (
-                                    <div key={field.key}>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5 block">{field.label}</label>
-                                        <div className="relative">
-                                            <input
-                                                type={showPasswords[field.showKey] ? 'text' : 'password'}
-                                                value={password[field.key]}
-                                                onChange={e => setPassword(p => ({ ...p, [field.key]: e.target.value }))}
-                                                className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all pr-10"
-                                            />
-                                            <button type="button" onClick={() => setShowPasswords(p => ({ ...p, [field.showKey]: !p[field.showKey] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
-                                                {showPasswords[field.showKey] ? <EyeOff size={16} /> : <Eye size={16} />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {password.password && password.password.length < 8 && (
-                                    <p className="text-[10px] text-danger">Password minimal 8 karakter</p>
-                                )}
-                                {password.password && password.password_confirmation && password.password !== password.password_confirmation && (
-                                    <p className="text-[10px] text-danger">Password tidak cocok</p>
-                                )}
-                                <div className="pt-2">
-                                    <button type="submit" disabled={saving || password.password.length < 8 || password.password !== password.password_confirmation} className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
-                                        <Lock size={16} /> {saving ? 'Mengubah...' : 'Ubah Password'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {activeTab === 'notifications' && (
-                        <div className="bg-card border border-border rounded-xl p-6">
-                            <h2 className="text-base font-bold text-text-primary mb-5">Preferensi Notifikasi</h2>
-                            <div className="space-y-4">
-                                {[
-                                    { key: 'pushEnabled', label: 'Push Notification (FCM)', desc: 'Terima notifikasi real-time ke perangkat' },
-                                    { key: 'emailEnabled', label: 'Email Notification', desc: 'Terima ringkasan via email' },
-                                    { key: 'statusChanges', label: 'Perubahan Status Request', desc: 'Notifikasi saat status request berubah' },
-                                    { key: 'scheduleUpdates', label: 'Update Jadwal', desc: 'Notifikasi saat jadwal berubah (Temp/Permanent)' },
-                                    { key: 'reminders', label: 'Pengingat', desc: 'Pengingat deadline dan jadwal mendatang' },
-                                ].map(item => (
-                                    <div key={item.key} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
-                                        <div>
-                                            <p className="text-sm font-semibold text-text-primary">{item.label}</p>
-                                            <p className="text-xs text-text-muted mt-0.5">{item.desc}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => setNotifPrefs(p => ({ ...p, [item.key]: !p[item.key] }))}
-                                            className={`w-11 h-6 rounded-full transition-colors relative ${notifPrefs[item.key] ? 'bg-primary-500' : 'bg-border'}`}
-                                        >
-                                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${notifPrefs[item.key] ? 'left-5.5 translate-x-0' : 'left-0.5'}`} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                <div>
+                    <h1 className="text-2xl font-bold text-text-primary tracking-tight">Pengaturan Profil</h1>
+                    <p className="text-text-secondary text-sm">Kelola informasi akun dan preferensi tampilan Anda</p>
                 </div>
             </div>
-        </>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left: Sidebar Info */}
+                <div className="space-y-6">
+                    <div className="bg-card border border-border rounded-3xl p-6 text-center shadow-sm">
+                        <div className="relative w-32 h-32 mx-auto mb-4 group">
+                            <div className="w-full h-full rounded-full overflow-hidden border-4 border-white shadow-xl bg-surface">
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-text-muted">
+                                        <User size={48} />
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current.click()}
+                                className="absolute bottom-0 right-0 w-10 h-10 bg-primary-500 text-white rounded-full flex items-center justify-center border-4 border-white shadow-lg hover:bg-primary-600 transition-all scale-90 group-hover:scale-100"
+                            >
+                                <Camera size={18} />
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/png, image/jpeg, image/jpg"
+                                onChange={handleFileChange}
+                            />
+                        </div>
+                        <h3 className="text-lg font-bold text-text-primary">{user.name}</h3>
+                        <p className="text-text-muted text-[10px] font-black uppercase tracking-widest mt-1">Mahasiswa</p>
+
+                        <div className="mt-6 pt-6 border-t border-border space-y-3">
+                            <div className="flex items-center gap-3 text-left">
+                                <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-secondary">
+                                    <Shield size={14} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Metode Login</p>
+                                    <p className="text-xs font-bold text-text-primary">Single Sign-On (SSO)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-primary-500/5 border border-primary-500/10 rounded-2xl p-5">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="text-primary-500 shrink-0" size={18} />
+                            <p className="text-[11px] text-primary-700 leading-relaxed font-semibold">
+                                Akun Anda terhubung melalui sistem SSO. Password hanya dapat diubah melalui portal pusat universitas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right: Forms */}
+                <div className="lg:col-span-2 space-y-8">
+                    {/* General Settings */}
+                    <motion.form
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onSubmit={handleSubmit}
+                        className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-8"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-500">
+                                    <ImageIcon size={18} />
+                                </div>
+                                <h2 className="text-lg font-bold text-text-primary">Informasi Umum</h2>
+                            </div>
+                            <AnimatePresence>
+                                {recentlySuccessful && (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        className="flex items-center gap-2 text-green-500 text-sm font-bold"
+                                    >
+                                        <CheckCircle size={16} /> Berhasil disimpan
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">Nama Lengkap</label>
+                                <input
+                                    type="text"
+                                    value={data.name}
+                                    onChange={e => setData('name', e.target.value)}
+                                    className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-primary-500/50 transition-all font-medium"
+                                    placeholder="Masukkan nama lengkap..."
+                                />
+                                {errors.name && <p className="text-xs text-red-500 font-medium px-1 mt-1">{errors.name}</p>}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2 opacity-70">
+                                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">Email</label>
+                                    <input
+                                        type="email"
+                                        value={user.email}
+                                        disabled
+                                        className="w-full px-4 py-3 bg-surface/50 border border-border rounded-xl text-text-muted cursor-not-allowed font-medium"
+                                    />
+                                </div>
+                                <div className="space-y-2 opacity-70">
+                                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">NIM</label>
+                                    <input
+                                        type="text"
+                                        value={user.nim_nip}
+                                        disabled
+                                        className="w-full px-4 py-3 bg-surface/50 border border-border rounded-xl text-text-muted cursor-not-allowed font-medium"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 flex justify-end">
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="flex items-center gap-2 px-8 py-3 bg-primary-500 text-white rounded-xl font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all disabled:opacity-50"
+                            >
+                                {processing ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Save size={18} />
+                                )}
+                                {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            </button>
+                        </div>
+                    </motion.form>
+
+                    {/* Appearance */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-6"
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-500">
+                                <Monitor size={18} />
+                            </div>
+                            <h2 className="text-lg font-bold text-text-primary">Tampilan</h2>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {[
+                                { id: 'light', label: 'Terang', icon: Sun },
+                                { id: 'dark', label: 'Gelap', icon: Moon },
+                                { id: 'system', label: 'Sistem', icon: Monitor },
+                            ].map(theme => (
+                                <button
+                                    key={theme.id}
+                                    type="button"
+                                    onClick={() => handleThemeChange(theme.id)}
+                                    className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all duration-300
+                                        ${activeTheme === theme.id
+                                            ? 'bg-primary-500/10 border-primary-500/40 text-primary-500 shadow-md scale-[1.02]'
+                                            : 'bg-surface border-border text-text-muted hover:border-primary-500/20 hover:text-text-primary'
+                                        }`}
+                                >
+                                    <theme.icon size={28} strokeWidth={activeTheme === theme.id ? 2.5 : 2} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.1em]">{theme.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="pt-2 bg-surface/50 p-4 rounded-xl border border-border/50">
+                            <p className="text-[11px] text-text-muted font-medium italic leading-relaxed">
+                                Fitur tema menyesuaikan kenyamanan mata Anda saat bekerja. Pilihan "Sistem" akan mengikuti pengaturan default perangkat Anda.
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        </div>
     );
 }
 
