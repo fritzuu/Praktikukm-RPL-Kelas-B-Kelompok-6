@@ -51,7 +51,7 @@ class HandleInertiaRequests extends Middleware
                     ->select(
                         'notifications.id',
                         'notifications.title as judul',
-                        'notifications.body as pesan',
+                        \DB::raw('COALESCE(notifications.message, notifications.body) as pesan'),
                         'notifications.created_at',
                         'notifications.type as tipe',
                         'notification_recipients.is_read as dibaca'
@@ -61,10 +61,15 @@ class HandleInertiaRequests extends Middleware
                     ->map(function ($n) {
                         $createdAt = \Carbon\Carbon::parse($n->created_at);
                         $tipeMap = [
-                            'STATUS_CHANGE'  => 'jadwal',
-                            'CONFLICT_ALERT' => 'validasi',
-                            'SYSTEM'         => 'sistem',
-                            'REMINDER'       => 'info',
+                            'STATUS_CHANGE'      => 'jadwal',
+                            'REQUEST_APPROVED'   => 'jadwal',
+                            'REQUEST_FORWARDED'  => 'jadwal',
+                            'SCHEDULE_CHANGED'   => 'jadwal',
+                            'CONFLICT_ALERT'     => 'validasi',
+                            'REQUEST_SUBMITTED'  => 'validasi',
+                            'REQUEST_REJECTED'   => 'info',
+                            'SYSTEM'             => 'sistem',
+                            'REMINDER'           => 'info',
                         ];
                         return [
                             'id' => (string)$n->id,
@@ -91,11 +96,15 @@ class HandleInertiaRequests extends Middleware
                     ->map(fn ($nr) => [
                         'id'     => (string) $nr->notification_id,
                         'judul'  => $nr->notification->title,
-                        'pesan'  => $nr->notification->body,
+                        'pesan'  => $nr->notification->message ?? $nr->notification->body,
                         'waktu'  => $nr->notification->created_at->diffForHumans(),
                         'dibaca' => (bool) $nr->is_read,
-                        'tipe'   => strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
-                                  : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info'),
+                        'tipe'   => match($nr->notification->type) {
+                            'STATUS_CHANGE', 'REQUEST_APPROVED', 'REQUEST_FORWARDED', 'SCHEDULE_CHANGED' => 'jadwal',
+                            'CONFLICT_ALERT', 'REQUEST_SUBMITTED' => 'validasi',
+                            'REQUEST_REJECTED' => 'info',
+                            default => 'info',
+                        },
                     ])->values()->toArray()
                 : [],
             'ziggy' => fn () => [

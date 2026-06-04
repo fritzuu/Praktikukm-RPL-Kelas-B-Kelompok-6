@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import {
     Search,
     Bell,
-    Settings,
     HelpCircle,
     X,
     Calendar,
@@ -193,17 +192,6 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
                                    hover:text-text-primary transition-colors"
                     >
                         <HelpCircle size={20} />
-                    </button>
-
-                    {/* ── Settings Icon ─────────────────────────────────────── */}
-                    <button
-                        onClick={() => {
-                            try { router.get(route('mahasiswa.settings')); } catch {}
-                        }}
-                        className="p-2 rounded-lg text-text-secondary hover:bg-surface
-                                   hover:text-text-primary transition-colors"
-                    >
-                        <Settings size={20} />
                     </button>
 
                     {/* ── Profile ───────────────────────────────────────────── */}

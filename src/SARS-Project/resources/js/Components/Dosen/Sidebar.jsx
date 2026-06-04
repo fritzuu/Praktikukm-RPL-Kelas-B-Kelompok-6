@@ -20,8 +20,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ isCollapsed, onToggle }) {
     const { url, props } = usePage();
-    const notifikasi = props.notifikasi || [];
-    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
+    const unreadCount = props.unreadCount || 0;
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     function isActive(routeName) {

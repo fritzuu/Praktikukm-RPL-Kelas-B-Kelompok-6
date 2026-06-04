@@ -309,6 +309,27 @@ class MahasiswaController extends Controller
             'has_conflict'        => $hasConflict,
         ]);
 
+        // Send notifications to all Aslab users
+        $aslabRole = \App\Models\Role::where('slug', 'aslab')->first();
+        $aslabUsers = \App\Models\User::whereHas('roles', fn($q) => $q->where('role_id', $aslabRole->id))->get();
+        
+        foreach ($aslabUsers as $aslab) {
+            $notif = \App\Models\Notification::create([
+                'type'    => 'REQUEST_SUBMITTED',
+                'title'   => 'Request Perubahan Jadwal Baru',
+                'message' => "Mahasiswa {$user->name} mengajukan perubahan jadwal ({$changeRequest->request_code}).",
+                'body'    => 'Silakan validasi di halaman Validasi.',
+            ]);
+
+            \App\Models\NotificationRecipient::create([
+                'notification_id' => $notif->id,
+                'recipient_id'    => $aslab->id,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => \Carbon\Carbon::now(),
+            ]);
+        }
+
         return back()->with([
             'success'      => 'Request berhasil diajukan dengan kode: ' . $changeRequest->request_code,
             'hasConflict'  => $hasConflict,

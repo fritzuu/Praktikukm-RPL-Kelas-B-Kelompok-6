@@ -94,10 +94,15 @@ export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
                             className="bg-card border border-border rounded-2xl p-6 hover:border-accent-cyan hover:scale-[1.02] hover:bg-accent-cyan/[0.03] hover:shadow-xl hover:shadow-accent-cyan/10 transition-all duration-300 group flex flex-col"
                         >
                             {/* Course Badge */}
-                            <div className="mb-3">
+                            <div className="mb-3 flex items-center gap-2">
                                 <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2.5 py-1 rounded-md uppercase tracking-wider">
                                     {item.kode}
                                 </span>
+                                {item.semesterNum && (
+                                    <span className="text-[10px] font-bold bg-accent-cyan/10 text-accent-cyan px-2.5 py-1 rounded-md uppercase tracking-wider">
+                                        SMT {item.semesterNum}
+                                    </span>
+                                )}
                             </div>
 
                             {/* Course Name */}

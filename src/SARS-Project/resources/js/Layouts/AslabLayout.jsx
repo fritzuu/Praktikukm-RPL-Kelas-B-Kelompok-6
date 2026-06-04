@@ -7,7 +7,7 @@ import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
 export default function AslabLayout({ children }) {
-    const { auth, notifikasi } = usePage().props;
+    const { auth } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -57,7 +57,6 @@ export default function AslabLayout({ children }) {
             <TopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
-                notifikasi={notifikasi}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}

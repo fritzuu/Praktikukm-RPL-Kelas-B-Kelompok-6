@@ -20,6 +20,7 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->boolean('is_read')->default(false);
             $table->timestamp('read_at')->nullable();
+            $table->timestamps();
 
             $table->unique(['notification_id', 'recipient_id', 'channel']);
             $table->index(['recipient_id', 'channel', 'is_read']);

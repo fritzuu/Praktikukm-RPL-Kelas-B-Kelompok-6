@@ -77,6 +77,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/statistik', [AdminStatistikController::class, 'index'])
             ->name('statistik');
 
+        // Notifikasi routes
+        Route::get('/notifikasi', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'index'])
+            ->name('notifikasi');
+        Route::post('/notifikasi/{notification}/read', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'markAsRead'])
+            ->name('notifikasi.read');
+        Route::post('/notifikasi/read-all', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'markAllAsRead'])
+            ->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{notification}', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'destroy'])
+            ->name('notifikasi.destroy');
+
         // Pengaturan (Setting) routes
         Route::get('/pengaturan', [AdminSettingController::class, 'index'])
             ->name('pengaturan');

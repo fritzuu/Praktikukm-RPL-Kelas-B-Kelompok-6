@@ -1,4 +1,4 @@
-import { Calendar, AlertTriangle, CheckCircle, Info, Settings } from 'lucide-react';
+import { Calendar, AlertTriangle, CheckCircle, Info, Settings, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';
 import { MOCK_NOTIFIKASI } from '../../data/mockData';
@@ -59,6 +59,16 @@ const itemVariants = {
 };
 
 export default function NotificationDropdown({ onClose, notifications = [] }) {
+    const { props } = usePage();
+    const role = props.auth?.user?.primaryRole || 'admin';
+    
+    const routes = {
+        admin: '/admin/notifikasi',
+        dosen: '/dosen/notifikasi',
+        aslab: '/aslab/notifikasi',
+        mahasiswa: '/mahasiswa/notifications',
+    };
+    
     const handleMarkAllRead = () => {
         router.post('/notifications/read-all', {}, {
             preserveScroll: true,
@@ -68,7 +78,24 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
     const handleMarkRead = (id) => {
         router.post(`/notifications/${id}/read`, {}, {
             preserveScroll: true,
+            onSuccess: () => {
+                const targetRoute = routes[role] || routes.admin;
+                router.get(targetRoute);
+                onClose();
+            }
         });
+    };
+
+    const handleViewAll = () => {
+        const routes = {
+            admin: '/admin/notifikasi',
+            dosen: '/dosen/notifikasi',
+            aslab: '/aslab/notifikasi',
+            mahasiswa: '/mahasiswa/notifications',
+        };
+        const targetRoute = routes[role] || routes.admin;
+        router.get(targetRoute);
+        onClose();
     };
 
     const unreadCount = notifications.filter((n) => !n.dibaca).length;
@@ -102,7 +129,7 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                         <p className="text-xs text-text-muted mt-0.5">Semua pemberitahuan baru akan muncul di sini.</p>
                     </div>
                 ) : (
-                    notifications.map((notif) => {
+                    notifications.slice(0, 3).map((notif) => {
                         const Icon = ICON_MAP[notif.tipe] || Calendar;
                         return (
                             <motion.div
@@ -139,13 +166,20 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                     })
                 )}
             </motion.div>
-            {notifications.length > 0 && unreadCount > 0 && (
-                <div className="px-4 py-2.5 border-t border-border flex justify-between items-center">
-                    <button onClick={handleMarkAllRead} className="text-xs font-semibold text-primary-500 hover:text-primary-600 transition-colors">
-                        Tandai Semua Dibaca
-                    </button>
-                    <button onClick={onClose} className="text-[11px] text-text-muted hover:text-text-primary transition-colors">
-                        Tutup
+            {notifications.length > 0 && (
+                <div className="px-4 py-2.5 border-t border-border flex justify-between items-center gap-2">
+                    {unreadCount > 0 && (
+                        <button onClick={handleMarkAllRead} className="text-xs font-semibold text-primary-500 hover:text-primary-600 transition-colors flex items-center gap-1">
+                            <CheckCircle size={14} />
+                            Tandai Semua Dibaca
+                        </button>
+                    )}
+                    <button 
+                        onClick={handleViewAll} 
+                        className="text-xs font-medium text-text-muted hover:text-text-primary transition-colors flex items-center gap-1 ml-auto"
+                    >
+                        Lihat Semua
+                        <ArrowRight size={12} />
                     </button>
                 </div>
             )}

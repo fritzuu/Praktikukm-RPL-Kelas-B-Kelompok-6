@@ -98,24 +98,42 @@ class AslabValidationController extends Controller
         // Update change request status
         $cr->update(['status' => 'PENDING_ADMIN']);
 
-        $notif = Notification::create([
-            'user_id'      => $cr->requester_id,
-            'request_id'   => $cr->id,
-            'triggered_by' => $request->user()->id,
-            'title'        => 'Request Diteruskan',
-            'message'      => "Pengajuan perubahan jadwal {$cr->request_code} telah divalidasi Aslab dan diteruskan ke Admin.",
-            'type'         => 'system',
-            'category'     => 'change_request',
-            'action_url'   => route('mahasiswa.requests'),
+        // Notify mahasiswa
+        $notif = \App\Models\Notification::create([
+            'type'    => 'REQUEST_FORWARDED',
+            'title'   => 'Request Diteruskan',
+            'message' => "Pengajuan {$cr->request_code} telah divalidasi Aslab.",
+            'body'    => 'Sedang menunggu persetujuan Admin.',
         ]);
 
-        NotificationRecipient::create([
+        \App\Models\NotificationRecipient::create([
             'notification_id' => $notif->id,
             'recipient_id'    => $cr->requester_id,
-            'channel'         => 'database',
+            'channel'         => 'IN_APP',
             'is_sent'         => true,
             'sent_at'         => Carbon::now(),
         ]);
+
+        // Notify all Admin users
+        $adminRole = \App\Models\Role::where('slug', 'admin')->first();
+        $adminUsers = \App\Models\User::whereHas('roles', fn($q) => $q->where('role_id', $adminRole->id))->get();
+        
+        foreach ($adminUsers as $admin) {
+            $notifAdmin = \App\Models\Notification::create([
+                'type'    => 'REQUEST_FORWARDED',
+                'title'   => 'Request Menunggu Persetujuan',
+                'message' => "Request {$cr->request_code} telah divalidasi Aslab.",
+                'body'    => 'Menunggu keputusan akhir Anda.',
+            ]);
+
+            \App\Models\NotificationRecipient::create([
+                'notification_id' => $notifAdmin->id,
+                'recipient_id'    => $admin->id,
+                'channel'         => 'IN_APP',
+                'is_sent'         => true,
+                'sent_at'         => Carbon::now(),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Request berhasil diteruskan ke Admin.');
     }
@@ -146,21 +164,17 @@ class AslabValidationController extends Controller
 
         $cr->update(['status' => 'REJECTED']);
 
-        $notif = Notification::create([
-            'user_id'      => $cr->requester_id,
-            'request_id'   => $cr->id,
-            'triggered_by' => $request->user()->id,
-            'title'        => 'Request Ditolak Aslab',
-            'message'      => "Pengajuan perubahan jadwal {$cr->request_code} ditolak oleh Aslab. Alasan: {$request->notes}",
-            'type'         => 'system',
-            'category'     => 'change_request',
-            'action_url'   => route('mahasiswa.requests'),
+        $notif = \App\Models\Notification::create([
+            'type'    => 'REQUEST_REJECTED',
+            'title'   => 'Request Ditolak Aslab',
+            'message' => "Pengajuan {$cr->request_code} ditolak.",
+            'body'    => "Alasan: {$request->notes}",
         ]);
 
-        NotificationRecipient::create([
+        \App\Models\NotificationRecipient::create([
             'notification_id' => $notif->id,
             'recipient_id'    => $cr->requester_id,
-            'channel'         => 'database',
+            'channel'         => 'IN_APP',
             'is_sent'         => true,
             'sent_at'         => Carbon::now(),
         ]);

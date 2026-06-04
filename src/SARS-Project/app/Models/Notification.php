@@ -73,4 +73,13 @@ class Notification extends Model
     {
         return $query->where('user_id', $userId);
     }
+
+    /**
+     * Relasi ke ChangeRequest
+     */
+    public function changeRequest(): BelongsTo
+    {
+        return $this->belongsTo(ChangeRequest::class, 'request_id');
+    }
 }
+

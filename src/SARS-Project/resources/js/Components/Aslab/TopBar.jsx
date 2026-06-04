@@ -19,7 +19,7 @@ const ICON_MAP = {
     info: AlertTriangle,
 };
 
-export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
+export default function TopBar({ user, sidebarCollapsed }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
@@ -30,6 +30,7 @@ export default function TopBar({ user, sidebarCollapsed, notifikasi = [] }) {
     const { props } = usePage();
 
     const jadwal = props.jadwal || [];
+    const notifikasi = props.auth?.notifications || [];
 
     const unreadCount = notifikasi.filter(n => !n.dibaca).length;
 

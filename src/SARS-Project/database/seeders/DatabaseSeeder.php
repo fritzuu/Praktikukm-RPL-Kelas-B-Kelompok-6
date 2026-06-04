@@ -153,5 +153,70 @@ class DatabaseSeeder extends Seeder
         // CALL SCHEDULE SEEDER
         // ═══════════════════════════════════════════
         $this->call(RealScheduleSeeder::class);
+
+        // ═══════════════════════════════════════════
+        // SAMPLE NOTIFICATIONS
+        // ═══════════════════════════════════════════
+        $this->seedNotifications();
+    }
+
+    private function seedNotifications(): void
+    {
+        $admin = User::where('email', 'revan@sars.test')->first();
+        $dosen = User::where('email', 'bagas@sars.test')->first();
+        $aslab = User::where('email', 'faris@sars.test')->first();
+        $mahasiswa = User::where('email', 'zendin@sars.test')->first();
+
+        $notifications = [
+            [
+                'type' => 'REQUEST_SUBMITTED',
+                'title' => 'Permohonan Reschedule Baru',
+                'message' => 'Mahasiswa mengajukan permohonan reschedule untuk RPL Kelas A',
+                'body' => 'Permohonan baru memerlukan persetujuan Anda',
+                'recipients' => [$admin, $aslab],
+            ],
+            [
+                'type' => 'SCHEDULE_CHANGED',
+                'title' => 'Jadwal Anda Diperbarui',
+                'message' => 'Jadwal Basis Data Kelas B telah dipindahkan ke ruang LAB-B4.04',
+                'body' => 'Perubahan jadwal telah disetujui',
+                'recipients' => [$dosen, $mahasiswa],
+            ],
+            [
+                'type' => 'REQUEST_APPROVED',
+                'title' => 'Permohonan Disetujui',
+                'message' => 'Permohonan reschedule RPL telah disetujui oleh Admin',
+                'body' => 'Jadwal baru akan berlaku mulai minggu depan',
+                'recipients' => [$mahasiswa],
+            ],
+            [
+                'type' => 'CONFLICT_ALERT',
+                'title' => 'Konflik Jadwal Terdeteksi',
+                'message' => 'Terdapat bentrokan jadwal pada hari Senin sesi 3-4',
+                'body' => 'Harap segera diselesaikan',
+                'recipients' => [$admin, $aslab],
+            ],
+        ];
+
+        foreach ($notifications as $notifData) {
+            $recipients = $notifData['recipients'];
+            unset($notifData['recipients']);
+
+            $notifId = DB::table('notifications')->insertGetId(array_merge($notifData, [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+
+            foreach ($recipients as $user) {
+                DB::table('notification_recipients')->insert([
+                    'notification_id' => $notifId,
+                    'recipient_id' => $user->id,
+                    'channel' => 'IN_APP',
+                    'is_read' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 }
