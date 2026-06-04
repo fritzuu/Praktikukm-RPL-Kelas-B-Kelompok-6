@@ -106,6 +106,18 @@ class AdminDashboardController extends Controller
                     }
                     // 2. Lecturer conflict
                     elseif ($s1->dosen_id && $s2->dosen_id && $s1->dosen_id === $s2->dosen_id) {
+                        // Check if conflict should be ignored
+                        $isP1 = $this->isPracticumCourse($s1->nama, $s1->kelas);
+                        $isP2 = $this->isPracticumCourse($s2->nama, $s2->kelas);
+                        
+                        $isBothPracticum = $isP1 && $isP2;
+                        $isAnyPracticum = $isP1 || $isP2;
+                        $isRoomDifferent = $s1->ruangan !== $s2->ruangan;
+                        
+                        if ($isBothPracticum || ($isAnyPracticum && $isRoomDifferent)) {
+                            continue; // Ignore conflict
+                        }
+
                         $checked[] = $pairKey;
                         $konflik[] = [
                             'id' => 'dosen-' . $pairKey,
@@ -175,5 +187,12 @@ class AdminDashboardController extends Controller
             'insights' => $insights,
             'aktivitas' => $aktivitas,
         ]);
+    }
+
+    private function isPracticumCourse($courseName, $className): bool
+    {
+        return (stripos($courseName, 'praktikum') !== false) || 
+               (stripos($className ?? '', 'P') !== false) || 
+               (str_ends_with(strtoupper($courseName), ' P'));
     }
 }

@@ -661,14 +661,32 @@ class MahasiswaController extends Controller
                 $lecturerConflictQuery->whereNotIn('id', $outgoingOverrideIds);
             }
 
-            $lecturerConflict = $lecturerConflictQuery->first();
+            $lecturerConflicts = $lecturerConflictQuery->get();
+            $realConflict = null;
+            foreach ($lecturerConflicts as $lc) {
+                // Check if conflict should be ignored
+                $course1 = $schedule->course;
+                $course2 = $lc->course;
+                $isP1 = $this->isPracticumCourse($course1);
+                $isP2 = $this->isPracticumCourse($course2);
+                $isBothPracticum = $isP1 && $isP2;
+                $isAnyPracticum = $isP1 || $isP2;
+                $isRoomDifferent = $roomId !== $lc->room_id;
+                
+                if ($isBothPracticum || ($isAnyPracticum && $isRoomDifferent)) {
+                    continue; // Ignore
+                }
+                $realConflict = $lc;
+                break;
+            }
 
-            if ($lecturerConflict) {
-                return "Bentrok Dosen: mengajar {$lecturerConflict->course->name} ({$lecturerConflict->course->class_name})";
+            if ($realConflict) {
+                return "Bentrok Dosen: mengajar {$realConflict->course->name} ({$realConflict->course->class_name})";
             }
 
             if ($date) {
-                $lecturerOverrideConflict = ScheduleOverride::where('is_active', true)
+                $lecturerOverrideConflicts = ScheduleOverride::with(['schedule.course'])
+                    ->where('is_active', true)
                     ->where('override_date', $date)
                     ->where('schedule_id', '!=', $scheduleId)
                     ->where(function ($q) use ($startTime, $endTime) {
@@ -678,10 +696,27 @@ class MahasiswaController extends Controller
                     ->whereHas('schedule.teachingAssignments', function ($q) use ($lecturerIds) {
                         $q->whereIn('user_id', $lecturerIds);
                     })
-                    ->first();
+                    ->get();
 
-                if ($lecturerOverrideConflict) {
-                    return "Bentrok Dosen: mengajar {$lecturerOverrideConflict->schedule->course->name} (Override)";
+                $realOverrideConflict = null;
+                foreach ($lecturerOverrideConflicts as $loc) {
+                    $course1 = $schedule->course;
+                    $course2 = $loc->schedule->course;
+                    $isP1 = $this->isPracticumCourse($course1);
+                    $isP2 = $this->isPracticumCourse($course2);
+                    $isBothPracticum = $isP1 && $isP2;
+                    $isAnyPracticum = $isP1 || $isP2;
+                    $isRoomDifferent = $roomId !== $loc->room_id;
+                    
+                    if ($isBothPracticum || ($isAnyPracticum && $isRoomDifferent)) {
+                        continue; // Ignore
+                    }
+                    $realOverrideConflict = $loc;
+                    break;
+                }
+
+                if ($realOverrideConflict) {
+                    return "Bentrok Dosen: mengajar {$realOverrideConflict->schedule->course->name} (Override)";
                 }
             }
         }
@@ -1052,26 +1087,60 @@ class MahasiswaController extends Controller
 
                     // 2. Lecturer conflict check (+30 if clean)
                     if (!empty($lecturerIds)) {
-                        $lecturerConflict = $allSchedules->first(function ($sched) use ($day, $start, $end, $scheduleId, $lecturerIds) {
+                        $lecturerConflict = $allSchedules->first(function ($sched) use ($day, $start, $end, $scheduleId, $lecturerIds, $room, $course) {
                             if ($sched->id === $scheduleId || $sched->day_of_week !== $day) {
                                 return false;
                             }
                             if (!$this->timesOverlap($sched->start_time, $sched->end_time, $start, $end)) {
                                 return false;
                             }
-                            return $sched->teachingAssignments->whereIn('user_id', $lecturerIds)->isNotEmpty();
+                            if ($sched->teachingAssignments->whereIn('user_id', $lecturerIds)->isEmpty()) {
+                                return false;
+                            }
+
+                            // Check if this conflict should be ignored
+                            $course1 = $course;
+                            $course2 = $sched->course;
+                            $isP1 = $this->isPracticumCourse($course1);
+                            $isP2 = $this->isPracticumCourse($course2);
+                            $isBothPracticum = $isP1 && $isP2;
+                            $isAnyPracticum = $isP1 || $isP2;
+                            $isRoomDifferent = $room->id !== $sched->room_id;
+
+                            if ($isBothPracticum || ($isAnyPracticum && $isRoomDifferent)) {
+                                return false; // Ignore conflict
+                            }
+
+                            return true; // Real conflict
                         });
 
                         $lecturerOverrideConflict = null;
                         if ($dayDate) {
-                            $lecturerOverrideConflict = $allOverrides->first(function ($ov) use ($dayDate, $start, $end, $scheduleId, $lecturerIds) {
+                            $lecturerOverrideConflict = $allOverrides->first(function ($ov) use ($dayDate, $start, $end, $scheduleId, $lecturerIds, $room, $course) {
                                 if ($ov->schedule_id === $scheduleId || $ov->override_date->format('Y-m-d') !== $dayDate) {
                                     return false;
                                 }
                                 if (!$this->timesOverlap($ov->new_start_time, $ov->new_end_time, $start, $end)) {
                                     return false;
                                 }
-                                return $ov->schedule->teachingAssignments->whereIn('user_id', $lecturerIds)->isNotEmpty();
+                                if ($ov->schedule->teachingAssignments->whereIn('user_id', $lecturerIds)->isEmpty()) {
+                                    return false;
+                                }
+
+                                // Check if this conflict should be ignored
+                                $course1 = $course;
+                                $course2 = $ov->schedule->course;
+                                $isP1 = $this->isPracticumCourse($course1);
+                                $isP2 = $this->isPracticumCourse($course2);
+                                $isBothPracticum = $isP1 && $isP2;
+                                $isAnyPracticum = $isP1 || $isP2;
+                                $isRoomDifferent = $room->id !== $ov->room_id;
+
+                                if ($isBothPracticum || ($isAnyPracticum && $isRoomDifferent)) {
+                                    return false; // Ignore
+                                }
+
+                                return true; // Real conflict
                             });
                         }
 
@@ -1422,7 +1491,8 @@ class MahasiswaController extends Controller
 
         $lecturerBusy = false;
         if ($lecturerIds->isNotEmpty()) {
-            $lecturerConflict = Schedule::where('semester_id', $semester->id)
+            $lecturerConflicts = Schedule::with(['course'])
+                ->where('semester_id', $semester->id)
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
@@ -1433,10 +1503,25 @@ class MahasiswaController extends Controller
                 ->whereHas('teachingAssignments', function ($q) use ($lecturerIds) {
                     $q->whereIn('user_id', $lecturerIds);
                 })
-                ->exists();
+                ->get();
 
-            if (!$lecturerConflict && $targetDate) {
-                $lecturerConflict = ScheduleOverride::where('is_active', true)
+            foreach ($lecturerConflicts as $lc) {
+                $course1 = $course;
+                $course2 = $lc->course;
+                $isP1 = $this->isPracticumCourse($course1);
+                $isP2 = $this->isPracticumCourse($course2);
+                $isBothPracticum = $isP1 && $isP2;
+                
+                // If they are not both practicum, it's a conflict
+                if (!$isBothPracticum) {
+                    $lecturerBusy = true;
+                    break;
+                }
+            }
+
+            if (!$lecturerBusy && $targetDate) {
+                $lecturerOverrideConflicts = ScheduleOverride::with(['schedule.course'])
+                    ->where('is_active', true)
                     ->where('override_date', $targetDate)
                     ->where('schedule_id', '!=', $scheduleId)
                     ->where(function ($q) use ($startTime, $endTime) {
@@ -1446,10 +1531,21 @@ class MahasiswaController extends Controller
                     ->whereHas('schedule.teachingAssignments', function ($q) use ($lecturerIds) {
                         $q->whereIn('user_id', $lecturerIds);
                     })
-                    ->exists();
-            }
+                    ->get();
 
-            $lecturerBusy = $lecturerConflict;
+                foreach ($lecturerOverrideConflicts as $loc) {
+                    $course1 = $course;
+                    $course2 = $loc->schedule->course;
+                    $isP1 = $this->isPracticumCourse($course1);
+                    $isP2 = $this->isPracticumCourse($course2);
+                    $isBothPracticum = $isP1 && $isP2;
+                    
+                    if (!$isBothPracticum) {
+                        $lecturerBusy = true;
+                        break;
+                    }
+                }
+            }
         }
 
         // ── Bulk query 4: Class/Student conflict check ───────────────────
@@ -1698,6 +1794,19 @@ class MahasiswaController extends Controller
                                 $lsStart = $this->normalizeTime($ls->start_time);
                                 $lsEnd = $this->normalizeTime($ls->end_time);
                                 if ($lsStart < $endT && $lsEnd > $startT) {
+                                    // Check if this conflict should be ignored
+                                    $course1 = $course;
+                                    $course2 = $ls->course;
+                                    $isP1 = $this->isPracticumCourse($course1);
+                                    $isP2 = $this->isPracticumCourse($course2);
+                                    $isBothPracticum = $isP1 && $isP2;
+                                    $isAnyPracticum = $isP1 || $isP2;
+                                    $isRoomDifferent = $roomId !== $ls->room_id;
+                                    
+                                    if ($isBothPracticum || ($isAnyPracticum && $isRoomDifferent)) {
+                                        continue; // Ignore
+                                    }
+
                                     $conflictWarning = "Dosen mengajar {$ls->course->name} ({$ls->course->class_name})";
                                     break;
                                 }
@@ -1731,5 +1840,13 @@ class MahasiswaController extends Controller
         }
 
         return response()->json(['matrix' => $result]);
+    }
+
+    private function isPracticumCourse($course): bool
+    {
+        if (!$course) return false;
+        return (stripos($course->name, 'praktikum') !== false) || 
+               (stripos($course->class_name ?? '', 'P') !== false) || 
+               (str_ends_with(strtoupper($course->name), ' P'));
     }
 }
