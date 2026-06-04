@@ -1,7 +1,6 @@
 import { Calendar, AlertTriangle, CheckCircle, Info, Settings, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { router } from '@inertiajs/react';
-import { MOCK_NOTIFIKASI } from '../../data/mockData';
+import { router, usePage } from '@inertiajs/react';
 
 const ICON_MAP = {
     jadwal: Calendar,
@@ -76,12 +75,11 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
     };
 
     const handleMarkRead = (id) => {
+        const targetRoute = routes[role] || routes.admin;
         router.post(`/notifications/${id}/read`, {}, {
             preserveScroll: true,
-            onSuccess: () => {
-                const targetRoute = routes[role] || routes.admin;
+            onFinish: () => {
                 router.get(targetRoute);
-                onClose();
             }
         });
     };

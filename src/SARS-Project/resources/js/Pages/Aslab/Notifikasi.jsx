@@ -4,7 +4,6 @@ import {
     Monitor, MailOpen, Search, Trash2,
 } from 'lucide-react';
 import AslabLayout from '../../Layouts/AslabLayout';
-import { MOCK_NOTIFIKASI_PAGE_ASLAB } from '../../data/aslabMockData';
 
 const TIPE_CONFIG = {
     jadwal: { icon: Calendar, color: 'bg-primary-500/10 text-primary-500', label: 'Jadwal', labelColor: 'bg-primary-500/10 text-primary-500' },
@@ -20,7 +19,7 @@ const FILTER_TABS = [
     { key: 'sistem', label: 'Sistem' },
 ];
 
-export default function AslabNotifikasi({ notifikasi = MOCK_NOTIFIKASI_PAGE_ASLAB }) {
+export default function AslabNotifikasi({ notifikasi = [] }) {
     const [items, setItems] = useState(notifikasi);
     const [activeFilter, setActiveFilter] = useState('semua');
     const [searchQuery, setSearchQuery] = useState('');

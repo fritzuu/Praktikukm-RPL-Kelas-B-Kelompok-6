@@ -13,7 +13,6 @@ import {
     Trash2,
 } from 'lucide-react';
 import DosenLayout from '../../Layouts/DosenLayout';
-import { MOCK_NOTIFIKASI_PAGE } from '../../data/dosenMockData';
 
 // ── Icon + color per type ─────────────────────────────────────────────
 const TIPE_CONFIG = {
@@ -46,7 +45,7 @@ const FILTER_TABS = [
     { key: 'sistem', label: 'Sistem' },
 ];
 
-export default function DosenNotifikasi({ notifikasi = MOCK_NOTIFIKASI_PAGE }) {
+export default function DosenNotifikasi({ notifikasi = [] }) {
     const [items, setItems] = useState(notifikasi);
     const [activeFilter, setActiveFilter] = useState('semua');
     const [searchQuery, setSearchQuery] = useState('');
