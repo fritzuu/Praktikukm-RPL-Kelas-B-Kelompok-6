@@ -114,6 +114,9 @@ class HandleInertiaRequests extends Middleware
             'pendingAdminCount' => $request->user() && in_array('admin', $request->user()->roles()->pluck('slug')->toArray())
                 ? \App\Models\ChangeRequest::where('status', 'PENDING_ADMIN')->count()
                 : 0,
+            'pendingAslabCount' => $request->user() && in_array('aslab', $request->user()->roles()->pluck('slug')->toArray())
+                ? \App\Models\ChangeRequest::where('status', 'PENDING_ASLAB')->count()
+                : 0,
             'serverTime' => now()->timestamp * 1000,
         ]);
     }
