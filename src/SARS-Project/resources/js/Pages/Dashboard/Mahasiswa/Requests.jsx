@@ -200,6 +200,19 @@ export default function Requests({
     const [submitting, setSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
+    const isPermanent = form.request_type === 'PERMANENT';
+
+    const activeSteps = [
+        { key: 'course', label: 'Pilih Mata Kuliah' },
+        { key: 'type', label: 'Tipe Request' },
+        ...(!isPermanent ? [{ key: 'meeting', label: 'Pilih Pertemuan' }] : []),
+        { key: 'reason', label: 'Alasan' },
+        { key: 'replacement', label: 'Jadwal Pengganti' },
+        { key: 'review', label: 'Review & Kirim' },
+    ];
+
+    const currentStepKey = activeSteps[step - 1]?.key;
+
     // Mode: 'AUTO' or 'MANUAL'
     const [mode, setMode] = useState('AUTO');
     const [isExplorerOpen, setIsExplorerOpen] = useState(false);
@@ -464,7 +477,19 @@ export default function Requests({
     // ─── Handlers ───────────────────────────────
 
     function handleChange(field, value) {
-        setForm(prev => ({ ...prev, [field]: value }));
+        setForm(prev => {
+            const nextForm = { ...prev, [field]: value };
+            if (field === 'request_type') {
+                if (value === 'TEMPORARY') {
+                    nextForm.target_date = '';
+                    nextForm.effective_from_date = '';
+                } else if (value === 'PERMANENT') {
+                    nextForm.target_date = '';
+                    nextForm.effective_from_date = meetingDates[0]?.date || '';
+                }
+            }
+            return nextForm;
+        });
         if (formErrors[field]) setFormErrors(prev => ({ ...prev, [field]: null }));
     }
 
