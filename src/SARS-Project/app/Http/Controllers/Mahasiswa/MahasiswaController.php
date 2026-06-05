@@ -121,7 +121,7 @@ class MahasiswaController extends Controller
             'hari'       => strtolower($s->day_of_week),
             'sesiMulai'  => $s->session_start,
             'durasi'     => $s->session_duration,
-            'dosen'      => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->first()?->user->name ?? '-',
+            'dosen'      => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->map(fn ($ta) => $ta->user->name)->join(' & ') ?: '-',
             'mulai'      => substr($s->start_time, 0, 5),
             'selesai'    => substr($s->end_time, 0, 5),
             'tipe'       => 'resmi',
@@ -685,7 +685,12 @@ class MahasiswaController extends Controller
             $lecturerConflicts = $lecturerConflictQuery->get();
             $realConflict = null;
             foreach ($lecturerConflicts as $lc) {
-                // Check if conflict should be ignored
+                // Skip if either schedule is team-taught (co-lecturer can cover)
+                if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($lc->id)) {
+                    continue;
+                }
+
+                // Check if conflict should be ignored (practicum rules)
                 $course1 = $schedule->course;
                 $course2 = $lc->course;
                 $isP1 = $this->isPracticumCourse($course1);
@@ -721,6 +726,11 @@ class MahasiswaController extends Controller
 
                 $realOverrideConflict = null;
                 foreach ($lecturerOverrideConflicts as $loc) {
+                    // Skip if either schedule is team-taught
+                    if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($loc->schedule_id)) {
+                        continue;
+                    }
+
                     $course1 = $schedule->course;
                     $course2 = $loc->schedule->course;
                     $isP1 = $this->isPracticumCourse($course1);
@@ -1119,7 +1129,12 @@ class MahasiswaController extends Controller
                                 return false;
                             }
 
-                            // Check if this conflict should be ignored
+                            // Skip if either schedule is team-taught
+                            if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($sched->id)) {
+                                return false;
+                            }
+
+                            // Check if this conflict should be ignored (practicum rules)
                             $course1 = $course;
                             $course2 = $sched->course;
                             $isP1 = $this->isPracticumCourse($course1);
@@ -1148,7 +1163,12 @@ class MahasiswaController extends Controller
                                     return false;
                                 }
 
-                                // Check if this conflict should be ignored
+                                // Skip if either schedule is team-taught
+                                if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($ov->schedule_id)) {
+                                    return false;
+                                }
+
+                                // Check if this conflict should be ignored (practicum rules)
                                 $course1 = $course;
                                 $course2 = $ov->schedule->course;
                                 $isP1 = $this->isPracticumCourse($course1);
@@ -1527,6 +1547,11 @@ class MahasiswaController extends Controller
                 ->get();
 
             foreach ($lecturerConflicts as $lc) {
+                // Skip if either schedule is team-taught
+                if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($lc->id)) {
+                    continue;
+                }
+
                 $course1 = $course;
                 $course2 = $lc->course;
                 $isP1 = $this->isPracticumCourse($course1);
@@ -1555,6 +1580,11 @@ class MahasiswaController extends Controller
                     ->get();
 
                 foreach ($lecturerOverrideConflicts as $loc) {
+                    // Skip if either schedule is team-taught
+                    if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($loc->schedule_id)) {
+                        continue;
+                    }
+
                     $course1 = $course;
                     $course2 = $loc->schedule->course;
                     $isP1 = $this->isPracticumCourse($course1);
@@ -1815,7 +1845,12 @@ class MahasiswaController extends Controller
                                 $lsStart = $this->normalizeTime($ls->start_time);
                                 $lsEnd = $this->normalizeTime($ls->end_time);
                                 if ($lsStart < $endT && $lsEnd > $startT) {
-                                    // Check if this conflict should be ignored
+                                    // Skip if either schedule is team-taught
+                                    if ($this->isTeamTeachingSchedule($scheduleId) || $this->isTeamTeachingSchedule($ls->id)) {
+                                        continue;
+                                    }
+
+                                    // Check if this conflict should be ignored (practicum rules)
                                     $course1 = $course;
                                     $course2 = $ls->course;
                                     $isP1 = $this->isPracticumCourse($course1);
@@ -1869,5 +1904,23 @@ class MahasiswaController extends Controller
         return (stripos($course->name, 'praktikum') !== false) || 
                (stripos($course->class_name ?? '', 'P') !== false) || 
                (str_ends_with(strtoupper($course->name), ' P'));
+    }
+
+    /**
+     * Check if a schedule is team-taught (has more than one PENGAJAR).
+     * When a schedule is team-taught, its lecturer conflicts should be ignored
+     * because the co-lecturer can cover the class.
+     */
+    private function isTeamTeachingSchedule($scheduleId): bool
+    {
+        static $cache = [];
+        if (!isset($cache[$scheduleId])) {
+            $cache[$scheduleId] = \Illuminate\Support\Facades\DB::table('teaching_assignments')
+                ->where('schedule_id', $scheduleId)
+                ->where('role_in_class', 'PENGAJAR')
+                ->distinct()
+                ->count('user_id') > 1;
+        }
+        return $cache[$scheduleId];
     }
 }

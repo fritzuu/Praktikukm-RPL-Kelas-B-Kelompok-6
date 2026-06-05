@@ -28,7 +28,7 @@ class AdminDashboardController extends Controller
                 'courses.description as semesterNum',
                 'semesters.name as semester',
                 'rooms.name as ruangan',
-                'users.name as dosen',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
                 'schedules.session_duration as durasi',
@@ -36,6 +36,12 @@ class AdminDashboardController extends Controller
                 'schedules.end_time as jamAkhir'
             )
             ->where('schedules.is_active', true)
+            ->groupBy(
+                'schedules.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'courses.description', 'semesters.name', 'rooms.name',
+                'schedules.day_of_week', 'schedules.session_start',
+                'schedules.session_duration', 'schedules.start_time', 'schedules.end_time'
+            )
             ->get()
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
@@ -73,6 +79,14 @@ class AdminDashboardController extends Controller
             ->where('schedules.is_active', true)
             ->get();
 
+        // Pre-compute team-teaching schedules (schedules with >1 PENGAJAR)
+        $teamTeachingScheduleIds = DB::table('teaching_assignments')
+            ->where('role_in_class', 'PENGAJAR')
+            ->groupBy('schedule_id')
+            ->havingRaw('COUNT(DISTINCT user_id) > 1')
+            ->pluck('schedule_id')
+            ->toArray();
+
         $konflik = [];
         $checked = [];
 
@@ -106,7 +120,14 @@ class AdminDashboardController extends Controller
                     }
                     // 2. Lecturer conflict
                     elseif ($s1->dosen_id && $s2->dosen_id && $s1->dosen_id === $s2->dosen_id) {
-                        // Check if conflict should be ignored
+                        // Skip if either schedule is team-taught (co-lecturer can cover)
+                        $isTeamTeaching1 = in_array($s1->id, $teamTeachingScheduleIds);
+                        $isTeamTeaching2 = in_array($s2->id, $teamTeachingScheduleIds);
+                        if ($isTeamTeaching1 || $isTeamTeaching2) {
+                            continue; // Ignore conflict — team teaching
+                        }
+
+                        // Check if conflict should be ignored (practicum rules)
                         $isP1 = $this->isPracticumCourse($s1->nama, $s1->kelas);
                         $isP2 = $this->isPracticumCourse($s2->nama, $s2->kelas);
                         
