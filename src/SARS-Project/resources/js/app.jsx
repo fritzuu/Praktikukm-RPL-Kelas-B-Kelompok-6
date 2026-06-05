@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { route } from 'ziggy-js';
 import '../css/app.css';
+import './echo';
 
 createInertiaApp({
     title: (title) => `${title} — SARS`,

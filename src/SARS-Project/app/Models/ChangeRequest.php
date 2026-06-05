@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BroadcastsChanges;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Support\Str;
 
 class ChangeRequest extends Model
 {
+    use BroadcastsChanges;
     /**
      * Generate a unique request code like CR-20260602-A3X7.
      */
