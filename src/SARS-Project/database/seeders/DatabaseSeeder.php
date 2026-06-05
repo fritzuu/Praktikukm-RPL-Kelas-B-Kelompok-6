@@ -164,7 +164,7 @@ class DatabaseSeeder extends Seeder
     {
         $admin = User::where('email', 'revan@sars.test')->first();
         $dosen = User::where('email', 'bagas@sars.test')->first();
-        $aslab = User::where('email', 'faris@sars.test')->first();
+        $aslab = User::where('email', 'faris@sars.test')->first(); 
         $mahasiswa = User::where('email', 'zendin@sars.test')->first();
 
         $notifications = [
