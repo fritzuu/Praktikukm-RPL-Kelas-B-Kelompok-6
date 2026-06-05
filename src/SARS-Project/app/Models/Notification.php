@@ -52,6 +52,22 @@ class Notification extends Model
     }
 
     /**
+     * Relasi ke ChangeRequest (jika notifikasi terkait pengajuan)
+     */
+    public function changeRequest(): BelongsTo
+    {
+        return $this->belongsTo(ChangeRequest::class, 'request_id');
+    }
+
+    /**
+     * Relasi ke penerima notifikasi (multi-channel)
+     */
+    public function recipients(): HasMany
+    {
+        return $this->hasMany(NotificationRecipient::class);
+    }
+
+    /**
      * Scope untuk notifikasi belum dibaca
      */
     public function scopeUnread($query)
@@ -73,14 +89,6 @@ class Notification extends Model
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
-    }
-
-    /**
-     * Relasi ke ChangeRequest
-     */
-    public function changeRequest(): BelongsTo
-    {
-        return $this->belongsTo(ChangeRequest::class, 'request_id');
     }
 }
 
