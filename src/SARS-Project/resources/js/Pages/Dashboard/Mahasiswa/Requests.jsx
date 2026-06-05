@@ -495,7 +495,7 @@ export default function Requests({
         return { isOccupied: false };
     };
 
-    // Dynamic manual check helper
+    // Dynamic manual check helper — uses full-range server-side check
     const handleCekKetersediaanManual = async () => {
         if (!form.proposed_day || !form.proposed_room_id || !form.proposed_start_time) return;
         setCheckingManual(true);
@@ -507,7 +507,7 @@ export default function Requests({
                 return;
             }
             
-            const response = await fetch(route('mahasiswa.cekSesiAvailabilitas'), {
+            const response = await fetch(route('mahasiswa.cekKetersediaanSlot'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -517,25 +517,21 @@ export default function Requests({
                     schedule_id: form.schedule_id,
                     proposed_day: form.proposed_day,
                     target_date: form.request_type === 'TEMPORARY' ? form.target_date : form.effective_from_date,
-                    proposed_room_id: form.proposed_room_id
+                    proposed_room_id: form.proposed_room_id,
+                    session_start: startSesi,
                 })
             });
             const data = await response.json();
             
-            // Check if any session within the duration is occupied
-            const endSesi = startSesi + duration - 1;
-            const targetSessions = data.sessions.filter(s => s.session >= startSesi && s.session <= endSesi);
-            
-            const conflictSession = targetSessions.find(s => s.is_occupied);
-            if (conflictSession) {
+            if (data.available) {
                 setManualCheckResult({
-                    available: false,
-                    reason: conflictSession.reason || "Slot waktu ini sudah terisi jadwal lain."
+                    available: true,
+                    message: `Slot waktu ini tersedia (${data.time_range})! Anda bisa melanjutkan ke langkah berikutnya.`
                 });
             } else {
                 setManualCheckResult({
-                    available: true,
-                    message: "Slot waktu ini tersedia! Anda bisa melanjutkan ke langkah berikutnya."
+                    available: false,
+                    reason: data.reason || "Slot waktu ini sudah terisi jadwal lain."
                 });
             }
         } catch (e) {

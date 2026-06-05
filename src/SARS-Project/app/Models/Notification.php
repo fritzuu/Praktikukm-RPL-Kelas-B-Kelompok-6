@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BroadcastsChanges;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Notification extends Model
 {
-    use HasFactory;
+    use HasFactory, BroadcastsChanges;
 
     protected $fillable = [
         'user_id',
@@ -73,4 +74,13 @@ class Notification extends Model
     {
         return $query->where('user_id', $userId);
     }
+
+    /**
+     * Relasi ke ChangeRequest
+     */
+    public function changeRequest(): BelongsTo
+    {
+        return $this->belongsTo(ChangeRequest::class, 'request_id');
+    }
 }
+

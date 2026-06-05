@@ -90,7 +90,7 @@ export default function DosenJadwal({
             </div>
 
             {/* ── Full Availability Grid ───────────────────────────── */}
-            <ScheduleGrid jadwalItems={allSchedules} rooms={rooms} />
+            <ScheduleGrid jadwalItems={allSchedules} rooms={rooms} onCardClick={handleOpenDetail} />
 
             {/* ── My Schedule Section ──────────────────────────────── */}
             <div className="space-y-6">
@@ -227,43 +227,81 @@ export default function DosenJadwal({
             <Modal
                 isOpen={!!selectedJadwal}
                 onClose={handleCloseModal}
-                title="Detail Mata Kuliah"
-                maxWidth="lg"
+                title="Detail Jadwal"
+                maxWidth="md"
             >
                 {selectedJadwal && (
-                    <div className="space-y-6 text-text-primary">
-                        <div className="bg-surface/50 rounded-2xl p-6 border border-border">
-                            <div className="flex items-center gap-5 mb-6">
-                                <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-500">
-                                    <BookOpen size={32} />
-                                </div>
-                                <div>
-                                    <h4 className="text-xl font-bold leading-tight">{selectedJadwal.nama}</h4>
-                                    <p className="text-primary-500 font-bold text-xs mt-1 uppercase tracking-wider">{selectedJadwal.kode}</p>
-                                </div>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Mata Kuliah</h4>
+                            <p className="text-lg font-bold text-text-primary">{selectedJadwal.nama} ({selectedJadwal.kode})</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Kelas</h4>
+                                <p className="font-medium text-text-primary">{selectedJadwal.kelas || '-'}</p>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                {[
-                                    { label: 'Ruangan', value: selectedJadwal.ruangan },
-                                    { label: 'Kelas', value: selectedJadwal.kelas },
-                                    { label: 'Waktu', value: selectedJadwal.waktu },
-                                    { label: 'Kapasitas', value: `${selectedJadwal.mahasiswa} MHS` },
-                                ].map(detail => (
-                                    <div key={detail.label} className="p-4 bg-card rounded-xl border border-border shadow-sm">
-                                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-1">{detail.label}</p>
-                                        <p className="text-sm font-bold text-text-primary">{detail.value}</p>
-                                    </div>
-                                ))}
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Semester</h4>
+                                <p className="font-medium text-text-primary">{selectedJadwal.semester || selectedJadwal.semesterNum || '-'}</p>
                             </div>
                         </div>
 
-                        <button 
-                            onClick={handleCloseModal}
-                            className="w-full py-4 rounded-2xl bg-primary-500 text-white font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-600 transition-all"
-                        >
-                            Tutup
-                        </button>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Ruangan</h4>
+                                <p className="font-medium text-text-primary">{selectedJadwal.ruangan}</p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Hari</h4>
+                                <p className="font-medium text-text-primary capitalize">{selectedJadwal.hari}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Waktu</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedJadwal.jamMulai && selectedJadwal.jamAkhir 
+                                        ? `${selectedJadwal.jamMulai.substring(0,5)} - ${selectedJadwal.jamAkhir.substring(0,5)}` 
+                                        : selectedJadwal.mulai && selectedJadwal.selesai
+                                            ? `${selectedJadwal.mulai.substring(0,5)} - ${selectedJadwal.selesai.substring(0,5)}`
+                                            : selectedJadwal.waktu || 'Waktu belum diatur'}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Sesi</h4>
+                                <p className="font-medium text-text-primary">
+                                    {selectedJadwal.durasi > 1 
+                                        ? `Sesi ${selectedJadwal.sesiMulai} - ${selectedJadwal.sesiMulai + selectedJadwal.durasi - 1}`
+                                        : `Sesi ${selectedJadwal.sesiMulai}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border flex flex-col gap-4">
+                            <div>
+                                <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Dosen Pengajar</h4>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-lg">
+                                        {selectedJadwal.dosen && selectedJadwal.dosen !== '-' ? selectedJadwal.dosen.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <p className="font-semibold text-text-primary">
+                                        {!selectedJadwal.dosen || selectedJadwal.dosen === '-' ? 'Belum Ditentukan' : selectedJadwal.dosen}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-2">
+                                <button
+                                    onClick={handleCloseModal}
+                                    className="flex-1 py-3 bg-surface hover:bg-card border border-border text-text-secondary rounded-xl text-sm font-bold transition-colors"
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </Modal>

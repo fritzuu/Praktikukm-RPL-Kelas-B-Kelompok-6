@@ -19,7 +19,21 @@ return new class extends Migration
             $table->string('title', 200)->nullable();
             $table->text('message')->nullable();
             $table->text('body')->nullable();
-            $table->enum('type', ['success', 'warning', 'info', 'error', 'STATUS_CHANGE', 'CONFLICT_ALERT', 'SYSTEM', 'REMINDER'])->default('info');
+            $table->enum('type', [
+                'success', 
+                'warning', 
+                'info', 
+                'error', 
+                'STATUS_CHANGE', 
+                'CONFLICT_ALERT', 
+                'SYSTEM', 
+                'REMINDER',
+                'REQUEST_SUBMITTED',
+                'REQUEST_FORWARDED',
+                'REQUEST_APPROVED',
+                'REQUEST_REJECTED',
+                'SCHEDULE_CHANGED'
+            ])->default('info');
             $table->string('category', 50)->nullable();
             $table->string('action_url')->nullable();
             $table->json('data_payload')->nullable();

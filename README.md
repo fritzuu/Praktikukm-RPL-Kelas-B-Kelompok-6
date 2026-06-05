@@ -54,8 +54,8 @@ Buka Terminal / Command Prompt dan jalankan langkah-langkah berikut secara berur
 
 **Langkah 1: Clone Project**
 ```bash
-git clone <url-repository-github>
-cd SARS-Project
+git clone https://github.com/fritzuu/Praktikum-RPL-Kelas-B-Kelompok-6
+cd src/SARS-Project
 ```
 
 **Langkah 2: Install Dependencies Backend (PHP/Laravel)**
@@ -86,25 +86,72 @@ php artisan key:generate
 
 ---
 
-### 3. Cara Menjalankan Project (Development Mode)
-Setiap kali kamu ingin mengerjakan atau melihat preview aplikasi, kamu perlu membuka **2 tab Terminal** dan menjalankan kedua perintah ini secara bersamaan:
+### 3. Setup Laravel Reverb (Realtime WebSocket)
+Project ini menggunakan Laravel Reverb untuk fitur realtime sync database. Setup sekali saja saat pertama kali:
+
+**Install Laravel Reverb Package:**
+```bash
+composer require laravel/reverb
+```
+
+**Install Reverb Configuration:**
+```bash
+php artisan reverb:install
+```
+
+**Install Frontend WebSocket Dependencies:**
+```bash
+npm install --save laravel-echo pusher-js
+```
+
+**Create Cache & Queue Tables (PENTING!):**
+```bash
+php artisan cache:table
+php artisan queue:table
+php artisan migrate
+```
+
+Setelah setup ini selesai, kredensial Reverb sudah otomatis ada di file `.env` kamu. Tidak perlu mengubah apapun.
+
+---
+
+### 4. Cara Menjalankan Project (Development Mode)
+Setiap kali kamu ingin mengerjakan atau melihat preview aplikasi, kamu perlu membuka **4 tab Terminal** dan menjalankan keempat perintah ini secara bersamaan:
 
 **Terminal 1 (Server Backend Laravel):**
 ```bash
 php artisan serve
 ```
 
-**Terminal 2 (Server Frontend React/Vite):**
+**Terminal 2 (WebSocket Server - Reverb):**
+```bash
+php artisan reverb:start
+```
+
+**Terminal 3 (Queue Worker untuk Broadcasting):**
+```bash
+php artisan queue:work
+```
+
+**Terminal 4 (Server Frontend React/Vite):**
 ```bash
 npm run dev
 ```
 
-Setelah keduanya berjalan tanpa error, buka browser dan akses URL:
+Setelah keempatnya berjalan tanpa error, buka browser dan akses URL:
 [http://localhost:8000](http://localhost:8000)
+
+**Catatan Penting:**
+- **Terminal 1** menjalankan server Laravel (API & web server)
+- **Terminal 2** menjalankan WebSocket server untuk realtime sync
+- **Terminal 3** memproses antrian broadcast event (jangan ditutup)
+- **Terminal 4** menjalankan frontend React development server
+
+Jika kamu menutup salah satu terminal, fitur realtime tidak akan berfungsi dengan baik.
 
 ---
 
-### 4. Akun Uji Coba (Dummy Accounts)
+### 5. Akun Uji Coba (Dummy Accounts)
 Gunakan akun berikut untuk menguji fitur login dan dashboard (Password untuk semua akun: `password123`):
 
 | Role | Email | Password |
@@ -113,3 +160,58 @@ Gunakan akun berikut untuk menguji fitur login dan dashboard (Password untuk sem
 | Dosen | `siti.rahayu@university.ac.id` | `password123` |
 | Asisten Lab | `reza.pratama@university.ac.id` | `password123` |
 | Mahasiswa | `andi.wijaya@student.university.ac.id` | `password123` |
+
+---
+
+### 6. Troubleshooting & FAQ
+
+**Q: Error "relation cache does not exist" saat reverb:start atau queue:work**
+- Tables cache/queue belum ada. Run:
+  ```bash
+  php artisan cache:table
+  php artisan queue:table
+  php artisan migrate
+  php artisan config:clear
+  ```
+
+**Q: Error "Connection refused" saat akses http://localhost:8000**
+- Pastikan Terminal 1 (`php artisan serve`) masih running
+- Check port 8000 tidak dipakai aplikasi lain
+
+**Q: Realtime sync tidak bekerja / data tidak auto-update**
+- Pastikan semua 4 terminal berjalan (Laravel, Reverb, Queue Worker, Vite)
+- Buka Console browser (F12) check error WebSocket
+- Pastikan Terminal 2 (Reverb) dan Terminal 3 (Queue Worker) tidak error
+
+**Q: Error "npm ERR!" saat npm install**
+- Hapus folder `node_modules` dan file `package-lock.json`
+- Run ulang `npm install`
+
+**Q: Error "Class not found" atau "Composer autoload"**
+- Run: `composer dump-autoload`
+- Run: `php artisan config:clear`
+- Run: `php artisan cache:clear`
+
+**Q: Reverb WebSocket tidak konek**
+- Pastikan `.env` ada config:
+  ```
+  BROADCAST_CONNECTION=reverb
+  REVERB_HOST="localhost"
+  REVERB_PORT=8080
+  ```
+- Restart Terminal 2 (Reverb server)
+- Clear browser cache dan refresh
+
+**Q: Queue worker stuck / broadcast tidak jalan**
+- Stop Terminal 3 (Ctrl+C)
+- Clear queue: `php artisan queue:flush`
+- Restart: `php artisan queue:work`
+
+**Q: Perlu reset database lokal?**
+⚠️ **Hati-hati!** Jika pakai Supabase bersama tim, command ini **reset database semua orang**:
+```bash
+php artisan migrate:fresh --seed
+```
+Koordinasi dengan tim dulu!
+
+---

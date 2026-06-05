@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import {
     Bell, BellOff, Calendar, AlertTriangle, CheckCircle,
-    Monitor, MailOpen, Search, Trash2,
+    Monitor, MailOpen, Search, Trash2, Info,
 } from 'lucide-react';
-import AslabLayout from '../../Layouts/AslabLayout';
+import AdminLayout from '../../Layouts/AdminLayout';
 
 const TIPE_CONFIG = {
     jadwal: { icon: Calendar, color: 'bg-primary-500/10 text-primary-500', label: 'Jadwal', labelColor: 'bg-primary-500/10 text-primary-500' },
-    info:   { icon: AlertTriangle, color: 'bg-warning/10 text-warning', label: 'Informasi', labelColor: 'bg-warning/10 text-warning' },
+    validasi: { icon: CheckCircle, color: 'bg-success/10 text-success', label: 'Validasi', labelColor: 'bg-success/10 text-success' },
+    info: { icon: Info, color: 'bg-warning/10 text-warning', label: 'Informasi', labelColor: 'bg-warning/10 text-warning' },
     sistem: { icon: Monitor, color: 'bg-info/10 text-info', label: 'Sistem', labelColor: 'bg-info/10 text-info' },
 };
 
@@ -15,11 +16,12 @@ const FILTER_TABS = [
     { key: 'semua', label: 'Semua' },
     { key: 'belum_dibaca', label: 'Belum Dibaca' },
     { key: 'jadwal', label: 'Jadwal' },
+    { key: 'validasi', label: 'Validasi' },
     { key: 'info', label: 'Informasi' },
     { key: 'sistem', label: 'Sistem' },
 ];
 
-export default function AslabNotifikasi({ notifikasi = [] }) {
+export default function AdminNotifikasi({ notifikasi = [] }) {
     const [items, setItems] = useState(notifikasi);
     const [activeFilter, setActiveFilter] = useState('semua');
     const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +42,7 @@ export default function AslabNotifikasi({ notifikasi = [] }) {
         semua: items.length,
         belum_dibaca: items.filter(n => !n.dibaca).length,
         jadwal: items.filter(n => n.tipe === 'jadwal').length,
+        validasi: items.filter(n => n.tipe === 'validasi').length,
         info: items.filter(n => n.tipe === 'info').length,
         sistem: items.filter(n => n.tipe === 'sistem').length,
     }), [items]);
@@ -50,17 +53,17 @@ export default function AslabNotifikasi({ notifikasi = [] }) {
 
     function markAsRead(id) {
         setItems(prev => prev.map(n => n.id === id ? { ...n, dibaca: true } : n));
-        fetch(`/aslab/notifikasi/${id}/read`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
+        fetch(`/admin/notifikasi/${id}/read`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
     }
 
     function markAllAsRead() {
         setItems(prev => prev.map(n => ({ ...n, dibaca: true })));
-        fetch('/aslab/notifikasi/read-all', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
+        fetch('/admin/notifikasi/read-all', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
     }
 
     function deleteNotif(id) {
         setItems(prev => prev.filter(n => n.id !== id));
-        fetch(`/aslab/notifikasi/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
+        fetch(`/admin/notifikasi/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
     }
 
     const grouped = useMemo(() => {
@@ -175,4 +178,4 @@ export default function AslabNotifikasi({ notifikasi = [] }) {
     );
 }
 
-AslabNotifikasi.layout = (page) => <AslabLayout>{page}</AslabLayout>;
+AdminNotifikasi.layout = (page) => <AdminLayout>{page}</AdminLayout>;

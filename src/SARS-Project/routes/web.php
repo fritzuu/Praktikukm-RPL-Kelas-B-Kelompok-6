@@ -77,6 +77,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/statistik', [AdminStatistikController::class, 'index'])
             ->name('statistik');
 
+        // Notifikasi routes
+        Route::get('/notifikasi', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'index'])
+            ->name('notifikasi');
+        Route::post('/notifikasi/{notification}/read', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'markAsRead'])
+            ->name('notifikasi.read');
+        Route::post('/notifikasi/read-all', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'markAllAsRead'])
+            ->name('notifikasi.readAll');
+        Route::delete('/notifikasi/{notification}', [\App\Http\Controllers\Admin\AdminNotifikasiController::class, 'destroy'])
+            ->name('notifikasi.destroy');
+
         // Pengaturan (Setting) routes
         Route::get('/pengaturan', [AdminSettingController::class, 'index'])
             ->name('pengaturan');
@@ -127,8 +137,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/requests',      [MahasiswaController::class, 'submitRequest'])->name('mahasiswa.requests.submit');
         Route::get('/notifications',  [MahasiswaController::class, 'notifications'])->name('mahasiswa.notifications');
         Route::get('/settings',       [MahasiswaController::class, 'settings'])->name('mahasiswa.settings');
-        Route::put('/settings',       [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
-        Route::put('/settings/password', [MahasiswaController::class, 'updatePassword'])->name('mahasiswa.settings.password');
+        Route::post('/settings',      [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
 
         // API-style endpoints (JSON)
         Route::post('/cek-slot',              [MahasiswaController::class, 'cekSlot'])->name('mahasiswa.cekSlot');
@@ -139,5 +148,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/meeting-dates',          [MahasiswaController::class, 'meetingDates'])->name('mahasiswa.meetingDates');
         Route::post('/available-rooms',        [MahasiswaController::class, 'availableRoomsForSlot'])->name('mahasiswa.availableRooms');
         Route::post('/matrix-availability',    [MahasiswaController::class, 'matrixAvailabilityBulk'])->name('mahasiswa.matrixAvailability');
+        Route::post('/cek-ketersediaan-slot',  [MahasiswaController::class, 'cekKetersediaanSlot'])->name('mahasiswa.cekKetersediaanSlot');
     });
 });

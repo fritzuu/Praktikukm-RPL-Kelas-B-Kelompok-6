@@ -30,7 +30,7 @@ class AdminJadwalController extends Controller
                 'courses.description as semesterNum',
                 'semesters.name as semester',
                 'rooms.name as ruangan',
-                'users.name as dosen',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
                 'schedules.session_duration as durasi',
@@ -38,6 +38,12 @@ class AdminJadwalController extends Controller
                 'schedules.end_time as jamAkhir'
             )
             ->where('schedules.is_active', true)
+            ->groupBy(
+                'schedules.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'courses.description', 'semesters.name', 'rooms.name',
+                'schedules.day_of_week', 'schedules.session_start',
+                'schedules.session_duration', 'schedules.start_time', 'schedules.end_time'
+            )
             ->get()
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
@@ -74,9 +80,7 @@ class AdminJadwalController extends Controller
         try {
             if ($overwrite) {
                 // Clear existing schedules and courses
-                DB::table('teaching_assignments')->delete();
                 DB::table('schedules')->delete();
-                DB::table('courses')->delete();
             }
 
             $now = Carbon::now();

@@ -3,6 +3,7 @@ import {
     Calendar,
     ClipboardCheck,
     BarChart3,
+    Bell,
     Settings,
 } from "lucide-react";
 
@@ -11,6 +12,7 @@ export const ADMIN_NAV_ITEMS = [
     { label: "Jadwal", icon: Calendar, route: "admin.jadwal" },
     { label: "Persetujuan", icon: ClipboardCheck, route: "admin.persetujuan" },
     { label: "Statistik", icon: BarChart3, route: "admin.statistik" },
+    { label: "Notifikasi", icon: Bell, route: "admin.notifikasi" },
     { label: "Pengaturan", icon: Settings, route: "admin.pengaturan" },
 ];
 

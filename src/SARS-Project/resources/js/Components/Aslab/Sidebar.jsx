@@ -23,6 +23,7 @@ const NAV_ITEMS = [
 export default function Sidebar({ isCollapsed, onToggle }) {
     const { url, props } = usePage();
     const notifikasi = props.notifikasi || [];
+    const pendingAslabCount = props.pendingAslabCount || 0;
     const unreadCount = notifikasi.filter(n => !n.dibaca).length;
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -81,7 +82,13 @@ export default function Sidebar({ isCollapsed, onToggle }) {
                     {NAV_ITEMS.map((item) => {
                         const active = isActive(item.route);
                         const Icon = item.icon;
-                        const displayBadge = item.label === 'Notifikasi' && unreadCount > 0 ? unreadCount : null;
+                        let displayBadge = null;
+                        
+                        if (item.label === 'Notifikasi' && unreadCount > 0) {
+                            displayBadge = unreadCount;
+                        } else if (item.label === 'Validasi' && pendingAslabCount > 0) {
+                            displayBadge = pendingAslabCount;
+                        }
 
                         return (
                             <button

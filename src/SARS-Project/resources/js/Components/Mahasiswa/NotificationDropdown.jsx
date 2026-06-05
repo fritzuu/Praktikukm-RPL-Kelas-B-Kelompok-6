@@ -68,9 +68,8 @@ export default function MahasiswaNotificationDropdown({ onClose, notifikasi = []
                 'Accept': 'application/json',
             },
         }).then(() => {
-            router.reload({ only: ['notifikasi', 'unreadCount'] });
+            router.reload({ only: ['notifikasi', 'unreadCount', 'auth'] });
         }).catch(() => {});
-        onClose();
     }
 
     function handleNotifClick(notif) {
@@ -82,15 +81,11 @@ export default function MahasiswaNotificationDropdown({ onClose, notifikasi = []
                     'Accept': 'application/json',
                 },
             }).then(() => {
-                router.reload({ only: ['notifikasi', 'unreadCount'] });
+                router.reload({ only: ['notifikasi', 'unreadCount', 'auth'] });
             }).catch(() => {});
         }
+        try { router.get(route('mahasiswa.notifications')); } catch {}
         onClose();
-        if (notif.request_code || notif.pesan?.includes('REQ-')) {
-            try { router.get(route('mahasiswa.requests')); } catch {}
-        } else {
-            try { router.get(route('mahasiswa.notifications')); } catch {}
-        }
     }
 
     return (
@@ -122,7 +117,7 @@ export default function MahasiswaNotificationDropdown({ onClose, notifikasi = []
                         Belum ada notifikasi
                     </div>
                 ) : (
-                    items.slice(0, 5).map((notif) => {
+                    items.slice(0, 3).map((notif) => {
                         const Icon = TYPE_ICONS[notif.tipe] || Calendar;
                         return (
                             <motion.div

@@ -80,6 +80,7 @@ class DosenJadwalController extends Controller
 
         $allSchedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
             ->leftJoin('teaching_assignments', function($join) {
                 $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
                      ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
@@ -91,11 +92,23 @@ class DosenJadwalController extends Controller
                 'schedules.id',
                 'courses.code as kode',
                 'courses.name as nama',
-                'users.name as dosen',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedules.room_id',
+                'rooms.code as ruangan',
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
-                'schedules.session_duration as durasi'
+                'schedules.session_duration as durasi',
+                'courses.class_name as kelas',
+                'courses.description as semesterNum',
+                'schedules.start_time as jamMulai',
+                'schedules.end_time as jamAkhir'
+            )
+            ->groupBy(
+                'schedules.id', 'courses.code', 'courses.name',
+                'schedules.room_id', 'rooms.code',
+                'schedules.day_of_week', 'schedules.session_start',
+                'schedules.session_duration', 'courses.class_name',
+                'courses.description', 'schedules.start_time', 'schedules.end_time'
             )
             ->get()
             ->map(function ($s) use ($assignedScheduleIds) {
@@ -105,9 +118,14 @@ class DosenJadwalController extends Controller
                     'nama'      => $s->nama,
                     'dosen'     => $s->dosen ?? '-',
                     'ruangan_id'=> $s->room_id,
+                    'ruangan'   => $s->ruangan,
                     'hari'      => strtolower($s->hari),
                     'sesiMulai' => $s->sesiMulai,
                     'durasi'    => $s->durasi,
+                    'kelas'     => $s->kelas,
+                    'semesterNum'=> $s->semesterNum,
+                    'jamMulai'  => $s->jamMulai,
+                    'jamAkhir'  => $s->jamAkhir,
                     'isOwn'     => $assignedScheduleIds->contains($s->id),
                 ];
             });

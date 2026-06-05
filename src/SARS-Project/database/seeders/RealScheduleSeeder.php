@@ -123,7 +123,6 @@ class RealScheduleSeeder extends Seeder
             ['SELASA', 1, 2, 'Jaringan Komputer', 'A', 'LAB-B4.04', null],
             ['SELASA', 1, 2, 'Jaringan Komputer', 'D', 'LAB-B4.05', null],
             ['SELASA', 1, 3, 'Proyek Perangkat Lunak', 'B', 'PASCA-1301', null],
-            ['SELASA', 1, 3, 'Matematika Diskrit I', 'D', 'PASCA-1304', null],
             ['SELASA', 3, 4, 'Jaringan Komputer', 'D P', 'LAB-B4.05', 'Praktikum'],
             ['SELASA', 4, 5, 'Pendidikan Kewarganegaraan', 'B', 'B4-10', null],
             ['SELASA', 4, 4, 'Struktur Data & Algoritma', 'D P', 'B4-11', 'Praktikum'],
@@ -131,7 +130,6 @@ class RealScheduleSeeder extends Seeder
             ['SELASA', 4, 5, 'Pendidikan Kewarganegaraan', 'C', 'PASCA-1312', null],
             ['SELASA', 5, 5, 'Pemrograman Web', 'D P', 'LAB-B4.04', 'Praktikum'],
             ['SELASA', 6, 8, 'Kalkulus II', 'B', 'B4-10', null],
-            ['SELASA', 6, 8, 'Teori Bahasa & Automata', 'A', 'PASCA-1304', null],
             ['SELASA', 6, 8, 'Aljabar Linier', 'A', 'B4-11', null],
             ['SELASA', 6, 6, 'Rekayasa Perangkat Lunak', 'D P', 'B4.06', 'Praktikum'],
             ['SELASA', 6, 8, 'Cyber Security', 'A', 'LAB4-TIK', null],
@@ -352,7 +350,9 @@ class RealScheduleSeeder extends Seeder
 
             // ── Rini ──
             ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'D', 'SENIN', 6],
+            ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'C', 'JUMAT', 2],
             ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'D P', 'SELASA', 6],
+            ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'C P', 'KAMIS', 6],
             ['rini@sars.test', 'Manajemen Sistem Informasi', 'C', 'SELASA', 6],
             ['rini@sars.test', 'Manajemen Sistem Informasi', 'D', 'RABU', 4],
             ['rini@sars.test', 'Jaminan Mutu Perangkat Lunak', 'A', 'KAMIS', 6],
@@ -385,6 +385,10 @@ class RealScheduleSeeder extends Seeder
             ['akhmad@sars.test', 'Pengembangan Aplikasi', 'A', 'KAMIS', 3],
             ['akhmad@sars.test', 'Pengembangan Aplikasi', 'A P', 'KAMIS', 5],
             ['akhmad@sars.test', 'Manajemen Sistem Informasi', 'A', 'JUMAT', 5],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'D', 'SENIN', 6],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'C', 'JUMAT', 2],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'D P', 'SELASA', 6],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'C P', 'KAMIS', 6],
 
             // ── Fahmy, Thofiq Odhi, Shofie (X) ──
         ];
