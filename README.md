@@ -104,6 +104,13 @@ php artisan reverb:install
 npm install --save laravel-echo pusher-js
 ```
 
+**Create Cache & Queue Tables (PENTING!):**
+```bash
+php artisan cache:table
+php artisan queue:table
+php artisan migrate
+```
+
 Setelah setup ini selesai, kredensial Reverb sudah otomatis ada di file `.env` kamu. Tidak perlu mengubah apapun.
 
 ---
@@ -153,5 +160,58 @@ Gunakan akun berikut untuk menguji fitur login dan dashboard (Password untuk sem
 | Dosen | `siti.rahayu@university.ac.id` | `password123` |
 | Asisten Lab | `reza.pratama@university.ac.id` | `password123` |
 | Mahasiswa | `andi.wijaya@student.university.ac.id` | `password123` |
+
+---
+
+### 6. Troubleshooting & FAQ
+
+**Q: Error "relation cache does not exist" saat reverb:start atau queue:work**
+- Tables cache/queue belum ada. Run:
+  ```bash
+  php artisan cache:table
+  php artisan queue:table
+  php artisan migrate
+  php artisan config:clear
+  ```
+
+**Q: Error "Connection refused" saat akses http://localhost:8000**
+- Pastikan Terminal 1 (`php artisan serve`) masih running
+- Check port 8000 tidak dipakai aplikasi lain
+
+**Q: Realtime sync tidak bekerja / data tidak auto-update**
+- Pastikan semua 4 terminal berjalan (Laravel, Reverb, Queue Worker, Vite)
+- Buka Console browser (F12) check error WebSocket
+- Pastikan Terminal 2 (Reverb) dan Terminal 3 (Queue Worker) tidak error
+
+**Q: Error "npm ERR!" saat npm install**
+- Hapus folder `node_modules` dan file `package-lock.json`
+- Run ulang `npm install`
+
+**Q: Error "Class not found" atau "Composer autoload"**
+- Run: `composer dump-autoload`
+- Run: `php artisan config:clear`
+- Run: `php artisan cache:clear`
+
+**Q: Reverb WebSocket tidak konek**
+- Pastikan `.env` ada config:
+  ```
+  BROADCAST_CONNECTION=reverb
+  REVERB_HOST="localhost"
+  REVERB_PORT=8080
+  ```
+- Restart Terminal 2 (Reverb server)
+- Clear browser cache dan refresh
+
+**Q: Queue worker stuck / broadcast tidak jalan**
+- Stop Terminal 3 (Ctrl+C)
+- Clear queue: `php artisan queue:flush`
+- Restart: `php artisan queue:work`
+
+**Q: Perlu reset database lokal?**
+⚠️ **Hati-hati!** Jika pakai Supabase bersama tim, command ini **reset database semua orang**:
+```bash
+php artisan migrate:fresh --seed
+```
+Koordinasi dengan tim dulu!
 
 ---
