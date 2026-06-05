@@ -5,7 +5,7 @@ import {
     FileText, Plus, ChevronDown, ChevronUp, AlertTriangle, 
     CheckCircle, XCircle, Clock, Star, Sparkles, Check, 
     Loader2, ArrowLeft, ArrowRight, Send, Calendar, 
-    Building, LayoutGrid, Search, Layers, RefreshCw
+    Building, LayoutGrid, Search, Layers, RefreshCw, Trash2
 } from 'lucide-react';
 
 const STATUS_STYLES = {
@@ -198,6 +198,40 @@ export default function Requests({
     // Manual check state
     const [manualCheckResult, setManualCheckResult] = useState(null);
     const [checkingManual, setCheckingManual] = useState(false);
+
+    // Delete requests state
+    const [selectedRequestIds, setSelectedRequestIds] = useState([]);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deletingRequests, setDeletingRequests] = useState(false);
+
+    const handleToggleSelectRequest = (id) => {
+        setSelectedRequestIds(prev => 
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleToggleSelectAll = () => {
+        if (selectedRequestIds.length === requests.length) {
+            setSelectedRequestIds([]);
+        } else {
+            setSelectedRequestIds(requests.map(r => r.id));
+        }
+    };
+
+    const handleDeleteSelected = () => {
+        setDeletingRequests(true);
+        router.delete('/mahasiswa/requests', {
+            data: { ids: selectedRequestIds },
+            onSuccess: () => {
+                setSelectedRequestIds([]);
+                setShowDeleteConfirm(false);
+                setDeletingRequests(false);
+            },
+            onError: () => {
+                setDeletingRequests(false);
+            }
+        });
+    };
 
     // Reset recommendations on schedule_id change and fetch meeting dates
     useEffect(() => {
@@ -1806,85 +1840,198 @@ export default function Requests({
 
             {/* ══════════ Request History List (Polished) ══════════ */}
             <section className="mt-8">
-                <h2 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
-                    <Layers size={18} className="text-primary-500" />
-                    Riwayat Request ({requests.length})
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                        <Layers size={18} className="text-primary-500" />
+                        Riwayat Request ({requests.length})
+                    </h2>
+                    {requests.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={handleToggleSelectAll}
+                            className="flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors px-3 py-1.5 bg-surface border border-border rounded-xl shadow-sm"
+                        >
+                            <input
+                                type="checkbox"
+                                checked={requests.length > 0 && selectedRequestIds.length === requests.length}
+                                onChange={handleToggleSelectAll}
+                                className="w-3.5 h-3.5 rounded border-border text-primary-500 focus:ring-primary-500/20 bg-surface cursor-pointer"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                            <span>
+                                {selectedRequestIds.length === requests.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                            </span>
+                        </button>
+                    )}
+                </div>
                 <div className="space-y-3">
                     {requests.map(req => {
                         const st = STATUS_STYLES[req.status] || STATUS_STYLES.PENDING_ASLAB;
                         const StIcon = st.icon;
                         const expanded = expandedId === req.id;
+                        const isSelected = selectedRequestIds.includes(req.id);
                         return (
-                            <div key={req.id} className="bg-card border border-border rounded-xl overflow-hidden transition-all hover:shadow-sm">
-                                <button onClick={() => setExpandedId(expanded ? null : req.id)} className="w-full px-5 py-4 flex items-center gap-4 text-left">
-                                    <div className={`w-10 h-10 rounded-xl ${st.bg} flex items-center justify-center shrink-0`}>
-                                        <StIcon size={18} className={st.text} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-xs font-bold text-text-primary">{req.request_code}</span>
-                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${req.request_type === 'TEMPORARY' ? 'bg-cyan-100 text-cyan-700' : 'bg-warning/10 text-warning'}`}>{req.request_type}</span>
+                            <div key={req.id} className={`bg-card border rounded-xl overflow-hidden transition-all hover:shadow-sm flex items-stretch ${isSelected ? 'border-primary-500 bg-primary-500/[0.01]' : 'border-border'}`}>
+                                <div className="pl-5 flex items-center justify-center shrink-0">
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => handleToggleSelectRequest(req.id)}
+                                        className="w-4 h-4 rounded border-border text-primary-500 focus:ring-primary-500/20 bg-surface cursor-pointer transition-all hover:scale-105"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <button onClick={() => setExpandedId(expanded ? null : req.id)} className="w-full pr-5 pl-3 py-4 flex items-center gap-4 text-left">
+                                        <div className={`w-10 h-10 rounded-xl ${st.bg} flex items-center justify-center shrink-0`}>
+                                            <StIcon size={18} className={st.text} />
                                         </div>
-                                        <p className="text-sm text-text-secondary truncate">
-                                            {req.schedule?.course?.name || 'N/A'}{' '}
-                                            {req.schedule && (
-                                                <span className="text-[11px] text-text-muted font-medium">
-                                                    ({req.schedule.day_of_week}, Sesi {req.schedule.session_start}
-                                                    {req.schedule.session_duration > 1 ? ` - ${req.schedule.session_start + req.schedule.session_duration - 1}` : ''})
-                                                </span>
-                                            )}{' '}
-                                            — {req.schedule?.room?.code || ''}
-                                        </p>
-                                    </div>
-                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${st.bg} ${st.text}`}>{st.label}</span>
-                                    {expanded ? <ChevronUp size={16} className="text-text-muted" /> : <ChevronDown size={16} className="text-text-muted" />}
-                                </button>
-                                {expanded && (
-                                    <div className="px-5 pb-5 border-t border-border pt-4 space-y-4">
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                                            <div><span className="text-text-muted block mb-0.5">{req.request_type === 'TEMPORARY' ? 'Tanggal Pertemuan' : 'Berlaku Mulai'}</span><span className="font-semibold text-text-primary">{req.target_date ? formatDateIndo(req.target_date) : req.effective_from_date ? formatDateIndo(req.effective_from_date) : '-'}</span></div>
-                                            <div><span className="text-text-muted block mb-0.5">Hari Usulan</span><span className="font-semibold text-text-primary">{req.proposed_day || '-'}</span></div>
-                                            <div>
-                                                <span className="text-text-muted block mb-0.5">Sesi Usulan</span>
-                                                <span className="font-semibold text-text-primary">
-                                                    {formatTimesToSessions(req.proposed_day, req.proposed_start_time, req.proposed_end_time)}
-                                                </span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="text-xs font-bold text-text-primary">{req.request_code}</span>
+                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${req.request_type === 'TEMPORARY' ? 'bg-cyan-100 text-cyan-700' : 'bg-warning/10 text-warning'}`}>{req.request_type}</span>
                                             </div>
-                                            <div><span className="text-text-muted block mb-0.5">Ruangan Usulan</span><span className="font-semibold text-text-primary">{req.proposed_room?.code || '-'}</span></div>
+                                            <p className="text-sm text-text-secondary truncate">
+                                                {req.schedule?.course?.name || 'N/A'}{' '}
+                                                {req.schedule && (
+                                                    <span className="text-[11px] text-text-muted font-medium">
+                                                        ({req.schedule.day_of_week}, Sesi {req.schedule.session_start}
+                                                        {req.schedule.session_duration > 1 ? ` - ${req.schedule.session_start + req.schedule.session_duration - 1}` : ''})
+                                                    </span>
+                                                )}{' '}
+                                                — {req.schedule?.room?.code || ''}
+                                            </p>
                                         </div>
-                                        <div><span className="text-[10px] font-bold uppercase tracking-widest text-text-muted block mb-1">Alasan</span><p className="text-sm text-text-secondary leading-normal">{req.reason}</p></div>
-                                        {req.has_conflict && (
-                                            <div className="bg-danger/5 border border-danger/20 rounded-lg px-3 py-2 flex items-center gap-2">
-                                                <AlertTriangle size={14} className="text-danger shrink-0" />
-                                                <p className="text-xs text-danger font-medium">Terdeteksi konflik jadwal pada slot yang diusulkan</p>
-                                            </div>
-                                        )}
-                                        {req.approvals?.length > 0 && (
-                                            <div>
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted block mb-2">Pipeline Validasi</span>
-                                                <div className="space-y-2">
-                                                    {req.approvals.map((a, i) => (
-                                                        <div key={i} className="flex items-start gap-3 text-xs">
-                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${a.decision.includes('REJECTED') ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'}`}>
-                                                                {a.decision.includes('REJECTED') ? <XCircle size={12} /> : <CheckCircle size={12} />}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-semibold text-text-primary">{a.stage} — {a.decision}</p>
-                                                                <p className="text-text-muted">{a.actor?.name} • {a.notes}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${st.bg} ${st.text}`}>{st.label}</span>
+                                        {expanded ? <ChevronUp size={16} className="text-text-muted" /> : <ChevronDown size={16} className="text-text-muted" />}
+                                    </button>
+                                    {expanded && (
+                                        <div className="pr-5 pl-3 pb-5 border-t border-border pt-4 space-y-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                                <div><span className="text-text-muted block mb-0.5">{req.request_type === 'TEMPORARY' ? 'Tanggal Pertemuan' : 'Berlaku Mulai'}</span><span className="font-semibold text-text-primary">{req.target_date ? formatDateIndo(req.target_date) : req.effective_from_date ? formatDateIndo(req.effective_from_date) : '-'}</span></div>
+                                                <div><span className="text-text-muted block mb-0.5">Hari Usulan</span><span className="font-semibold text-text-primary">{req.proposed_day || '-'}</span></div>
+                                                <div>
+                                                    <span className="text-text-muted block mb-0.5">Sesi Usulan</span>
+                                                    <span className="font-semibold text-text-primary">
+                                                        {formatTimesToSessions(req.proposed_day, req.proposed_start_time, req.proposed_end_time)}
+                                                    </span>
                                                 </div>
+                                                <div><span className="text-text-muted block mb-0.5">Ruangan Usulan</span><span className="font-semibold text-text-primary">{req.proposed_room?.code || '-'}</span></div>
                                             </div>
-                                        )}
-                                    </div>
-                                )}
+                                            <div><span className="text-[10px] font-bold uppercase tracking-widest text-text-muted block mb-1">Alasan</span><p className="text-sm text-text-secondary leading-normal">{req.reason}</p></div>
+                                            {req.has_conflict && (
+                                                <div className="bg-danger/5 border border-danger/20 rounded-lg px-3 py-2 flex items-center gap-2">
+                                                    <AlertTriangle size={14} className="text-danger shrink-0" />
+                                                    <p className="text-xs text-danger font-medium">Terdeteksi konflik jadwal pada slot yang diusulkan</p>
+                                                </div>
+                                            )}
+                                            {req.approvals?.length > 0 && (
+                                                <div>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted block mb-2">Pipeline Validasi</span>
+                                                    <div className="space-y-2">
+                                                        {req.approvals.map((a, i) => (
+                                                            <div key={i} className="flex items-start gap-3 text-xs">
+                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${a.decision.includes('REJECTED') ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'}`}>
+                                                                    {a.decision.includes('REJECTED') ? <XCircle size={12} /> : <CheckCircle size={12} />}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold text-text-primary">{a.stage} — {a.decision}</p>
+                                                                    <p className="text-text-muted">{a.actor?.name} • {a.notes}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             </section>
+
+            {/* Sticky Floating Action Bar */}
+            {selectedRequestIds.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-lg bg-card/85 backdrop-blur-md border border-primary-500/25 px-5 py-3.5 rounded-2xl shadow-xl flex items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300" style={{ boxShadow: '0 20px 40px -15px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)' }}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center shrink-0">
+                            <Layers size={16} className="text-primary-500" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-text-primary">{selectedRequestIds.length} Request Terpilih</p>
+                            <p className="text-[10px] text-text-muted font-medium">Pilih hapus untuk menghapus riwayat</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRequestIds([])}
+                            className="px-3.5 py-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-red-500/20 flex items-center gap-1.5 group hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <Trash2 size={13} className="transition-transform group-hover:rotate-6" />
+                            <span>Hapus</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-card border border-border/60 w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" style={{boxShadow: '0 25px 60px -15px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)'}}>
+                        <div className="p-6 text-center space-y-4">
+                            <div className="w-12 h-12 bg-danger/10 text-danger rounded-full flex items-center justify-center mx-auto">
+                                <AlertTriangle size={24} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <h3 className="text-base font-bold text-text-primary">Hapus Riwayat Request?</h3>
+                                <p className="text-xs text-text-secondary leading-normal">
+                                    Apakah Anda yakin ingin menghapus <span className="font-bold text-text-primary">{selectedRequestIds.length}</span> riwayat request yang terpilih? Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
+                                </p>
+                            </div>
+                            
+                            <div className="bg-surface/50 border border-border rounded-xl p-3 max-h-32 overflow-y-auto text-left space-y-1">
+                                {requests
+                                    .filter(r => selectedRequestIds.includes(r.id))
+                                    .map(r => (
+                                        <div key={r.id} className="text-[11px] font-bold text-text-secondary flex justify-between">
+                                            <span>{r.request_code}</span>
+                                            <span className="font-medium text-text-muted">{r.schedule?.course?.name || 'N/A'}</span>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 border-t border-border/40 bg-surface/20 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={deletingRequests}
+                                className="px-4 py-2 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteSelected}
+                                disabled={deletingRequests}
+                                className="px-5 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:opacity-90 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-red-500/15 flex items-center gap-1.5"
+                            >
+                                {deletingRequests ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                <span>Ya, Hapus</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
