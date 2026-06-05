@@ -350,7 +350,9 @@ class RealScheduleSeeder extends Seeder
 
             // ── Rini ──
             ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'D', 'SENIN', 6],
+            ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'C', 'JUMAT', 2],
             ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'D P', 'SELASA', 6],
+            ['rini@sars.test', 'Rekayasa Perangkat Lunak', 'C P', 'KAMIS', 6],
             ['rini@sars.test', 'Manajemen Sistem Informasi', 'C', 'SELASA', 6],
             ['rini@sars.test', 'Manajemen Sistem Informasi', 'D', 'RABU', 4],
             ['rini@sars.test', 'Jaminan Mutu Perangkat Lunak', 'A', 'KAMIS', 6],
@@ -383,6 +385,10 @@ class RealScheduleSeeder extends Seeder
             ['akhmad@sars.test', 'Pengembangan Aplikasi', 'A', 'KAMIS', 3],
             ['akhmad@sars.test', 'Pengembangan Aplikasi', 'A P', 'KAMIS', 5],
             ['akhmad@sars.test', 'Manajemen Sistem Informasi', 'A', 'JUMAT', 5],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'D', 'SENIN', 6],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'C', 'JUMAT', 2],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'D P', 'SELASA', 6],
+            ['akhmad@sars.test', 'Rekayasa Perangkat Lunak', 'C P', 'KAMIS', 6],
 
             // ── Fahmy, Thofiq Odhi, Shofie (X) ──
         ];
