@@ -371,6 +371,50 @@ class MahasiswaController extends Controller
     }
 
     /**
+     * Delete selected change request history.
+     */
+    public function deleteRequests(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:change_requests,id',
+        ]);
+
+        $user = $request->user();
+        $ids = $request->input('ids');
+
+        $requestsToDelete = ChangeRequest::whereIn('id', $ids)
+            ->where('requester_id', $user->id)
+            ->get();
+
+        if ($requestsToDelete->isEmpty()) {
+            return back()->with('error', 'Tidak ada request yang valid untuk dihapus.');
+        }
+
+        DB::transaction(function () use ($requestsToDelete) {
+            foreach ($requestsToDelete as $changeRequest) {
+                // Delete schedule overrides referencing this change request
+                DB::table('schedule_overrides')
+                    ->where('request_id', $changeRequest->id)
+                    ->delete();
+
+                // Delete schedule history referencing this change request
+                DB::table('schedule_history')
+                    ->where('request_id', $changeRequest->id)
+                    ->delete();
+
+                // Delete approvals
+                $changeRequest->approvals()->delete();
+
+                // Delete the change request itself (cascades to notifications)
+                $changeRequest->delete();
+            }
+        });
+
+        return back()->with('success', count($requestsToDelete) . ' riwayat request berhasil dihapus.');
+    }
+
+    /**
      * Generate meeting dates for a given schedule.
      * Returns all dates matching the schedule's day_of_week within the active semester range.
      */
