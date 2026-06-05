@@ -168,43 +168,52 @@ class DatabaseSeeder extends Seeder
         $mahasiswa = User::where('email', 'zendin@sars.test')->first();
 
         $notifications = [
+            // Flow 1: Mahasiswa submit request → Admin & Aslab dapat notif (2 hari lalu)
             [
                 'type' => 'REQUEST_SUBMITTED',
                 'title' => 'Permohonan Reschedule Baru',
                 'message' => 'Mahasiswa mengajukan permohonan reschedule untuk RPL Kelas A',
                 'body' => 'Permohonan baru memerlukan persetujuan Anda',
                 'recipients' => [$admin, $aslab],
+                'created_at' => now()->subDays(2)->setTime(10, 30),
             ],
-            [
-                'type' => 'SCHEDULE_CHANGED',
-                'title' => 'Jadwal Anda Diperbarui',
-                'message' => 'Jadwal Basis Data Kelas B telah dipindahkan ke ruang LAB-B4.04',
-                'body' => 'Perubahan jadwal telah disetujui',
-                'recipients' => [$dosen, $mahasiswa],
-            ],
+            // Flow 2: Admin approve request → Mahasiswa & Dosen dapat notif (1 hari lalu)
             [
                 'type' => 'REQUEST_APPROVED',
                 'title' => 'Permohonan Disetujui',
                 'message' => 'Permohonan reschedule RPL telah disetujui oleh Admin',
                 'body' => 'Jadwal baru akan berlaku mulai minggu depan',
-                'recipients' => [$mahasiswa],
+                'recipients' => [$mahasiswa, $dosen],
+                'created_at' => now()->subDays(1)->setTime(14, 15),
             ],
+            // Flow 3: Schedule actually changed → Dosen & Mahasiswa dapat notif (3 jam lalu)
+            [
+                'type' => 'SCHEDULE_CHANGED',
+                'title' => 'Jadwal Anda Diperbarui',
+                'message' => 'Jadwal RPL Kelas A telah dipindahkan ke ruang LAB-B4.04',
+                'body' => 'Perubahan jadwal telah diterapkan',
+                'recipients' => [$dosen, $mahasiswa],
+                'created_at' => now()->subHours(3),
+            ],
+            // Alert conflict (tidak related ke flow di atas, 5 jam lalu)
             [
                 'type' => 'CONFLICT_ALERT',
                 'title' => 'Konflik Jadwal Terdeteksi',
                 'message' => 'Terdapat bentrokan jadwal pada hari Senin sesi 3-4',
                 'body' => 'Harap segera diselesaikan',
                 'recipients' => [$admin, $aslab],
+                'created_at' => now()->subHours(5),
             ],
         ];
 
         foreach ($notifications as $notifData) {
             $recipients = $notifData['recipients'];
-            unset($notifData['recipients']);
+            $createdAt = $notifData['created_at'];
+            unset($notifData['recipients'], $notifData['created_at']);
 
             $notifId = DB::table('notifications')->insertGetId(array_merge($notifData, [
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
             ]));
 
             foreach ($recipients as $user) {
@@ -213,8 +222,8 @@ class DatabaseSeeder extends Seeder
                     'recipient_id' => $user->id,
                     'channel' => 'IN_APP',
                     'is_read' => false,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
                 ]);
             }
         }
