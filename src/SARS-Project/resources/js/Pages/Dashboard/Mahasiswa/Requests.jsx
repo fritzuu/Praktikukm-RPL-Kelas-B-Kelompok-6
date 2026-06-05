@@ -99,24 +99,50 @@ const getWeekDate = (dayIndex, offset = 0) => {
 /* ─────────────────────────────────────────────
    Step indicator — simple horizontal bar
    ───────────────────────────────────────────── */
-const STEPS = [
-    { id: 1, label: 'Pilih Mata Kuliah' },
-    { id: 2, label: 'Pilih Pertemuan' },
-    { id: 3, label: 'Tipe Request' },
-    { id: 4, label: 'Alasan' },
-    { id: 5, label: 'Jadwal Pengganti' },
-    { id: 6, label: 'Kirim' },
-];
+function StepIndicator({ isPermanent, currentStepKey }) {
+    const ALL_STEPS = [
+        { key: 'course', label: 'Pilih Mata Kuliah' },
+        { key: 'type', label: 'Tipe Request' },
+        { key: 'meeting', label: 'Pilih Pertemuan', isConditional: true },
+        { key: 'reason', label: 'Alasan' },
+        { key: 'replacement', label: 'Jadwal Pengganti' },
+        { key: 'review', label: 'Review & Kirim' },
+    ];
 
-function StepIndicator({ current }) {
+    let visibleCount = 0;
+    const stepsWithIndex = ALL_STEPS.map((step) => {
+        const isHidden = step.isConditional && isPermanent;
+        const stepNum = isHidden ? null : ++visibleCount;
+        return { ...step, isHidden, stepNum };
+    });
+
+    const activeSteps = stepsWithIndex.filter(s => !s.isHidden);
+    const currentIdx = activeSteps.findIndex(s => s.key === currentStepKey);
+
     return (
-        <div className="flex items-center gap-1 mb-6">
-            {STEPS.map((step, idx) => {
-                const isActive = step.id === current;
-                const isDone = step.id < current;
+        <div className="flex items-center mb-6 overflow-hidden py-2 px-1">
+            {stepsWithIndex.map((step, idx) => {
+                const visibleIdx = step.isHidden ? -1 : activeSteps.findIndex(s => s.key === step.key);
+                const isActive = visibleIdx === currentIdx;
+                const isDone = visibleIdx !== -1 && visibleIdx < currentIdx;
+                const isHidden = step.isHidden;
+
+                const hasNextVisible = stepsWithIndex.slice(idx + 1).some(s => !s.isHidden);
+                const isLastVisible = !hasNextVisible && !isHidden;
+
                 return (
-                    <div key={step.id} className="flex items-center flex-1">
-                        <div className="flex flex-col items-center flex-1">
+                    <div
+                        key={step.key}
+                        className="flex items-center transition-all duration-500 ease-in-out py-2"
+                        style={{
+                            flex: isHidden ? '0 0 0px' : isLastVisible ? '0 0 auto' : '1 1 0px',
+                            opacity: isHidden ? 0 : 1,
+                            transform: isHidden ? 'scale(0.8)' : 'scale(1)',
+                            pointerEvents: isHidden ? 'none' : 'auto',
+                            marginRight: isHidden || isLastVisible ? '0px' : '4px',
+                        }}
+                    >
+                        <div className="flex flex-col items-center flex-1 min-w-[70px]">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                                 isDone
                                     ? 'bg-success text-white'
@@ -124,18 +150,25 @@ function StepIndicator({ current }) {
                                         ? 'bg-primary-500 text-white ring-4 ring-primary-500/20'
                                         : 'bg-surface border-2 border-border text-text-muted'
                             }`}>
-                                {isDone ? <Check size={14} /> : step.id}
+                                {isDone ? <Check size={14} /> : step.stepNum}
                             </div>
-                            <span className={`text-[10px] mt-1.5 text-center font-semibold leading-tight ${
+                            <span className={`text-[10px] mt-1.5 text-center font-semibold leading-tight whitespace-nowrap transition-colors duration-300 ${
                                 isActive ? 'text-primary-500' : isDone ? 'text-success' : 'text-text-muted'
                             }`}>
                                 {step.label}
                             </span>
                         </div>
-                        {idx < STEPS.length - 1 && (
-                            <div className={`h-0.5 flex-1 mx-1 rounded-full transition-all duration-300 -mt-4 ${
-                                step.id < current ? 'bg-success' : 'bg-border'
-                            }`} />
+                        {idx < stepsWithIndex.length - 1 && (
+                            <div
+                                className={`h-0.5 rounded-full transition-all duration-500 -mt-4 ${
+                                    isDone ? 'bg-success' : 'bg-border'
+                                }`}
+                                style={{
+                                    flex: hasNextVisible && !isHidden ? '1 1 0px' : '0 0 0px',
+                                    opacity: hasNextVisible && !isHidden ? 1 : 0,
+                                    margin: hasNextVisible && !isHidden ? '0 4px' : '0px',
+                                }}
+                            />
                         )}
                     </div>
                 );
