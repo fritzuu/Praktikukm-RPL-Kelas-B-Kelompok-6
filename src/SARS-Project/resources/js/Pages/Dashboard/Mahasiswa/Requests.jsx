@@ -770,7 +770,7 @@ export default function Requests({
                     <StepIndicator isPermanent={isPermanent} currentStepKey={currentStepKey} />
 
                     {/* ══════════ STEP 1: Pilih Mata Kuliah ══════════ */}
-                    {step === 1 && (
+                    {currentStepKey === 'course' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-base font-bold text-text-primary">Pilih Mata Kuliah</h3>
@@ -935,8 +935,8 @@ export default function Requests({
 
                             <div className="flex justify-end pt-2 border-t border-border/50">
                                 <button
-                                    onClick={() => setStep(2)}
-                                    disabled={!canGoStep2}
+                                    onClick={handleNext}
+                                    disabled={!stepValidations[currentStepKey]}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-all shadow-sm"
                                 >
                                     <span>Lanjut</span>
@@ -947,7 +947,7 @@ export default function Requests({
                     )}
 
                     {/* ══════════ STEP 2: Pilih Pertemuan ══════════ */}
-                    {step === 2 && (
+                    {currentStepKey === 'meeting' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
@@ -1015,13 +1015,13 @@ export default function Requests({
                             )}
 
                             <div className="flex justify-between pt-4 border-t border-border/50">
-                                <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
+                                <button onClick={handleBack} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
                                     <ArrowLeft size={16} />
                                     <span>Kembali</span>
                                 </button>
                                 <button
-                                    onClick={() => setStep(3)}
-                                    disabled={!canGoStep3}
+                                    onClick={handleNext}
+                                    disabled={!stepValidations[currentStepKey]}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
                                 >
                                     <span>Lanjut</span>
@@ -1032,7 +1032,7 @@ export default function Requests({
                     )}
 
                     {/* ══════════ STEP 3: Tipe Request ══════════ */}
-                    {step === 3 && (
+                    {currentStepKey === 'type' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
@@ -1060,7 +1060,7 @@ export default function Requests({
                                     </div>
                                     <p className="text-sm font-bold text-text-primary mt-1">Perubahan Satu Pertemuan</p>
                                     <p className="text-xs text-text-secondary leading-normal">
-                                        Jadwal kuliah hanya bergeser untuk tanggal pertemuan yang dipilih ({formatDateIndo(form.target_date || form.effective_from_date)}). Pertemuan minggu berikutnya kembali ke jadwal normal.
+                                        Jadwal kuliah hanya bergeser untuk tanggal pertemuan yang dipilih ({formatDateIndo(form.target_date || form.effective_from_date)}). Pertemuan minggu berikutnya kembali to jadwal normal.
                                     </p>
                                     {form.request_type === 'TEMPORARY' && (
                                         <div className="absolute top-3 right-3 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
@@ -1097,13 +1097,13 @@ export default function Requests({
                             </div>
 
                             <div className="flex justify-between pt-4 border-t border-border/50">
-                                <button onClick={() => setStep(2)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
+                                <button onClick={handleBack} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
                                     <ArrowLeft size={16} />
                                     <span>Kembali</span>
                                 </button>
                                 <button
-                                    onClick={() => setStep(4)}
-                                    disabled={!canGoStep4}
+                                    onClick={handleNext}
+                                    disabled={!stepValidations[currentStepKey]}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
                                 >
                                     <span>Lanjut</span>
@@ -1114,7 +1114,7 @@ export default function Requests({
                     )}
 
                     {/* ══════════ STEP 4: Alasan ══════════ */}
-                    {step === 4 && (
+                    {currentStepKey === 'reason' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
@@ -1141,24 +1141,24 @@ export default function Requests({
                             </div>
 
                             <div className="flex justify-between pt-4 border-t border-border/50">
-                                <button onClick={() => setStep(3)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
+                                <button onClick={handleBack} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
                                     <ArrowLeft size={16} />
                                     <span>Kembali</span>
                                 </button>
                                 <button
-                                    onClick={() => { setStep(5); handleCariJadwalPengganti(); }}
-                                    disabled={!canGoStep5}
+                                    onClick={handleNext}
+                                    disabled={!stepValidations[currentStepKey]}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:opacity-90 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
                                 >
                                     <Sparkles size={16} className="text-yellow-300 animate-pulse" />
-                                    <span>Cari Jadwal Pengganti</span>
+                                    <span>Lanjut</span>
                                 </button>
                             </div>
                         </div>
                     )}
 
                     {/* ══════════ STEP 5: Jadwal Pengganti ══════════ */}
-                    {step === 5 && (
+                    {currentStepKey === 'replacement' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/50">
                                 <div>
@@ -1241,7 +1241,7 @@ export default function Requests({
                                                                 <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1 shadow-sm">
                                                                     <Star size={10} className="fill-white" />
                                                                     Rekomendasi Terbaik
-                                                                </div>
+                                                                 </div>
                                                             )}
 
                                                             {/* Day & Session */}
@@ -1411,13 +1411,13 @@ export default function Requests({
                             )}
 
                             <div className="flex justify-between pt-4 border-t border-border/50">
-                                <button onClick={() => setStep(4)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
+                                <button onClick={handleBack} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
                                     <ArrowLeft size={16} />
                                     <span>Kembali</span>
                                 </button>
                                 <button
-                                    onClick={() => setStep(6)}
-                                    disabled={mode === 'AUTO' ? selectedRecIndex === null : !form.proposed_day || !form.proposed_room_id || !form.proposed_start_time || !form.proposed_end_time || !manualCheckResult?.available}
+                                    onClick={handleNext}
+                                    disabled={!stepValidations[currentStepKey]}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
                                 >
                                     <span>Lanjut</span>
@@ -1428,7 +1428,7 @@ export default function Requests({
                     )}
 
                     {/* ══════════ STEP 6: Review & Kirim ══════════ */}
-                    {step === 6 && (
+                    {currentStepKey === 'review' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <div>
                                 <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
@@ -1529,7 +1529,7 @@ export default function Requests({
                             </div>
 
                             <div className="flex justify-between pt-4 border-t border-border/50">
-                                <button onClick={() => setStep(5)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
+                                <button onClick={handleBack} className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
                                     <ArrowLeft size={16} />
                                     <span>Kembali</span>
                                 </button>
