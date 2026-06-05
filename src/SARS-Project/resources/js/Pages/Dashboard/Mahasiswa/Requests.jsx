@@ -721,14 +721,34 @@ export default function Requests({
     };
 
     // Step navigation helpers
-    const canGoStep2 = !!form.schedule_id;
-    const canGoStep3 = canGoStep2 && (form.target_date || form.effective_from_date);
-    const canGoStep4 = canGoStep3 && !!form.request_type;
-    const canGoStep5 = canGoStep4 && form.reason.length >= 20;
     const isAutomaticMode = mode === 'AUTO';
     const hasSelectedManualSlot = !isAutomaticMode && !!form.proposed_day && !!form.proposed_room_id && !!form.proposed_start_time && !!form.proposed_end_time;
-    const canGoStep6 = canGoStep5 && (isAutomaticMode ? selectedRecIndex !== null : (hasSelectedManualSlot && manualCheckResult?.available));
-    const canSubmit = step === 6 && canGoStep6;
+
+    const stepValidations = {
+        course: !!form.schedule_id,
+        type: !!form.request_type,
+        meeting: isPermanent || !!form.target_date,
+        reason: form.reason.length >= 20,
+        replacement: isAutomaticMode ? selectedRecIndex !== null : (hasSelectedManualSlot && manualCheckResult?.available),
+        review: true,
+    };
+
+    const canSubmit = activeSteps.every(s => s.key === 'review' || stepValidations[s.key]);
+
+    const handleNext = () => {
+        if (currentStepKey === 'reason') {
+            handleCariJadwalPengganti();
+        }
+        if (step < activeSteps.length) {
+            setStep(prev => prev + 1);
+        }
+    };
+
+    const handleBack = () => {
+        if (step > 1) {
+            setStep(prev => prev - 1);
+        }
+    };
 
     return (
         <>
@@ -747,7 +767,7 @@ export default function Requests({
 
             {showForm && (
                 <section className="mb-6 bg-card border border-border rounded-2xl p-6 shadow-sm">
-                    <StepIndicator current={step} />
+                    <StepIndicator isPermanent={isPermanent} currentStepKey={currentStepKey} />
 
                     {/* ══════════ STEP 1: Pilih Mata Kuliah ══════════ */}
                     {step === 1 && (
