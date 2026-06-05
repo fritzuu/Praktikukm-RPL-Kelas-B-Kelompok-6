@@ -92,7 +92,7 @@ class DosenJadwalController extends Controller
                 'schedules.id',
                 'courses.code as kode',
                 'courses.name as nama',
-                'users.name as dosen',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedules.room_id',
                 'rooms.code as ruangan',
                 'schedules.day_of_week as hari',
@@ -102,6 +102,13 @@ class DosenJadwalController extends Controller
                 'courses.description as semesterNum',
                 'schedules.start_time as jamMulai',
                 'schedules.end_time as jamAkhir'
+            )
+            ->groupBy(
+                'schedules.id', 'courses.code', 'courses.name',
+                'schedules.room_id', 'rooms.code',
+                'schedules.day_of_week', 'schedules.session_start',
+                'schedules.session_duration', 'courses.class_name',
+                'courses.description', 'schedules.start_time', 'schedules.end_time'
             )
             ->get()
             ->map(function ($s) use ($assignedScheduleIds) {

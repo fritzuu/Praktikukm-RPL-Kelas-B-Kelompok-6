@@ -51,7 +51,7 @@ class AslabDashboardController extends Controller
                 'courses.description as semesterNum',
                 'semesters.name as semester',
                 'rooms.name as ruangan',
-                'users.name as dosen',
+                \Illuminate\Support\Facades\DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
                 'schedules.session_duration as durasi',
@@ -60,6 +60,12 @@ class AslabDashboardController extends Controller
             )
             ->where('schedules.is_active', true)
             ->where('schedules.semester_id', $semester->id)
+            ->groupBy(
+                'schedules.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'courses.description', 'semesters.name', 'rooms.name',
+                'schedules.day_of_week', 'schedules.session_start',
+                'schedules.session_duration', 'schedules.start_time', 'schedules.end_time'
+            )
             ->get()
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
