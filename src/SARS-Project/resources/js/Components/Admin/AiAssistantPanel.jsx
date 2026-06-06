@@ -115,7 +115,35 @@ export default function AdminAiAssistantPanel({ isOpen, onClose, ref }) {
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    // Process any remaining data in buffer before exiting
+                    if (buffer.trim()) {
+                        const trimmed = buffer.trim();
+                        if (trimmed.startsWith('data: ')) {
+                            const jsonStr = trimmed.slice(6);
+                            if (jsonStr) {
+                                try {
+                                    const parsed = JSON.parse(jsonStr);
+                                    const textDelta = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                                    if (textDelta) {
+                                        assistantText += textDelta;
+                                        if (messageAdded) {
+                                            setMessages(prev => {
+                                                const updated = [...prev];
+                                                updated[updated.length - 1] = {
+                                                    ...updated[updated.length - 1],
+                                                    text: assistantText,
+                                                };
+                                                return updated;
+                                            });
+                                        }
+                                    }
+                                } catch {}
+                            }
+                        }
+                    }
+                    break;
+                }
 
                 buffer += decoder.decode(value, { stream: true });
 

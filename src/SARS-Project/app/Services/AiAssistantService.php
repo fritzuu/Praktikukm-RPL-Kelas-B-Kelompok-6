@@ -23,7 +23,7 @@ class AiAssistantService
         $this->apiKey      = config('ai.gemini.api_key', '');
         $this->model       = config('ai.gemini.model', 'gemini-2.5-flash');
         $this->baseUrl     = config('ai.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta');
-        $this->maxTokens   = config('ai.gemini.max_tokens', 1024);
+        $this->maxTokens   = config('ai.gemini.max_tokens', 8192);
         $this->temperature = config('ai.gemini.temperature', 0.7);
     }
 
