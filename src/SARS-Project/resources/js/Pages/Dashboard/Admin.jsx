@@ -216,7 +216,7 @@ export default function AdminDashboard({
                             </div>
                             <div>
                                 <h4 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-1">Semester</h4>
-                                <p className="font-medium text-text-primary">{selectedSchedule.semester || '-'}</p>
+                                <p className="font-medium text-text-primary">{selectedSchedule.semesterNum || '-'}</p>
                             </div>
                         </div>
 

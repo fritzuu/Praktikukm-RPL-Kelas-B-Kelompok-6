@@ -656,7 +656,7 @@ export default function AdminJadwal({ jadwal = [], rooms = [], flash = {} }) {
                                     Semester
                                 </h4>
                                 <p className="font-medium text-text-primary">
-                                    {selectedSchedule.semester || "-"}
+                                    {selectedSchedule.semesterNum || "-"}
                                 </p>
                             </div>
                         </div>

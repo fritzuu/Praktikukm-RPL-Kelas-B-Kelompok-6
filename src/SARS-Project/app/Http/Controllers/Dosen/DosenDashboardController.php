@@ -47,7 +47,7 @@ class DosenDashboardController extends Controller
             'kode'      => $s->course->code,
             'nama'      => $s->course->name,
             'kelas'     => $s->course->class_name,
-            'semesterNum'=> $s->course->description,
+            'semesterNum'=> preg_replace('/[^0-9]/', '', $s->course->description),
             'ruangan'   => $s->room->code,
             'hari'      => strtolower($s->day_of_week),
             'sesiMulai' => $s->session_start,
