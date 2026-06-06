@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiAssistantService;
 use App\Services\Dashboard\CampusActivityService;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
@@ -48,7 +49,8 @@ class MahasiswaController extends Controller
     ];
 
     public function __construct(
-        private readonly CampusActivityService $campusActivity
+        private readonly CampusActivityService $campusActivity,
+        private readonly AiAssistantService $aiAssistant,
     ) {}
 
     /**
@@ -579,6 +581,7 @@ class MahasiswaController extends Controller
 
     /**
      * AI Assistant - read-only query endpoint.
+     * Returns SSE stream when Gemini is available, JSON fallback otherwise.
      */
     public function aiQuery(Request $request)
     {
@@ -586,50 +589,24 @@ class MahasiswaController extends Controller
             'query' => 'required|string|max:500',
         ]);
 
-        $query   = strtolower($request->query('query', $request->input('query')));
+        $query    = $request->input('query');
+        $user     = $request->user();
         $semester = Semester::active();
 
-        // Simple rule-based AI responses for mahasiswa role
-        $response = $this->processAiQuery($query, $semester);
+        // Try streaming with Gemini first
+        $streamedResponse = $this->aiAssistant->streamMahasiswaQuery($query, $user, $semester);
+
+        if ($streamedResponse) {
+            return $streamedResponse;
+        }
+
+        // Fallback to rule-based responses
+        $response = $this->aiAssistant->fallbackResponse($query, $semester);
 
         return response()->json([
             'answer' => $response,
             'type'   => 'text',
         ]);
-    }
-
-    /**
-     * Process AI query with simple rule-based logic.
-     */
-    private function processAiQuery(string $query, ?Semester $semester): string
-    {
-        if (!$semester) {
-            return 'Maaf, tidak ada semester aktif saat ini. Silakan hubungi admin.';
-        }
-
-        if (str_contains($query, 'jadwal') || str_contains($query, 'schedule')) {
-            $count = Schedule::where('semester_id', $semester->id)->where('is_active', true)->count();
-            return "Pada semester {$semester->name}, terdapat {$count} jadwal aktif. Kamu bisa melihat detailnya di halaman Jadwal.";
-        }
-
-        if (str_contains($query, 'slot') || str_contains($query, 'kosong') || str_contains($query, 'ruang')) {
-            $roomCount = Room::where('is_active', true)->count();
-            return "Saat ini terdapat {$roomCount} ruangan aktif. Gunakan fitur 'Cek Slot Kosong' di halaman Jadwal untuk melihat ketersediaan berdasarkan hari dan waktu.";
-        }
-
-        if (str_contains($query, 'request') || str_contains($query, 'pengajuan') || str_contains($query, 'ajukan')) {
-            return "Untuk mengajukan perubahan jadwal, buka halaman 'Requests' dan klik 'Ajukan Request Baru'. Kamu bisa memilih tipe Temporary (1x tanggal) atau Permanent (sisa semester).";
-        }
-
-        if (str_contains($query, 'status') || str_contains($query, 'tracking')) {
-            return "Status request mengikuti pipeline: PENDING_ASLAB → FORWARDED → APPROVED/REJECTED. Kamu bisa memantau semua status di halaman 'Requests'.";
-        }
-
-        if (str_contains($query, 'notifikasi') || str_contains($query, 'notification')) {
-            return "Notifikasi akan dikirim otomatis saat ada perubahan status request atau perubahan jadwal. Kamu bisa melihat semua notifikasi di halaman 'Notifikasi'.";
-        }
-
-        return "Halo! Saya adalah AI Assistant SARS. Saya bisa membantu kamu dengan informasi tentang jadwal, slot kosong, pengajuan request, dan notifikasi. Silakan tanyakan sesuatu yang spesifik!";
     }
 
     /**
