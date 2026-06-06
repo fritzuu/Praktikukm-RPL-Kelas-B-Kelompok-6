@@ -117,9 +117,14 @@ class AiAssistantService
      */
     private function buildMahasiswaSystemPrompt(User $user, Semester $semester): string
     {
-        $scheduleContext = $this->gatherScheduleContext($semester);
+        $schedules = Schedule::with(['course', 'room', 'teachingAssignments.user'])
+            ->where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->get();
+
+        $scheduleContext = $this->gatherScheduleContext($schedules);
         $requestContext  = $this->gatherRequestContext($user, $semester);
-        $roomContext     = $this->gatherRoomContext($semester);
+        $roomContext     = $this->gatherRoomContext($semester, $schedules);
 
         $now = now()->translatedFormat('l, d F Y H:i');
 
@@ -162,12 +167,8 @@ PROMPT;
     /**
      * Gather all active schedules for the current semester.
      */
-    private function gatherScheduleContext(Semester $semester): string
+    private function gatherScheduleContext(\Illuminate\Database\Eloquent\Collection $schedules): string
     {
-        $schedules = Schedule::with(['course', 'room', 'teachingAssignments.user'])
-            ->where('semester_id', $semester->id)
-            ->where('is_active', true)
-            ->get();
 
         if ($schedules->isEmpty()) {
             return "No active schedules found for this semester.";
@@ -227,7 +228,7 @@ PROMPT;
     /**
      * Gather room information with occupancy summary.
      */
-    private function gatherRoomContext(Semester $semester): string
+    private function gatherRoomContext(Semester $semester, \Illuminate\Database\Eloquent\Collection $schedules): string
     {
         $rooms = Room::where('is_active', true)->orderBy('code')->get();
 
@@ -238,10 +239,7 @@ PROMPT;
         $lines = ["Total active rooms: {$rooms->count()}", ""];
 
         foreach ($rooms as $room) {
-            $scheduleCount = Schedule::where('semester_id', $semester->id)
-                ->where('is_active', true)
-                ->where('room_id', $room->id)
-                ->count();
+            $scheduleCount = $schedules->where('room_id', $room->id)->count();
 
             $lines[] = "- {$room->code} ({$room->name}) | Building: {$room->building} | Capacity: {$room->capacity} | Scheduled classes: {$scheduleCount}";
         }
@@ -368,10 +366,15 @@ PROMPT;
      */
     private function buildAdminSystemPrompt(User $user, Semester $semester): string
     {
-        $scheduleContext = $this->gatherScheduleContext($semester);
+        $schedules = Schedule::with(['course', 'room', 'teachingAssignments.user'])
+            ->where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->get();
+
+        $scheduleContext = $this->gatherScheduleContext($schedules);
         $requestContext  = $this->gatherAdminRequestContext($semester);
-        $roomContext     = $this->gatherRoomContext($semester);
-        $conflictContext = $this->gatherConflictContext($semester);
+        $roomContext     = $this->gatherRoomContext($semester, $schedules);
+        $conflictContext = $this->gatherConflictContext($schedules);
 
         $now = now()->translatedFormat('l, d F Y H:i');
 
@@ -459,12 +462,8 @@ PROMPT;
     /**
      * Gather conflict information for admin.
      */
-    private function gatherConflictContext(Semester $semester): string
+    private function gatherConflictContext(\Illuminate\Database\Eloquent\Collection $schedules): string
     {
-        $schedules = Schedule::with(['course', 'room'])
-            ->where('semester_id', $semester->id)
-            ->where('is_active', true)
-            ->get();
 
         if ($schedules->isEmpty()) {
             return "No active schedules to analyze for conflicts.";
