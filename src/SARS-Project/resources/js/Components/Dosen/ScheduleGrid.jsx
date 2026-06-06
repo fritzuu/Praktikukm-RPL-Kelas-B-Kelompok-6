@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { CalendarDays, Clock, MapPin, Users, Loader2 } from 'lucide-react';
-import { MOCK_DOSEN_JADWAL } from '../../data/dosenMockData';
 
 const HARI_LIST = [
     { key: 'senin', label: 'Senin' },
@@ -16,7 +15,7 @@ function getTodayKey() {
     return dayMap[jsDay];
 }
 
-export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
+export default function ScheduleGrid({ jadwalItems = [] }) {
     const [selectedDay, setSelectedDay] = useState(getTodayKey);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -119,7 +118,7 @@ export default function ScheduleGrid({ jadwalItems = MOCK_DOSEN_JADWAL }) {
                                     <div>
                                         <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-0.5">Waktu</p>
                                         <p className="text-sm font-bold text-text-primary">
-                                            {item.waktu} <span className="text-text-muted font-medium ml-1">(Sesi {item.sesiMulai})</span>
+                                            Sesi {item.sesiMulai}{item.durasi > 1 ? ` - ${item.sesiMulai + item.durasi - 1}` : ''}
                                         </p>
                                     </div>
                                 </div>

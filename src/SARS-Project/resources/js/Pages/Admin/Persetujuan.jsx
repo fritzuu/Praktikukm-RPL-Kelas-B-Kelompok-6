@@ -4,11 +4,6 @@ import AdminInsightCards from '../../Components/Admin/AdminInsightCards';
 import ApprovalQueue from '../../Components/Admin/ApprovalQueue';
 import ActivityTable from '../../Components/Shared/ActivityTable';
 import { CheckCircle, History } from 'lucide-react';
-import {
-    MOCK_INSIGHTS,
-    MOCK_ADMIN_PENDING,
-    MOCK_ADMIN_RECENT,
-} from '../../data/mockData';
 
 const DECISION_STYLES = {
     APPROVED: 'bg-success/10 text-success',
@@ -96,9 +91,9 @@ const HISTORY_COLUMNS = [
  *   - insights: stats object for AdminInsightCards
  */
 export default function Persetujuan({
-    pending = MOCK_ADMIN_PENDING,
-    recent = MOCK_ADMIN_RECENT,
-    insights = MOCK_INSIGHTS,
+    pending = [],
+    recent = [],
+    insights = {},
     flash = {},
 }) {
     const { auth } = usePage().props;

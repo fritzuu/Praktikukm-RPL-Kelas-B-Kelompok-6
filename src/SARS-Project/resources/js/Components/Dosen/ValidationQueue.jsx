@@ -1,5 +1,4 @@
 import { ClipboardCheck, Check, X, Clock } from 'lucide-react';
-import { MOCK_VALIDASI_MAHASISWA } from '../../data/dosenMockData';
 
 const JENIS_BADGES = {
     'Perubahan Jadwal': { style: 'bg-info/10 text-info' },
@@ -7,7 +6,7 @@ const JENIS_BADGES = {
     'Penambahan Mata Kuliah': { style: 'bg-primary-500/10 text-primary-500' },
 };
 
-export default function ValidationQueue({ validations = MOCK_VALIDASI_MAHASISWA }) {
+export default function ValidationQueue({ validations = [] }) {
     if (!validations.length) return null;
 
     return (

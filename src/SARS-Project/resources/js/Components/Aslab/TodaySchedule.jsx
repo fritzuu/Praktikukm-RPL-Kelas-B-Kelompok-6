@@ -1,5 +1,4 @@
 import { Clock, MapPin, Users, Radio } from 'lucide-react';
-import { MOCK_ASLAB_JADWAL_HARI_INI } from '../../data/aslabMockData';
 
 const STATUS_STYLES = {
     sedang_berlangsung: {
@@ -22,7 +21,7 @@ const STATUS_STYLES = {
     },
 };
 
-export default function TodaySchedule({ schedules = MOCK_ASLAB_JADWAL_HARI_INI }) {
+export default function TodaySchedule({ schedules = [] }) {
     const today = new Date();
     const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     const formattedDate = today.toLocaleDateString('id-ID', options);

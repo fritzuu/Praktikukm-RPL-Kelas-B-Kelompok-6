@@ -1,21 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Bot, Sparkles, Send, Building2, Clock, Users, ClipboardCheck } from 'lucide-react';
-import {
-    MOCK_AI_ANALYSIS,
-    MOCK_METRIK,
-    MOCK_TUGAS_PENDING,
-} from '../../data/mockData';
-import {
-    MOCK_DOSEN_AI_ANALYSIS,
-    MOCK_DOSEN_METRIK,
-    MOCK_DOSEN_TUGAS,
-} from '../../data/dosenMockData';
-import {
-    MOCK_ASLAB_AI_ANALYSIS,
-    MOCK_ASLAB_METRIK,
-    MOCK_ASLAB_TUGAS,
-} from '../../data/aslabMockData';
 
 const ROLE_MODE_LABELS = {
     admin: 'Admin Mode',
@@ -46,53 +31,53 @@ export default function AiAssistantPanel({ isOpen, onClose, role = 'admin', ref 
     const config = {
         admin: {
             analysisTitle: 'Analisis Konflik',
-            analysisText: MOCK_AI_ANALYSIS.text,
-            analysisRecommendation: MOCK_AI_ANALYSIS.rekomendasi,
+            analysisText: '',
+            analysisRecommendation: '',
             metricTitle: 'Metrik Efisiensi',
             metric1Icon: Building2,
             metric1Label: 'Utilisasi Ruangan',
-            metric1Value: MOCK_METRIK.utilisasiRuangan,
+            metric1Value: 0,
             metric1Suffix: '%',
             metric2Icon: Clock,
             metric2Label: 'Waktu Tunggu',
-            metric2Value: MOCK_METRIK.waktuTunggu,
+            metric2Value: '0j',
             metric2Suffix: '',
             tasksTitle: 'Ringkasan Tugas Tertunda',
-            tasksData: MOCK_TUGAS_PENDING,
+            tasksData: [],
             placeholder: 'Tanyakan AI tentang konflik...'
         },
         dosen: {
             analysisTitle: 'Analisis Kehadiran',
-            analysisText: MOCK_DOSEN_AI_ANALYSIS.text,
-            analysisRecommendation: MOCK_DOSEN_AI_ANALYSIS.rekomendasi,
+            analysisText: '',
+            analysisRecommendation: '',
             metricTitle: 'Metrik Mengajar',
             metric1Icon: Users,
             metric1Label: 'Kehadiran Rata²',
-            metric1Value: MOCK_DOSEN_METRIK.kehadiranRataRata,
+            metric1Value: 0,
             metric1Suffix: '%',
             metric2Icon: Clock,
             metric2Label: 'Tugas Dinilai',
-            metric2Value: MOCK_DOSEN_METRIK.tugasDinilai,
+            metric2Value: '0/0',
             metric2Suffix: '',
             tasksTitle: 'Tugas Tertunda',
-            tasksData: MOCK_DOSEN_TUGAS,
+            tasksData: [],
             placeholder: 'Tanya AI tentang jadwal...'
         },
         aslab: {
             analysisTitle: 'Analisis Validasi',
-            analysisText: MOCK_ASLAB_AI_ANALYSIS.text,
-            analysisRecommendation: MOCK_ASLAB_AI_ANALYSIS.rekomendasi,
+            analysisText: '',
+            analysisRecommendation: '',
             metricTitle: 'Metrik Validasi',
             metric1Icon: ClipboardCheck,
             metric1Label: 'Validasi Minggu Ini',
-            metric1Value: MOCK_ASLAB_METRIK.validasiMingguIni,
+            metric1Value: 0,
             metric1Suffix: '',
             metric2Icon: Clock,
             metric2Label: 'Waktu Respon',
-            metric2Value: MOCK_ASLAB_METRIK.rataRataWaktuRespon,
+            metric2Value: '0 jam',
             metric2Suffix: '',
             tasksTitle: 'Tugas Tertunda',
-            tasksData: MOCK_ASLAB_TUGAS,
+            tasksData: [],
             placeholder: 'Tanya AI tentang jadwal...'
         }
     };
