@@ -188,7 +188,9 @@ PROMPT;
                     ->first()?->user?->name ?? '-';
                 $start = substr($s->start_time, 0, 5);
                 $end   = substr($s->end_time, 0, 5);
-                $lines[] = "- {$s->course->code} {$s->course->name} (Kelas {$s->course->class_name}) | {$start}-{$end} | Room: {$s->room->code} | Dosen: {$lecturer}";
+                $semesterNum = preg_replace('/[^0-9]/', '', $s->course->description);
+                $semesterLabel = $semesterNum ? " (Semester {$semesterNum})" : '';
+                $lines[] = "- {$s->course->code} {$s->course->name} (Kelas {$s->course->class_name}{$semesterLabel}) | {$start}-{$end} | Room: {$s->room->code} | Dosen: {$lecturer}";
             }
             $lines[] = "";
         }
