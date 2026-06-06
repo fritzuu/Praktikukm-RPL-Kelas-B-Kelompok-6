@@ -92,6 +92,10 @@ Route::middleware('auth')->group(function () {
             ->name('pengaturan');
         Route::post('/pengaturan', [AdminSettingController::class, 'updateProfile'])
             ->name('pengaturan.update');
+
+        // AI Assistant route
+        Route::post('/ai-query', [AdminDashboardController::class, 'aiQuery'])
+            ->name('aiQuery');
     });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────

@@ -3,12 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiAssistantService;
+use App\Models\Semester;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
 class AdminDashboardController extends Controller
 {
+    public function __construct(
+        private readonly AiAssistantService $aiAssistant,
+    ) {}
+
     public function index()
     {
         $schedules = DB::table('schedules')
@@ -215,5 +221,35 @@ class AdminDashboardController extends Controller
         return (stripos($courseName, 'praktikum') !== false) || 
                (stripos($className ?? '', 'P') !== false) || 
                (str_ends_with(strtoupper($courseName), ' P'));
+    }
+
+    /**
+     * AI Assistant - read-only query endpoint for Admin.
+     * Returns SSE stream when Gemini is available, JSON fallback otherwise.
+     */
+    public function aiQuery(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|max:500',
+        ]);
+
+        $query    = $request->input('query');
+        $user     = $request->user();
+        $semester = Semester::active();
+
+        // Try streaming with Gemini first
+        $streamedResponse = $this->aiAssistant->streamAdminQuery($query, $user, $semester);
+
+        if ($streamedResponse) {
+            return $streamedResponse;
+        }
+
+        // Fallback to rule-based responses
+        $response = $this->aiAssistant->fallbackAdminResponse($query, $semester);
+
+        return response()->json([
+            'answer' => $response,
+            'type'   => 'text',
+        ]);
     }
 }

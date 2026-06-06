@@ -93,7 +93,7 @@ export default function AiAssistantPanel({ isOpen, onClose, role = 'admin', ref 
             animate={{ width: 320, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 250 }}
-            className="shrink-0 border-l border-border bg-card flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-40 overflow-hidden"
+            className="shrink-0 border-l border-border bg-card flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-30 overflow-hidden"
         >
             {/* Fixed width mask wrapper to prevent content squishing during transition */}
             <div className="w-[320px] flex flex-col h-full shrink-0">
