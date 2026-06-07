@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
 import { router } from "@inertiajs/react";
+import { AnimatePresence } from "framer-motion";
 import AppLayout from "./AppLayout";
 import FileUploadModal from "../Components/Shared/FileUploadModal";
+import AdminAiAssistantPanel from "../Components/Admin/AiAssistantPanel";
+import AdminAiAssistantFab from "../Components/Admin/AiAssistantFab";
 import {
     ADMIN_NAV_ITEMS,
     ADMIN_BRANDING,
@@ -11,6 +14,27 @@ import {
 export default function AdminLayout({ children }) {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [aiPanelOpen, setAiPanelOpen] = useState(true);
+
+    // Auto-collapse AI panel based on breakpoint
+    useEffect(() => {
+        const mediaLg = window.matchMedia('(max-width: 1024px)');
+        const mediaMd = window.matchMedia('(max-width: 768px)');
+
+        function handleResize() {
+            if (mediaMd.matches) {
+                setAiPanelOpen(false);
+            } else if (mediaLg.matches) {
+                setAiPanelOpen(false);
+            } else {
+                setAiPanelOpen(true);
+            }
+        }
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     /**
      * Read the dropped/selected file as plain text and POST to jadwal.import.
@@ -46,11 +70,33 @@ export default function AdminLayout({ children }) {
         </button>
     );
 
+    const aiPanelSlot = (
+        <AnimatePresence>
+            {aiPanelOpen && (
+                <AdminAiAssistantPanel
+                    key="admin-ai-panel"
+                    isOpen={aiPanelOpen}
+                    onClose={() => setAiPanelOpen(false)}
+                />
+            )}
+        </AnimatePresence>
+    );
+
+    const aiFabSlot = (
+        <AnimatePresence>
+            {!aiPanelOpen && (
+                <AdminAiAssistantFab key="admin-ai-fab" onClick={() => setAiPanelOpen(true)} />
+            )}
+        </AnimatePresence>
+    );
+
     return (
         <AppLayout
             navItems={ADMIN_NAV_ITEMS}
             branding={ADMIN_BRANDING}
             topBarActions={topBarActions}
+            aiPanel={aiPanelSlot}
+            aiFab={aiFabSlot}
         >
             {children}
 

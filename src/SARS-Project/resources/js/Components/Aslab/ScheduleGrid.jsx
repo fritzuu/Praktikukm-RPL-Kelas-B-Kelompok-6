@@ -180,7 +180,7 @@ export default function ScheduleGrid({ schedules = [], rooms = [] }) {
                                                         {/* Header Row of Card */}
                                                         <div className="flex items-start justify-between gap-1 mb-1">
                                                             <span className="font-bold text-[10px] leading-none truncate">
-                                                                {item.semesterNum && item.kelas ? `SMT ${item.semesterNum} - ${item.kode} (${item.kelas})` : item.kode}
+                                                                {item.semesterNum && item.kelas ? `Semester ${item.semesterNum} - ${item.kode} (${item.kelas})` : item.kode}
                                                             </span>
                                                             {isConflict && (
                                                                 <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />

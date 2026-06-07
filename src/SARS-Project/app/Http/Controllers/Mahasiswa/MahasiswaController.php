@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiAssistantService;
 use App\Services\Dashboard\CampusActivityService;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
@@ -48,7 +49,8 @@ class MahasiswaController extends Controller
     ];
 
     public function __construct(
-        private readonly CampusActivityService $campusActivity
+        private readonly CampusActivityService $campusActivity,
+        private readonly AiAssistantService $aiAssistant,
     ) {}
 
     /**
@@ -116,7 +118,7 @@ class MahasiswaController extends Controller
             'kode'       => $s->course->code,
             'nama'       => $s->course->name,
             'kelas'      => $s->course->class_name,
-            'semesterNum'=> $s->course->description,
+            'semesterNum'=> preg_replace('/[^0-9]/', '', $s->course->description),
             'ruangan'    => $s->room->code,
             'hari'       => strtolower($s->day_of_week),
             'sesiMulai'  => $s->session_start,
@@ -371,6 +373,50 @@ class MahasiswaController extends Controller
     }
 
     /**
+     * Delete selected change request history.
+     */
+    public function deleteRequests(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:change_requests,id',
+        ]);
+
+        $user = $request->user();
+        $ids = $request->input('ids');
+
+        $requestsToDelete = ChangeRequest::whereIn('id', $ids)
+            ->where('requester_id', $user->id)
+            ->get();
+
+        if ($requestsToDelete->isEmpty()) {
+            return back()->with('error', 'Tidak ada request yang valid untuk dihapus.');
+        }
+
+        DB::transaction(function () use ($requestsToDelete) {
+            foreach ($requestsToDelete as $changeRequest) {
+                // Delete schedule overrides referencing this change request
+                DB::table('schedule_overrides')
+                    ->where('request_id', $changeRequest->id)
+                    ->delete();
+
+                // Delete schedule history referencing this change request
+                DB::table('schedule_history')
+                    ->where('request_id', $changeRequest->id)
+                    ->delete();
+
+                // Delete approvals
+                $changeRequest->approvals()->delete();
+
+                // Delete the change request itself (cascades to notifications)
+                $changeRequest->delete();
+            }
+        });
+
+        return back()->with('success', count($requestsToDelete) . ' riwayat request berhasil dihapus.');
+    }
+
+    /**
      * Generate meeting dates for a given schedule.
      * Returns all dates matching the schedule's day_of_week within the active semester range.
      */
@@ -535,6 +581,7 @@ class MahasiswaController extends Controller
 
     /**
      * AI Assistant - read-only query endpoint.
+     * Returns SSE stream when Gemini is available, JSON fallback otherwise.
      */
     public function aiQuery(Request $request)
     {
@@ -542,50 +589,24 @@ class MahasiswaController extends Controller
             'query' => 'required|string|max:500',
         ]);
 
-        $query   = strtolower($request->query('query', $request->input('query')));
+        $query    = $request->input('query');
+        $user     = $request->user();
         $semester = Semester::active();
 
-        // Simple rule-based AI responses for mahasiswa role
-        $response = $this->processAiQuery($query, $semester);
+        // Try streaming with Gemini first
+        $streamedResponse = $this->aiAssistant->streamMahasiswaQuery($query, $user, $semester);
+
+        if ($streamedResponse) {
+            return $streamedResponse;
+        }
+
+        // Fallback to rule-based responses
+        $response = $this->aiAssistant->fallbackResponse($query, $semester);
 
         return response()->json([
             'answer' => $response,
             'type'   => 'text',
         ]);
-    }
-
-    /**
-     * Process AI query with simple rule-based logic.
-     */
-    private function processAiQuery(string $query, ?Semester $semester): string
-    {
-        if (!$semester) {
-            return 'Maaf, tidak ada semester aktif saat ini. Silakan hubungi admin.';
-        }
-
-        if (str_contains($query, 'jadwal') || str_contains($query, 'schedule')) {
-            $count = Schedule::where('semester_id', $semester->id)->where('is_active', true)->count();
-            return "Pada semester {$semester->name}, terdapat {$count} jadwal aktif. Kamu bisa melihat detailnya di halaman Jadwal.";
-        }
-
-        if (str_contains($query, 'slot') || str_contains($query, 'kosong') || str_contains($query, 'ruang')) {
-            $roomCount = Room::where('is_active', true)->count();
-            return "Saat ini terdapat {$roomCount} ruangan aktif. Gunakan fitur 'Cek Slot Kosong' di halaman Jadwal untuk melihat ketersediaan berdasarkan hari dan waktu.";
-        }
-
-        if (str_contains($query, 'request') || str_contains($query, 'pengajuan') || str_contains($query, 'ajukan')) {
-            return "Untuk mengajukan perubahan jadwal, buka halaman 'Requests' dan klik 'Ajukan Request Baru'. Kamu bisa memilih tipe Temporary (1x tanggal) atau Permanent (sisa semester).";
-        }
-
-        if (str_contains($query, 'status') || str_contains($query, 'tracking')) {
-            return "Status request mengikuti pipeline: PENDING_ASLAB → FORWARDED → APPROVED/REJECTED. Kamu bisa memantau semua status di halaman 'Requests'.";
-        }
-
-        if (str_contains($query, 'notifikasi') || str_contains($query, 'notification')) {
-            return "Notifikasi akan dikirim otomatis saat ada perubahan status request atau perubahan jadwal. Kamu bisa melihat semua notifikasi di halaman 'Notifikasi'.";
-        }
-
-        return "Halo! Saya adalah AI Assistant SARS. Saya bisa membantu kamu dengan informasi tentang jadwal, slot kosong, pengajuan request, dan notifikasi. Silakan tanyakan sesuatu yang spesifik!";
     }
 
     /**

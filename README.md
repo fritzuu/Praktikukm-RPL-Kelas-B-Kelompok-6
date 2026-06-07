@@ -152,14 +152,14 @@ Jika kamu menutup salah satu terminal, fitur realtime tidak akan berfungsi denga
 ---
 
 ### 5. Akun Uji Coba (Dummy Accounts)
-Gunakan akun berikut untuk menguji fitur login dan dashboard (Password untuk semua akun: `password123`):
+Gunakan akun berikut untuk menguji fitur login dan dashboard (Password untuk semua akun: `password`):
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | `admin@university.ac.id` | `password123` |
-| Dosen | `siti.rahayu@university.ac.id` | `password123` |
-| Asisten Lab | `reza.pratama@university.ac.id` | `password123` |
-| Mahasiswa | `andi.wijaya@student.university.ac.id` | `password123` |
+| Admin | `revan@sars.test` | `password` |
+| Dosen | `bagas@sars.test` | `password` |
+| Asisten Lab | `faris@sars.test` | `password` |
+| Mahasiswa | `zendin@sars.test` | `password` |
 
 ---
 

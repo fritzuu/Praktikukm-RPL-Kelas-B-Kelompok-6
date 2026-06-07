@@ -143,7 +143,7 @@ function ScheduleCard({ item, isConflict, onCardClick, variants }) {
             <div className="relative z-10 p-2 flex flex-col h-full justify-center">
                 <div className="flex items-start justify-between gap-1 mb-1">
                     <span className="font-bold text-[10px] leading-none truncate opacity-80">
-                        {item.semesterNum || item.kelas ? `${item.semesterNum || ''} - Kelas ${item.kelas || '-'}` : item.kode}
+                        {item.semesterNum || item.kelas ? `Semester ${item.semesterNum || ''} - Kelas ${item.kelas || '-'}` : item.kode}
                     </span>
                     {(isConflict || item.tipe === 'konflik') && (
                         <AlertTriangle size={12} className="text-danger flex-shrink-0 animate-pulse" />

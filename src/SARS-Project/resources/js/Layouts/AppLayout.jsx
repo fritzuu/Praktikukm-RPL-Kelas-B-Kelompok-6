@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import { AnimatePresence } from 'framer-motion';
 import Sidebar from '../Components/Shared/Sidebar';
 import TopBar from '../Components/Shared/TopBar';
-import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
-import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
-export default function AppLayout({ navItems, branding, topBarActions, children }) {
+export default function AppLayout({ navItems, branding, topBarActions, children, aiPanel, aiFab }) {
     const { auth } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [aiPanelOpen, setAiPanelOpen] = useState(true);
 
     // Auto-collapse berdasarkan breakpoint
     useEffect(() => {
@@ -21,12 +17,8 @@ export default function AppLayout({ navItems, branding, topBarActions, children 
         function handleResize() {
             if (mediaMd.matches) {
                 setSidebarCollapsed(true);
-                setAiPanelOpen(false);
             } else if (mediaLg.matches) {
                 setSidebarCollapsed(false);
-                setAiPanelOpen(false);
-            } else {
-                setAiPanelOpen(true);
             }
         }
 
@@ -59,30 +51,16 @@ export default function AppLayout({ navItems, branding, topBarActions, children 
                     ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
                 `}
             >
-                {/* Main content area */}
                 <main className="flex-1 min-w-0 p-6">
                     {children}
                 </main>
-
-                {/* Right AI Panel */}
-                <AnimatePresence>
-                    {aiPanelOpen && (
-                        <AiAssistantPanel
-                            key="ai-panel"
-                            isOpen={aiPanelOpen}
-                            onClose={() => setAiPanelOpen(false)}
-                            role={user?.primaryRole || user?.role}
-                        />
-                    )}
-                </AnimatePresence>
+                
+                {/* Right AI Panel slot */}
+                {aiPanel}
             </div>
 
-            {/* FAB saat AI panel tertutup */}
-            <AnimatePresence>
-                {!aiPanelOpen && (
-                    <AiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
-                )}
-            </AnimatePresence>
+            {/* FAB slot (renders at root level for fixed positioning) */}
+            {aiFab}
         </div>
     );
 }

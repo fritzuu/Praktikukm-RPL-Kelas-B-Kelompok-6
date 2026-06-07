@@ -92,6 +92,10 @@ Route::middleware('auth')->group(function () {
             ->name('pengaturan');
         Route::post('/pengaturan', [AdminSettingController::class, 'updateProfile'])
             ->name('pengaturan.update');
+
+        // AI Assistant route
+        Route::post('/ai-query', [AdminDashboardController::class, 'aiQuery'])
+            ->name('aiQuery');
     });
 
     // ── Aslab routes ─────────────────────────────────────────────────────────
@@ -135,6 +139,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/jadwal',         [MahasiswaController::class, 'jadwal'])->name('mahasiswa.jadwal');
         Route::get('/requests',       [MahasiswaController::class, 'requests'])->name('mahasiswa.requests');
         Route::post('/requests',      [MahasiswaController::class, 'submitRequest'])->name('mahasiswa.requests.submit');
+        Route::delete('/requests',    [MahasiswaController::class, 'deleteRequests'])->name('mahasiswa.requests.delete');
         Route::get('/notifications',  [MahasiswaController::class, 'notifications'])->name('mahasiswa.notifications');
         Route::get('/settings',       [MahasiswaController::class, 'settings'])->name('mahasiswa.settings');
         Route::post('/settings',      [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
