@@ -27,7 +27,7 @@ class AdminJadwalController extends Controller
                 'courses.code as kode',
                 'courses.name as nama',
                 'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '') as semesterNum"),
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'semesters.name as semester',
                 'rooms.name as ruangan',
                 DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
