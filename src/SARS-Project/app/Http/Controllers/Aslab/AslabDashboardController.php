@@ -7,9 +7,11 @@ use App\Models\ChangeRequest;
 use App\Models\NotificationRecipient;
 use App\Models\Schedule;
 use App\Models\Semester;
+use App\Services\Dashboard\ConflictDetectionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+
 use App\Models\Room;
 use App\Services\AiAssistantService;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,7 @@ class AslabDashboardController extends Controller
                 'rooms'           => [],
                 'notifikasi'      => [],
                 'pendingRequests' => [],
+                'konflik'         => [],
             ]);
         }
 
@@ -119,6 +122,7 @@ class AslabDashboardController extends Controller
                 'reason'        => $cr->reason,
                 'targetDate'    => $cr->target_date,
                 'createdAtDiff' => $cr->created_at->diffForHumans(),
+                'hasConflict'   => (bool) $cr->has_conflict,
             ])->values();
 
         // Notifications
@@ -144,6 +148,8 @@ class AslabDashboardController extends Controller
             'rooms'           => $rooms,
             'notifikasi'      => $notifikasi,
             'pendingRequests' => $pendingRequests,
+            'konflik'         => app(ConflictDetectionService::class)
+                                    ->detect($semester->id, [], false),
         ]);
     }
 

@@ -66,18 +66,33 @@ class AslabNotifikasiController extends Controller
     }
 
     /**
-     * Delete a notification.
+     * Delete a notification (soft-delete, only allowed when already read).
      */
     public function destroy(Request $request, int $notificationId): JsonResponse
     {
-        $deleted = NotificationRecipient::where('recipient_id', $request->user()->id)
+        $recipient = NotificationRecipient::where('recipient_id', $request->user()->id)
             ->where('notification_id', $notificationId)
             ->where('channel', 'IN_APP')
-            ->delete();
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$recipient) {
+            return response()->json(['success' => false, 'message' => 'Notifikasi tidak ditemukan.'], 404);
+        }
+
+        if (!$recipient->is_read) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tandai notifikasi sebagai dibaca sebelum menghapus.',
+                'reason'  => 'UNREAD_NOT_DELETABLE',
+            ], 422);
+        }
+
+        $recipient->delete(); // soft delete via SoftDeletes trait
 
         return response()->json([
-            'success' => $deleted > 0,
-            'message' => $deleted > 0 ? 'Notifikasi dihapus.' : 'Notifikasi tidak ditemukan.',
+            'success' => true,
+            'message' => 'Notifikasi dihapus.',
         ]);
     }
 

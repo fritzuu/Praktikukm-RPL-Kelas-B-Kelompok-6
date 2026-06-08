@@ -44,6 +44,7 @@ class AslabValidationController extends Controller
                 'targetDate'    => $cr->target_date,
                 'createdAt'     => $cr->created_at->translatedFormat('d M Y'),
                 'createdAtDiff' => $cr->created_at->diffForHumans(),
+                'hasConflict'   => (bool) $cr->has_conflict,
             ])->values();
 
         // Recently validated (forwarded or rejected by aslab)
@@ -85,25 +86,67 @@ class AslabValidationController extends Controller
             return redirect()->back()->with('error', 'Request ini sudah tidak dalam status PENDING_ASLAB.');
         }
 
-        // Create approval record
-        Approval::create([
-            'request_id' => $cr->id,
-            'actor_id'   => $request->user()->id,
-            'stage'      => 'ASLAB_CHECK',
-            'decision'   => 'FORWARDED',
-            'notes'      => $request->notes ?? 'Diteruskan ke Admin untuk keputusan akhir.',
-            'decided_at' => Carbon::now(),
-        ]);
+        // Create/update approval record (idempotent per unique(request_id, stage))
+        Approval::updateOrCreate(
+            [
+                'request_id' => $cr->id,
+                'stage'      => 'ASLAB_CHECK',
+            ],
+            [
+                'actor_id'   => $request->user()->id,
+                'decision'   => 'FORWARDED',
+                'notes'      => $request->notes ?? 'Diteruskan ke Admin untuk keputusan akhir.',
+                'decided_at' => Carbon::now(),
+            ]
+        );
 
         // Update change request status
         $cr->update(['status' => 'PENDING_ADMIN']);
 
+        // Build shared data_payload for detail modal
+        $schedule = $cr->schedule()->with(['course', 'room'])->first();
+        $proposedRoom = $cr->proposed_room_id
+            ? \App\Models\Room::find($cr->proposed_room_id)
+            : null;
+
+        $oldSessionFwd = null;
+        if ($schedule && $schedule->session_start) {
+            $dur = $schedule->session_duration ?? 1;
+            $oldSessionFwd = $dur > 1
+                ? 'Sesi ' . $schedule->session_start . '–' . ($schedule->session_start + $dur - 1)
+                : 'Sesi ' . $schedule->session_start;
+        }
+
+        $notifPayload = [
+            'request_code'   => $cr->request_code,
+            'course_name'    => $schedule?->course?->name,
+            'class_name'     => $schedule?->course?->class_name,
+            'request_type'   => $cr->request_type,
+            'student_reason' => $cr->reason,
+            'old_day'        => $schedule?->day_of_week,
+            'old_time'       => ($schedule && $schedule->start_time && $schedule->end_time)
+                                    ? substr($schedule->start_time, 0, 5) . ' – ' . substr($schedule->end_time, 0, 5)
+                                    : null,
+            'old_room'       => $schedule?->room?->code,
+            'old_room_name'  => $schedule?->room?->name,
+            'old_session'    => $oldSessionFwd,
+            'new_day'        => $cr->proposed_day,
+            'new_time'       => ($cr->proposed_start_time && $cr->proposed_end_time)
+                                    ? substr($cr->proposed_start_time, 0, 5) . ' – ' . substr($cr->proposed_end_time, 0, 5)
+                                    : null,
+            'new_room'       => $proposedRoom?->code ?? $schedule?->room?->code,
+            'new_room_name'  => $proposedRoom?->name ?? $schedule?->room?->name,
+        ];
+
         // Notify mahasiswa
         $notif = \App\Models\Notification::create([
-            'type'    => 'REQUEST_FORWARDED',
-            'title'   => 'Request Diteruskan',
-            'message' => "Pengajuan {$cr->request_code} telah divalidasi Aslab.",
-            'body'    => 'Sedang menunggu persetujuan Admin.',
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'type'         => 'REQUEST_FORWARDED',
+            'title'        => 'Request Diteruskan',
+            'message'      => "Pengajuan {$cr->request_code} telah divalidasi Aslab.",
+            'body'         => 'Sedang menunggu persetujuan Admin.',
+            'data_payload' => $notifPayload,
         ]);
 
         \App\Models\NotificationRecipient::create([
@@ -120,10 +163,13 @@ class AslabValidationController extends Controller
         
         foreach ($adminUsers as $admin) {
             $notifAdmin = \App\Models\Notification::create([
-                'type'    => 'REQUEST_FORWARDED',
-                'title'   => 'Request Menunggu Persetujuan',
-                'message' => "Request {$cr->request_code} telah divalidasi Aslab.",
-                'body'    => 'Menunggu keputusan akhir Anda.',
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'type'         => 'REQUEST_FORWARDED',
+                'title'        => 'Request Menunggu Persetujuan',
+                'message'      => "Request {$cr->request_code} telah divalidasi Aslab.",
+                'body'         => 'Menunggu keputusan akhir Anda.',
+                'data_payload' => $notifPayload,
             ]);
 
             \App\Models\NotificationRecipient::create([
@@ -153,22 +199,65 @@ class AslabValidationController extends Controller
             return redirect()->back()->with('error', 'Request ini sudah tidak dalam status PENDING_ASLAB.');
         }
 
-        Approval::create([
-            'request_id' => $cr->id,
-            'actor_id'   => $request->user()->id,
-            'stage'      => 'ASLAB_CHECK',
-            'decision'   => 'REJECTED',
-            'notes'      => $request->notes,
-            'decided_at' => Carbon::now(),
-        ]);
+        // Create/update approval record (idempotent per unique(request_id, stage))
+        Approval::updateOrCreate(
+            [
+                'request_id' => $cr->id,
+                'stage'      => 'ASLAB_CHECK',
+            ],
+            [
+                'actor_id'   => $request->user()->id,
+                'decision'   => 'REJECTED_ASLAB',
+                'notes'      => $request->notes,
+                'decided_at' => Carbon::now(),
+            ]
+        );
 
-        $cr->update(['status' => 'REJECTED']);
+        $cr->update(['status' => 'REJECTED_ASLAB']);
+
+        // Build data_payload for detail modal
+        $scheduleForReject = $cr->schedule()->with(['course', 'room'])->first();
+        $proposedRoomForReject = $cr->proposed_room_id
+            ? \App\Models\Room::find($cr->proposed_room_id)
+            : null;
+
+        $oldSessionRej = null;
+        if ($scheduleForReject && $scheduleForReject->session_start) {
+            $dur = $scheduleForReject->session_duration ?? 1;
+            $oldSessionRej = $dur > 1
+                ? 'Sesi ' . $scheduleForReject->session_start . '–' . ($scheduleForReject->session_start + $dur - 1)
+                : 'Sesi ' . $scheduleForReject->session_start;
+        }
+
+        $rejectPayload = [
+            'request_code'   => $cr->request_code,
+            'course_name'    => $scheduleForReject?->course?->name,
+            'class_name'     => $scheduleForReject?->course?->class_name,
+            'request_type'   => $cr->request_type,
+            'student_reason' => $cr->reason,
+            'old_day'        => $scheduleForReject?->day_of_week,
+            'old_time'       => ($scheduleForReject && $scheduleForReject->start_time && $scheduleForReject->end_time)
+                                    ? substr($scheduleForReject->start_time, 0, 5) . ' – ' . substr($scheduleForReject->end_time, 0, 5)
+                                    : null,
+            'old_room'       => $scheduleForReject?->room?->code,
+            'old_room_name'  => $scheduleForReject?->room?->name,
+            'old_session'    => $oldSessionRej,
+            'new_day'        => $cr->proposed_day,
+            'new_time'       => ($cr->proposed_start_time && $cr->proposed_end_time)
+                                    ? substr($cr->proposed_start_time, 0, 5) . ' – ' . substr($cr->proposed_end_time, 0, 5)
+                                    : null,
+            'new_room'       => $proposedRoomForReject?->code ?? $scheduleForReject?->room?->code,
+            'new_room_name'  => $proposedRoomForReject?->name ?? $scheduleForReject?->room?->name,
+        ];
 
         $notif = \App\Models\Notification::create([
-            'type'    => 'REQUEST_REJECTED',
-            'title'   => 'Request Ditolak Aslab',
-            'message' => "Pengajuan {$cr->request_code} ditolak.",
-            'body'    => "Alasan: {$request->notes}",
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'type'         => 'REQUEST_REJECTED',
+            'title'        => 'Request Ditolak Aslab',
+            'message'      => "Pengajuan {$cr->request_code} ditolak.",
+            'body'         => "Alasan: {$request->notes}",
+            'data_payload' => $rejectPayload,
         ]);
 
         \App\Models\NotificationRecipient::create([
