@@ -18,6 +18,9 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
+        // Eager-load roles once so hasRole() uses the cached collection
+        $request->user()->loadMissing('roles');
+
         foreach ($roles as $role) {
             if ($request->user()->hasRole($role)) {
                 return $next($request);
