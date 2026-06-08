@@ -9,6 +9,7 @@ import {
 import { router, usePage } from '@inertiajs/react';
 import MahasiswaNotificationDropdown from './NotificationDropdown';
 import HelpModal from '../Shared/HelpModal';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 
 export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
     const [notifOpen, setNotifOpen] = useState(false);
@@ -19,11 +20,29 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
     const notifRef = useRef(null);
     const searchRef = useRef(null);
 
+    const bellControls = useAnimationControls();
+
     const { url, component, props } = usePage();
     
     const isRequestsTab = component === 'Dashboard/Mahasiswa/Requests' || url?.startsWith('/mahasiswa/requests');
     const notifikasi = props.notifikasi || [];
     const unreadCount = props.unreadCount || 0;
+
+    const triggerBellWobble = () => {
+        if (unreadCount === 0) return;
+        bellControls.start({
+            rotate: [0, -15, 12, -8, 6, -3, 0],
+            transition: { duration: 0.5, ease: 'easeInOut' }
+        });
+    };
+
+    useEffect(() => {
+        if (unreadCount === 0) return;
+        const interval = setInterval(() => {
+            triggerBellWobble();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [unreadCount]);
     const schedules = props.schedules || [];
 
     useEffect(() => {
@@ -164,24 +183,34 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
                     <div className="relative" ref={notifRef}>
                         <button
                             onClick={() => setNotifOpen(!notifOpen)}
+                            onMouseEnter={triggerBellWobble}
                             className="relative p-2 rounded-lg text-text-secondary hover:bg-surface
-                                       hover:text-text-primary transition-colors"
+                                       hover:text-text-primary transition-colors group"
                         >
-                            <Bell size={20} />
+                            <motion.div animate={bellControls} style={{ originX: 0.5, originY: 0 }}>
+                                <Bell size={20} />
+                            </motion.div>
                             {unreadCount > 0 && (
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
-                                                 text-[9px] font-bold rounded-full flex items-center justify-center">
+                                <motion.span
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
+                                    className="absolute top-1 right-1 w-4 h-4 bg-danger text-white
+                                                 text-[9px] font-bold rounded-full flex items-center justify-center"
+                                >
                                     {unreadCount}
-                                </span>
+                                </motion.span>
                             )}
                         </button>
-                        {notifOpen && (
-                            <MahasiswaNotificationDropdown
-                                notifikasi={notifikasi}
-                                unreadCount={unreadCount}
-                                onClose={() => setNotifOpen(false)}
-                            />
-                        )}
+                        <AnimatePresence>
+                            {notifOpen && (
+                                <MahasiswaNotificationDropdown
+                                    notifikasi={notifikasi}
+                                    unreadCount={unreadCount}
+                                    onClose={() => setNotifOpen(false)}
+                                />
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     {/* ── Help Icon ─────────────────────────────────────────── */}
