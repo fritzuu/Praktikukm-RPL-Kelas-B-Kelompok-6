@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '../Components/Aslab/Sidebar';
 import TopBar from '../Components/Aslab/TopBar';
-import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
+import AiAssistantPanel from '../Components/Aslab/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
 export default function AslabLayout({ children }) {

@@ -10,10 +10,16 @@ use App\Models\Semester;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-
 use App\Models\Room;
+use App\Services\AiAssistantService;
+use Illuminate\Support\Facades\DB;
+
 class AslabDashboardController extends Controller
 {
+    public function __construct(
+        private readonly AiAssistantService $aiAssistant,
+    ) {}
+
     /**
      * Display the aslab dashboard.
      */
@@ -139,6 +145,35 @@ class AslabDashboardController extends Controller
             'notifikasi'      => $notifikasi,
             'pendingRequests' => $pendingRequests,
         ]);
-}
+    }
 
+    /**
+     * AI Assistant - read-only query endpoint for Aslab.
+     * Returns SSE stream when Gemini is available, JSON fallback otherwise.
+     */
+    public function aiQuery(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|max:500',
+        ]);
+
+        $query    = $request->input('query');
+        $user     = $request->user();
+        $semester = Semester::active();
+
+        // Try streaming with Gemini first
+        $streamedResponse = $this->aiAssistant->streamAslabQuery($query, $user, $semester);
+
+        if ($streamedResponse) {
+            return $streamedResponse;
+        }
+
+        // Fallback to simple offline message
+        $response = $this->aiAssistant->fallbackAslabResponse($query, $semester, $user);
+
+        return response()->json([
+            'answer' => $response,
+            'type'   => 'text',
+        ]);
+    }
 }

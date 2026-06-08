@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/notifikasi/{id}', [AslabNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
         Route::get('/pengaturan', [AslabSettingController::class, 'index'])->name('pengaturan');
         Route::post('/pengaturan', [AslabSettingController::class, 'updateProfile'])->name('pengaturan.update');
+        Route::post('/ai-query', [AslabDashboardController::class, 'aiQuery'])->name('aiQuery');
     });
 
     // ── Dosen routes ─────────────────────────────────────────────────────────
