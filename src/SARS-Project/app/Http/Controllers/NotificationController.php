@@ -12,6 +12,7 @@ class NotificationController extends Controller
     {
         NotificationRecipient::where('recipient_id', $request->user()->id)
             ->where('notification_id', $notificationId)
+            ->whereNull('deleted_at')
             ->where('is_read', false)
             ->update([
                 'is_read' => true,
@@ -24,6 +25,7 @@ class NotificationController extends Controller
     public function markAllAsRead(Request $request)
     {
         NotificationRecipient::where('recipient_id', $request->user()->id)
+            ->whereNull('deleted_at')
             ->where('is_read', false)
             ->update([
                 'is_read' => true,
@@ -37,6 +39,7 @@ class NotificationController extends Controller
     {
         NotificationRecipient::where('recipient_id', $request->user()->id)
             ->where('notification_id', $notificationId)
+            ->whereNull('deleted_at')
             ->delete();
 
         return back();
