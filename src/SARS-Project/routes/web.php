@@ -131,6 +131,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/notifikasi/{id}/read', [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
         Route::post('/notifikasi/read-all', [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
         Route::delete('/notifikasi/{id}', [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+
+        // ── AI Assistant ─────────────────────────────────────────────────────
+        Route::post('/ai-query', [DosenDashboardController::class, 'aiQuery'])->name('aiQuery');
     });
 
     // ─── Mahasiswa routes ────────────────────────────────────────────────
