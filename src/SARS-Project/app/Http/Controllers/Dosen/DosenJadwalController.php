@@ -48,7 +48,7 @@ class DosenJadwalController extends Controller
                 'courses.code as kode',
                 'courses.name as nama',
                 'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '') as semesterNum"),
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'courses.credits',
                 'schedules.course_id',
                 'rooms.code as ruangan',
@@ -99,7 +99,7 @@ class DosenJadwalController extends Controller
                 'schedules.session_start as sesiMulai',
                 'schedules.session_duration as durasi',
                 'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '') as semesterNum"),
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'schedules.start_time as jamMulai',
                 'schedules.end_time as jamAkhir'
             )
