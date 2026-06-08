@@ -3,6 +3,8 @@ import DosenLayout from '../../Layouts/DosenLayout';
 import WelcomeHeader from '../../Components/Dosen/WelcomeHeader';
 import TodaySchedule from '../../Components/Dosen/TodaySchedule';
 import ScheduleGrid from '../../Components/Dosen/ScheduleGrid';
+import ConflictAlertsBanner from '../../Components/Shared/ConflictAlertsBanner';
+
 export default function DosenDashboard({
     jadwal = [],
     stats = {
@@ -13,6 +15,7 @@ export default function DosenDashboard({
         pertemuanMingguIni: 0,
     },
     jadwalHariIni = [],
+    konflik = [],
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -20,6 +23,9 @@ export default function DosenDashboard({
     return (
         <>
             <WelcomeHeader user={user} stats={stats} />
+
+            {/* Konflik Jadwal — only shows when dosen's own schedules have conflicts */}
+            <ConflictAlertsBanner conflicts={konflik} role="dosen" />
 
             <TodaySchedule schedules={jadwalHariIni} />
 

@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import AslabLayout from '../../Layouts/AslabLayout';
 import WelcomeHeader from '../../Components/Aslab/WelcomeHeader';
 import RequestAlerts from '../../Components/Aslab/RequestAlerts';
+import ConflictAlertsBanner from '../../Components/Shared/ConflictAlertsBanner';
 import Modal from '../../Components/Modal';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 
@@ -11,6 +12,7 @@ export default function AslabDashboard({
     jadwal = [],
     rooms = [],
     pendingRequests = [],
+    konflik = [],
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -27,6 +29,9 @@ export default function AslabDashboard({
 
             {/* Pengajuan Masuk — only shows when mahasiswa have pending requests */}
             <RequestAlerts requests={pendingRequests} />
+
+            {/* Konflik Jadwal — shows when schedule conflicts exist */}
+            <ConflictAlertsBanner conflicts={konflik} role="aslab" />
 
             {/* Schedule Grid — identical to Admin */}
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden p-6">
