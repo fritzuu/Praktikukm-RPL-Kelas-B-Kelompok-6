@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import MahasiswaSidebar from '../Components/Mahasiswa/Sidebar';
 import MahasiswaTopBar from '../Components/Mahasiswa/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
-import MahasiswaAiAssistantFab from '../Components/Mahasiswa/AiAssistantFab';
+import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
 export default function MahasiswaLayout({ children }) {
     const { auth, unreadCount } = usePage().props;
@@ -87,7 +87,7 @@ export default function MahasiswaLayout({ children }) {
             {/* FAB when AI panel is closed */}
             <AnimatePresence>
                 {!aiPanelOpen && (
-                    <MahasiswaAiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
+                    <AiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
                 )}
             </AnimatePresence>
         </div>

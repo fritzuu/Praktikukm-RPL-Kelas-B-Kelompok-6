@@ -5,7 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import AppLayout from "./AppLayout";
 import FileUploadModal from "../Components/Shared/FileUploadModal";
 import AiAssistantPanel from "../Components/Shared/AiAssistantPanel";
-import AdminAiAssistantFab from "../Components/Admin/AiAssistantFab";
+import AiAssistantFab from "../Components/Shared/AiAssistantFab";
 import {
     ADMIN_NAV_ITEMS,
     ADMIN_BRANDING,
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }) {
     const aiFabSlot = (
         <AnimatePresence>
             {!aiPanelOpen && (
-                <AdminAiAssistantFab key="admin-ai-fab" onClick={() => setAiPanelOpen(true)} />
+                <AiAssistantFab key="admin-ai-fab" onClick={() => setAiPanelOpen(true)} />
             )}
         </AnimatePresence>
     );
