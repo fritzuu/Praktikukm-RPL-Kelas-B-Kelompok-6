@@ -1,9 +1,13 @@
 import { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import {
     Bell, BellOff, Calendar, AlertTriangle, CheckCircle,
-    Monitor, MailOpen, Search, Trash2, Info,
+    Monitor, Search, Trash2, Info,
 } from 'lucide-react';
 import AdminLayout from '../../Layouts/AdminLayout';
+import NotificationDetailModal from '../../Components/Shared/NotificationDetailModal';
+import ConfirmModal from '../../Components/Shared/ConfirmModal';
+import DoubleCheck from '../../Components/Shared/DoubleCheck';
 
 const TIPE_CONFIG = {
     jadwal: { icon: Calendar, color: 'bg-primary-500/10 text-primary-500', label: 'Jadwal', labelColor: 'bg-primary-500/10 text-primary-500' },
@@ -25,6 +29,51 @@ export default function AdminNotifikasi({ notifikasi = [] }) {
     const [items, setItems] = useState(notifikasi);
     const [activeFilter, setActiveFilter] = useState('semua');
     const [searchQuery, setSearchQuery] = useState('');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [activeNotifId, setActiveNotifId] = useState(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    function openDetail(id) {
+        setActiveNotifId(id);
+        setModalOpen(true);
+    }
+
+    function closeModal() {
+        setModalOpen(false);
+        setItems(prev => prev.map(n => String(n.id) === String(activeNotifId) ? { ...n, dibaca: true } : n));
+        setActiveNotifId(null);
+        // Sync bell badge + sidebar badge with server state
+        router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] });
+    }
+
+    function requestDelete(id) {
+        setPendingDeleteId(id);
+        setConfirmOpen(true);
+    }
+
+    async function handleConfirmDelete() {
+        if (!pendingDeleteId) return;
+        setDeleteLoading(true);
+        try {
+            await fetch(`/admin/notifikasi/${pendingDeleteId}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' },
+            });
+            setItems(prev => prev.filter(n => String(n.id) !== String(pendingDeleteId)));
+        } catch (_) {}
+        finally {
+            setDeleteLoading(false);
+            setConfirmOpen(false);
+            setPendingDeleteId(null);
+        }
+    }
+
+    function handleCancelDelete() {
+        setConfirmOpen(false);
+        setPendingDeleteId(null);
+    }
 
     const filteredItems = useMemo(() => {
         let result = items;
@@ -53,17 +102,16 @@ export default function AdminNotifikasi({ notifikasi = [] }) {
 
     function markAsRead(id) {
         setItems(prev => prev.map(n => n.id === id ? { ...n, dibaca: true } : n));
-        fetch(`/admin/notifikasi/${id}/read`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
+        fetch(`/admin/notifikasi/${id}/read`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } })
+            .then(() => router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] }))
+            .catch(() => {});
     }
 
     function markAllAsRead() {
         setItems(prev => prev.map(n => ({ ...n, dibaca: true })));
-        fetch('/admin/notifikasi/read-all', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
-    }
-
-    function deleteNotif(id) {
-        setItems(prev => prev.filter(n => n.id !== id));
-        fetch(`/admin/notifikasi/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } }).catch(() => {});
+        fetch('/admin/notifikasi/read-all', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' } })
+            .then(() => router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] }))
+            .catch(() => {});
     }
 
     const grouped = useMemo(() => {
@@ -134,7 +182,7 @@ export default function AdminNotifikasi({ notifikasi = [] }) {
                                     const cfg = TIPE_CONFIG[notif.tipe] || TIPE_CONFIG.info;
                                     const Icon = cfg.icon;
                                     return (
-                                        <div key={notif.id} onClick={() => markAsRead(notif.id)}
+                                        <div key={notif.id}
                                             className={`group relative bg-card border rounded-xl px-5 py-4 transition-all duration-200 hover:shadow-md ${!notif.dibaca ? 'border-primary-500/30 bg-primary-500/[0.02]' : 'border-border hover:border-primary-500/10'}`}>
                                             <div className="flex items-start gap-4">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-transform group-hover:scale-110 ${cfg.color}`}>
@@ -149,17 +197,21 @@ export default function AdminNotifikasi({ notifikasi = [] }) {
                                                     <p className="text-xs text-text-muted mt-1 leading-relaxed line-clamp-2">{notif.pesan}</p>
                                                     <div className="flex items-center gap-3 mt-2.5">
                                                         <span className="text-[11px] text-text-muted">{notif.waktu}</span>
+                                                        <button onClick={e => { e.stopPropagation(); openDetail(notif.id); }}
+                                                            className="flex items-center gap-1 text-[11px] font-medium text-primary-500 hover:text-primary-600 transition-colors">
+                                                            Lihat detail
+                                                        </button>
                                                         {!notif.dibaca && (
                                                             <button onClick={e => { e.stopPropagation(); markAsRead(notif.id); }}
                                                                 className="flex items-center gap-1 text-[11px] font-medium text-primary-500 hover:text-primary-600 transition-colors">
-                                                                <MailOpen size={12} /> Tandai dibaca
+                                                                <DoubleCheck size={12} /> Tandai dibaca
                                                             </button>
                                                         )}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                                     {notif.dibaca && (
-                                                        <button onClick={e => { e.stopPropagation(); deleteNotif(notif.id); }} title="Hapus"
+                                                        <button onClick={e => { e.stopPropagation(); requestDelete(notif.id); }} title="Hapus"
                                                             className="p-1.5 rounded-lg text-text-muted hover:bg-danger/10 hover:text-danger transition-colors">
                                                             <Trash2 size={14} />
                                                         </button>
@@ -174,6 +226,23 @@ export default function AdminNotifikasi({ notifikasi = [] }) {
                     ))}
                 </div>
             )}
+
+            <NotificationDetailModal
+                open={modalOpen}
+                onClose={closeModal}
+                notificationId={activeNotifId}
+            />
+
+            <ConfirmModal
+                open={confirmOpen}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                loading={deleteLoading}
+                title="Hapus Notifikasi?"
+                description="Notifikasi yang dihapus tidak akan muncul lagi pada halaman notifikasi."
+                confirmLabel="Hapus"
+                cancelLabel="Batal"
+            />
         </>
     );
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import {
     Bell,
     BellOff,
@@ -7,12 +8,14 @@ import {
     CheckCircle,
     Monitor,
     Filter,
-    MailOpen,
     Mail,
     Search,
     Trash2,
 } from 'lucide-react';
 import DosenLayout from '../../Layouts/DosenLayout';
+import NotificationDetailModal from '../../Components/Shared/NotificationDetailModal';
+import ConfirmModal from '../../Components/Shared/ConfirmModal';
+import DoubleCheck from '../../Components/Shared/DoubleCheck';
 
 // ── Icon + color per type ─────────────────────────────────────────────
 const TIPE_CONFIG = {
@@ -49,6 +52,54 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
     const [items, setItems] = useState(notifikasi);
     const [activeFilter, setActiveFilter] = useState('semua');
     const [searchQuery, setSearchQuery] = useState('');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [activeNotifId, setActiveNotifId] = useState(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    function openDetail(id) {
+        setActiveNotifId(id);
+        setModalOpen(true);
+    }
+
+    function closeModal() {
+        setModalOpen(false);
+        setItems((prev) => prev.map((n) => String(n.id) === String(activeNotifId) ? { ...n, dibaca: true } : n));
+        setActiveNotifId(null);
+        // Sync bell badge + sidebar badge with server state
+        router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] });
+    }
+
+    function requestDelete(id) {
+        setPendingDeleteId(id);
+        setConfirmOpen(true);
+    }
+
+    async function handleConfirmDelete() {
+        if (!pendingDeleteId) return;
+        setDeleteLoading(true);
+        try {
+            await fetch(`/dosen/notifikasi/${pendingDeleteId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json',
+                },
+            });
+            setItems((prev) => prev.filter((n) => String(n.id) !== String(pendingDeleteId)));
+        } catch (_) {}
+        finally {
+            setDeleteLoading(false);
+            setConfirmOpen(false);
+            setPendingDeleteId(null);
+        }
+    }
+
+    function handleCancelDelete() {
+        setConfirmOpen(false);
+        setPendingDeleteId(null);
+    }
 
     // ── Filtering ────────────────────────────────────────────────────
     const filteredItems = useMemo(() => {
@@ -90,14 +141,15 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
         setItems((prev) =>
             prev.map((n) => (n.id === id ? { ...n, dibaca: true } : n))
         );
-        // Fire-and-forget API call
         fetch(`/dosen/notifikasi/${id}/read`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 'Accept': 'application/json',
             },
-        }).catch(() => {}); // silent fail, UI already updated
+        })
+            .then(() => router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] }))
+            .catch(() => {});
     }
 
     function markAllAsRead() {
@@ -108,18 +160,9 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 'Accept': 'application/json',
             },
-        }).catch(() => {});
-    }
-
-    function deleteNotif(id) {
-        setItems((prev) => prev.filter((n) => n.id !== id));
-        fetch(`/dosen/notifikasi/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                'Accept': 'application/json',
-            },
-        }).catch(() => {});
+        })
+            .then(() => router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] }))
+            .catch(() => {});
     }
 
     // ── Group by date ────────────────────────────────────────────────
@@ -246,7 +289,6 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
                                     return (
                                         <div
                                             key={notif.id}
-                                            onClick={() => markAsRead(notif.id)}
                                             className={`
                                                 group relative bg-card border rounded-xl px-5 py-4
                                                 transition-all duration-200 hover:shadow-md
@@ -292,6 +334,15 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
                                                         <span className="text-[11px] text-text-muted">
                                                             {notif.waktu}
                                                         </span>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openDetail(notif.id);
+                                                            }}
+                                                            className="flex items-center gap-1 text-[11px] font-medium text-primary-500 hover:text-primary-600 transition-colors"
+                                                        >
+                                                            Lihat detail
+                                                        </button>
                                                         {!notif.dibaca && (
                                                             <button
                                                                 onClick={(e) => {
@@ -301,7 +352,7 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
                                                                 className="flex items-center gap-1 text-[11px] font-medium
                                                                            text-primary-500 hover:text-primary-600 transition-colors"
                                                             >
-                                                                <MailOpen size={12} />
+                                                                <DoubleCheck size={12} />
                                                                 Tandai dibaca
                                                             </button>
                                                         )}
@@ -314,7 +365,7 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                deleteNotif(notif.id);
+                                                                requestDelete(notif.id);
                                                             }}
                                                             title="Hapus"
                                                             className="p-1.5 rounded-lg text-text-muted hover:bg-danger/10 hover:text-danger transition-colors"
@@ -332,6 +383,23 @@ export default function DosenNotifikasi({ notifikasi = [] }) {
                     ))}
                 </div>
             )}
+
+            <NotificationDetailModal
+                open={modalOpen}
+                onClose={closeModal}
+                notificationId={activeNotifId}
+            />
+
+            <ConfirmModal
+                open={confirmOpen}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                loading={deleteLoading}
+                title="Hapus Notifikasi?"
+                description="Notifikasi yang dihapus tidak akan muncul lagi pada halaman notifikasi."
+                confirmLabel="Hapus"
+                cancelLabel="Batal"
+            />
         </>
     );
 }
