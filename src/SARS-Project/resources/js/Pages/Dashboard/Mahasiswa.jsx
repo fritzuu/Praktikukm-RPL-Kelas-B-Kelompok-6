@@ -104,28 +104,28 @@ export default function MahasiswaDashboard({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
                     <StatCard
                         icon={FileText}
-                        label="Total Requests"
+                        label="TOTAL REQUESTS"
                         value={stats.totalRequests}
                         color="text-primary-500"
                         bgColor="bg-primary-500/10"
                     />
                     <StatCard
                         icon={Clock}
-                        label="Pending"
+                        label="PENDING"
                         value={stats.pendingRequests}
                         color="text-warning"
                         bgColor="bg-warning/10"
                     />
                     <StatCard
                         icon={CheckCircle}
-                        label="Disetujui"
+                        label="ACCEPTED"
                         value={stats.approvedRequests}
                         color="text-success"
                         bgColor="bg-success/10"
                     />
                     <StatCard
                         icon={XCircle}
-                        label="Ditolak"
+                        label="REJECTED"
                         value={stats.rejectedRequests}
                         color="text-danger"
                         bgColor="bg-danger/10"
