@@ -20,11 +20,14 @@ const NAV_ITEMS = [
     { label: 'Pengaturan', icon: Settings,         route: 'aslab.pengaturan' },
 ];
 
-export default function Sidebar({ isCollapsed, onToggle }) {
+export default function Sidebar({ isCollapsed, onToggle, unreadCount: unreadCountProp, pendingAslabCount: pendingAslabCountProp }) {
     const { url, props } = usePage();
-    const notifikasi = props.notifikasi || [];
-    const pendingAslabCount = props.pendingAslabCount || 0;
-    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
+
+    // Use live polled data when provided, fall back to Inertia shared props
+    const notifikasi        = props.notifikasi ?? [];
+    const unreadCount       = unreadCountProp       ?? notifikasi.filter(n => !n.dibaca).length;
+    const pendingAslabCount = pendingAslabCountProp ?? props.pendingAslabCount ?? 0;
+
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     function isActive(routeName) {

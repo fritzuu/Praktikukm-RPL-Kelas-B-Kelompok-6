@@ -1,16 +1,29 @@
 import MahasiswaLayout from '../../../Layouts/MahasiswaLayout';
-import NotificationPage from '../../Shared/NotificationPage';
+import NotificationListPage from '../../../Components/Shared/NotificationListPage';
 
 /**
  * Mahasiswa Notifications page.
- * Delegates rendering to the shared NotificationPage component,
- * which handles the full list, detail modal, read state, and deletion.
- *
  * Route: GET /mahasiswa/notifications → MahasiswaController::notifications()
- * Inertia render: 'Dashboard/Mahasiswa/Notifications'
+ *
+ * All notification action endpoints are scoped under /mahasiswa/notifications/*
+ * (inside the role:mahasiswa group) so the mahasiswa never needs to call
+ * shared or role-restricted routes. The detail endpoint delegates to the same
+ * NotificationCenterController::detail() — authorization is recipient-based,
+ * not role-based — so mahasiswa can always open their own notification details.
+ *
+ * Live updates come from /api/notifications/list (role-agnostic JSON endpoint),
+ * not from Inertia router.reload(), so no 403 risk from route/role mismatch.
  */
-export default function MahasiswaNotifications({ notifications = [], unreadCount = 0 }) {
-    return <NotificationPage notifications={notifications} unreadCount={unreadCount} />;
+export default function MahasiswaNotifications({ notifications = [] }) {
+    return (
+        <NotificationListPage
+            notifikasi={notifications}
+            readUrl="/mahasiswa/notifications"
+            readAllUrl="/mahasiswa/notifications/read-all"
+            deleteUrl="/mahasiswa/notifications"
+            detailUrl="/mahasiswa/notifications"
+        />
+    );
 }
 
 MahasiswaNotifications.layout = (page) => <MahasiswaLayout>{page}</MahasiswaLayout>;

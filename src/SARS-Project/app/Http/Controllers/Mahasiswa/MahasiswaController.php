@@ -475,6 +475,28 @@ class MahasiswaController extends Controller
     }
 
     /**
+     * JSON endpoint for live-reload of the requests list.
+     * Called by the frontend when the polling fingerprint detects a status change.
+     * Returns the same shape as MahasiswaController::requests() Inertia props,
+     * but as pure JSON so the page can update without a full Inertia navigation.
+     */
+    public function requestsList(Request $request)
+    {
+        $user = $request->user();
+        $semester = Semester::active();
+
+        $requests = $semester
+            ? ChangeRequest::with(['schedule.course', 'schedule.room', 'proposedRoom', 'approvals.actor'])
+                ->where('requester_id', $user->id)
+                ->where('semester_id', $semester->id)
+                ->latest()
+                ->paginate(10)
+            : collect();
+
+        return response()->json(['requests' => $requests]);
+    }
+
+    /**
      * Generate meeting dates for a given schedule.
      * Returns all dates matching the schedule's day_of_week within the active semester range.
      */

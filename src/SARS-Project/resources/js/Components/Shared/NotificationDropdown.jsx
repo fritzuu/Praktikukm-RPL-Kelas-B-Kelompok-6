@@ -62,49 +62,53 @@ const itemVariants = {
     },
 };
 
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
 export default function NotificationDropdown({ onClose, notifications = [] }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [activeId, setActiveId] = useState(null);
 
     const handleCloseModal = () => {
+        // Capture id BEFORE clearing state to avoid stale closure
+        const closingId = activeId;
         setModalOpen(false);
         setActiveId(null);
-        // Reload only notification data so the bell badge + dropdown stay in sync
-        // after the modal auto-marked the notification as read.
-        router.reload({ only: ['auth', 'notifikasi', 'unreadCount'] });
+        // Trigger polling hook to re-fetch badge counts immediately
+        window.dispatchEvent(new CustomEvent('notifications:refresh'));
     };
 
     const handleOpenDetail = (notifId) => {
         setActiveId(notifId);
         setModalOpen(true);
+        // Close dropdown while modal is open
+        onClose?.();
     };
-
-    const handleMarkAsRead = (notifId) => {
-        router.post(`/notifications/${notifId}/read`, {}, { preserveScroll: true });
-    };
-
 
     const handleMarkAllRead = () => {
-
-        router.post('/notifications/read-all', {}, { preserveScroll: true });
-    };
-
-    const handleMarkRead = (id) => {
-        router.post(`/notifications/${id}/read`, {}, { preserveScroll: true, onFinish: () => {
-            // refresh only current props (avoid full nav)
-            // parent pages may still reload; this is best-effort
-        }});
+        // Use fetch with Accept: application/json so the server returns JSON (not redirect)
+        fetch('/notifications/read-all', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+        })
+            .then(() => window.dispatchEvent(new CustomEvent('notifications:refresh')))
+            .catch(() => {});
     };
 
     const handleViewAll = () => {
-        router.get('/notifications');
         onClose?.();
+        router.get('/notifications');
     };
 
     const unreadCount = notifications.filter((n) => !n.dibaca).length;
 
 
     return (
+        <>
         <motion.div
             variants={dropdownVariants}
             initial="hidden"
@@ -192,5 +196,13 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                 </div>
             )}
         </motion.div>
+
+        {/* Detail modal — rendered outside the dropdown so it persists after dropdown closes */}
+        <NotificationDetailModal
+            open={modalOpen}
+            onClose={handleCloseModal}
+            notificationId={activeId}
+        />
+    </>
     );
 }

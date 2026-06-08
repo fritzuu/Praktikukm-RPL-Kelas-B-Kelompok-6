@@ -64,6 +64,7 @@ export default function NotificationDetailModal({
     onClose,
     notificationId,
     initialPayload = null,
+    detailUrl = '/notifications',
 }) {
     const [loading, setLoading] = useState(false);
     const [payload, setPayload] = useState(initialPayload);
@@ -76,8 +77,9 @@ export default function NotificationDetailModal({
         if (!notificationId) return;
 
         setLoading(true);
-        fetch(`/notifications/${notificationId}/detail`, {
+        fetch(`${detailUrl}/${notificationId}/detail`, {
             headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
         })
             .then(r => {
                 if (!r.ok) throw new Error('Gagal memuat detail');

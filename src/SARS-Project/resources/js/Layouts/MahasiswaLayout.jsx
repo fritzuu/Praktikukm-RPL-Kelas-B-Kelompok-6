@@ -5,13 +5,20 @@ import MahasiswaSidebar from '../Components/Mahasiswa/Sidebar';
 import MahasiswaTopBar from '../Components/Mahasiswa/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
+import useNotificationPoll from '../hooks/useNotificationPoll';
 
 export default function MahasiswaLayout({ children }) {
-    const { auth, unreadCount } = usePage().props;
+    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [aiPanelOpen, setAiPanelOpen] = useState(true);
+
+    // ── Live notification polling ────────────────────────────────────────────
+    const { unreadCount, notifications } = useNotificationPoll({
+        unreadCount:   initialUnread ?? 0,
+        notifications: initialNotifs ?? auth?.notifications ?? [],
+    });
 
     useEffect(() => {
         const mediaLg = window.matchMedia('(max-width: 1024px)');
@@ -57,6 +64,8 @@ export default function MahasiswaLayout({ children }) {
             <MahasiswaTopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
+                unreadCount={unreadCount}
+                notifications={notifications}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}

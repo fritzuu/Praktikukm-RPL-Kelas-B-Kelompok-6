@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NotificationRecipient;
+use App\Services\Notifications\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,16 +13,15 @@ use Inertia\Response;
 
 class AdminNotifikasiController extends Controller
 {
+    public function __construct(private readonly NotificationService $notificationService) {}
+
     /**
      * Display the notification page.
      */
     public function index(Request $request): Response
     {
-        $userId = $request->user()->id;
-        $notifikasi = $this->getNotifikasi($userId);
-
         return Inertia::render('Admin/Notifikasi', [
-            'notifikasi' => $notifikasi,
+            'notifikasi' => $this->notificationService->getArchive($request->user(), 100),
         ]);
     }
 
@@ -30,57 +30,46 @@ class AdminNotifikasiController extends Controller
      */
     public function markAsRead(Request $request, int $notificationId): JsonResponse
     {
-        $updated = NotificationRecipient::where('recipient_id', $request->user()->id)
-            ->where('notification_id', $notificationId)
-            ->where('channel', 'IN_APP')
-            ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => Carbon::now(),
-            ]);
+        $ok = $this->notificationService->markAsRead($request->user(), $notificationId);
 
         return response()->json([
-            'success' => $updated > 0,
-            'message' => $updated > 0 ? 'Notifikasi ditandai dibaca.' : 'Notifikasi sudah dibaca atau tidak ditemukan.',
+            'success' => $ok,
+            'message' => $ok ? 'Notifikasi ditandai dibaca.' : 'Notifikasi sudah dibaca atau tidak ditemukan.',
         ]);
     }
 
     /**
-     * Mark all notifications as read.
+     * Mark all IN_APP notifications as read.
      */
     public function markAllAsRead(Request $request): JsonResponse
     {
         $updated = NotificationRecipient::where('recipient_id', $request->user()->id)
             ->where('channel', 'IN_APP')
+            ->whereNull('deleted_at')
             ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => Carbon::now(),
-            ]);
+            ->update(['is_read' => true, 'read_at' => Carbon::now()]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "{$updated} notifikasi ditandai dibaca.",
-            'count'   => $updated,
-        ]);
+        return response()->json(['success' => true, 'count' => $updated]);
     }
 
     /**
-     * Delete a notification (soft-delete, only allowed when already read).
+     * Soft-delete a notification recipient row (must be read first).
      */
     public function destroy(Request $request, int $notificationId): JsonResponse
     {
-        $recipient = NotificationRecipient::where('recipient_id', $request->user()->id)
-            ->where('notification_id', $notificationId)
-            ->where('channel', 'IN_APP')
-            ->whereNull('deleted_at')
-            ->first();
+        $ok = $this->notificationService->deleteIfRead($request->user(), $notificationId);
 
-        if (!$recipient) {
-            return response()->json(['success' => false, 'message' => 'Notifikasi tidak ditemukan.'], 404);
-        }
+        if (!$ok) {
+            // Distinguish: not found vs unread
+            $exists = NotificationRecipient::where('recipient_id', $request->user()->id)
+                ->where('notification_id', $notificationId)
+                ->whereNull('deleted_at')
+                ->exists();
 
-        if (!$recipient->is_read) {
+            if (!$exists) {
+                return response()->json(['success' => false, 'message' => 'Notifikasi tidak ditemukan.'], 404);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Tandai notifikasi sebagai dibaca sebelum menghapus.',
@@ -88,52 +77,6 @@ class AdminNotifikasiController extends Controller
             ], 422);
         }
 
-        $recipient->delete(); // soft delete via SoftDeletes trait
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Notifikasi dihapus.',
-        ]);
-    }
-
-    /**
-     * Fetch formatted notifications for frontend.
-     */
-    private function getNotifikasi(int $userId): array
-    {
-        return NotificationRecipient::where('recipient_id', $userId)
-            ->where('channel', 'IN_APP')
-            ->with('notification')
-            ->orderByDesc('notification_id')
-            ->limit(50)
-            ->get()
-            ->map(function ($nr) {
-                $notif = $nr->notification;
-                $createdAt = $notif->created_at;
-
-                $tipeMap = [
-                    'STATUS_CHANGE'      => 'jadwal',
-                    'REQUEST_APPROVED'   => 'jadwal',
-                    'REQUEST_FORWARDED'  => 'jadwal',
-                    'SCHEDULE_CHANGED'   => 'jadwal',
-                    'CONFLICT_ALERT'     => 'validasi',
-                    'REQUEST_SUBMITTED'  => 'validasi',
-                    'REQUEST_REJECTED'   => 'info',
-                    'SYSTEM'             => 'sistem',
-                    'REMINDER'           => 'info',
-                ];
-
-                return [
-                    'id'      => (string) $notif->id,
-                    'judul'   => $notif->title,
-                    'pesan'   => $notif->message ?? $notif->body,
-                    'waktu'   => $createdAt->diffForHumans(),
-                    'tanggal' => $createdAt->translatedFormat('j F Y'),
-                    'dibaca'  => $nr->is_read,
-                    'tipe'    => $tipeMap[$notif->type] ?? 'info',
-                ];
-            })
-            ->values()
-            ->toArray();
+        return response()->json(['success' => true, 'message' => 'Notifikasi dihapus.']);
     }
 }

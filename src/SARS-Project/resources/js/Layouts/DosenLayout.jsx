@@ -5,13 +5,20 @@ import Sidebar from '../Components/Dosen/Sidebar';
 import TopBar from '../Components/Dosen/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
+import useNotificationPoll from '../hooks/useNotificationPoll';
 
 export default function DosenLayout({ children }) {
-    const { auth } = usePage().props;
+    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [aiPanelOpen, setAiPanelOpen] = useState(true);
+
+    // ── Live notification polling ────────────────────────────────────────────
+    const { unreadCount, notifications } = useNotificationPoll({
+        unreadCount:   initialUnread ?? 0,
+        notifications: initialNotifs ?? auth?.notifications ?? [],
+    });
 
     // Auto-collapse berdasarkan breakpoint
     useEffect(() => {
@@ -51,12 +58,15 @@ export default function DosenLayout({ children }) {
             <Sidebar
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                unreadCount={unreadCount}
             />
 
             {/* ── Top Bar ─────────────────────────────────────────── */}
             <TopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
+                unreadCount={unreadCount}
+                notifications={notifications}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}

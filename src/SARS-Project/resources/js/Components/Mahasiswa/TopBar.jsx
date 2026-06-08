@@ -11,7 +11,7 @@ import MahasiswaNotificationDropdown from './NotificationDropdown';
 import HelpModal from '../Shared/HelpModal';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 
-export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
+export default function MahasiswaTopBar({ user, sidebarCollapsed, unreadCount: unreadCountProp, notifications: notificationsProp }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
@@ -25,8 +25,10 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed }) {
     const { url, component, props } = usePage();
     
     const isRequestsTab = component === 'Dashboard/Mahasiswa/Requests' || url?.startsWith('/mahasiswa/requests');
-    const notifikasi = props.notifikasi || [];
-    const unreadCount = props.unreadCount || 0;
+
+    // Use live polled data when provided by layout, fall back to Inertia shared props
+    const notifikasi   = notificationsProp ?? props.notifikasi ?? [];
+    const unreadCount  = unreadCountProp   ?? props.unreadCount ?? 0;
 
     const triggerBellWobble = () => {
         if (unreadCount === 0) return;

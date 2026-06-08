@@ -313,10 +313,10 @@ export default function Requests({
     };
 
     const handleToggleSelectAll = () => {
-        if (selectedRequestIds.length === requests.length) {
+        if (selectedRequestIds.length === displayRequests.length) {
             setSelectedRequestIds([]);
         } else {
-            setSelectedRequestIds(requests.map(r => r.id));
+            setSelectedRequestIds(displayRequests.map(r => r.id));
         }
     };
 
@@ -334,6 +334,42 @@ export default function Requests({
             }
         });
     };
+
+    // ── Live status auto-refresh ─────────────────────────────────────────────
+    // Listens for `page:reload:my-requests` dispatched by useNotificationPoll
+    // when the poll fingerprint detects a status change (admin/aslab decision).
+    // Fetches fresh request data directly from the JSON list endpoint so the
+    // status badges update without a full page navigation.
+    const [liveRequests, setLiveRequests] = useState(null); // null = use Inertia props
+    const fetchingRequestsRef = useRef(false);
+
+    useEffect(() => {
+        const handler = async () => {
+            if (fetchingRequestsRef.current) return;
+            fetchingRequestsRef.current = true;
+            try {
+                const res = await fetch('/mahasiswa/requests/list', {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const rows = data.requests?.data ?? data.requests ?? [];
+                if (Array.isArray(rows)) {
+                    setLiveRequests(rows);
+                }
+            } catch (_) {}
+            finally {
+                fetchingRequestsRef.current = false;
+            }
+        };
+
+        window.addEventListener('page:reload:my-requests', handler);
+        return () => window.removeEventListener('page:reload:my-requests', handler);
+    }, []);
+
+    // Merge: prefer live data once it arrives, fall back to Inertia props
+    const displayRequests = liveRequests ?? requests;
 
     // Reset recommendations on schedule_id change and fetch meeting dates
     useEffect(() => {
@@ -2012,9 +2048,9 @@ export default function Requests({
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
                         <Layers size={18} className="text-primary-500" />
-                        Riwayat Request ({requests.length})
+                        Riwayat Request ({displayRequests.length})
                     </h2>
-                    {requests.length > 0 && (
+                    {displayRequests.length > 0 && (
                         <button
                             type="button"
                             onClick={handleToggleSelectAll}
@@ -2022,19 +2058,19 @@ export default function Requests({
                         >
                             <input
                                 type="checkbox"
-                                checked={requests.length > 0 && selectedRequestIds.length === requests.length}
+                                checked={displayRequests.length > 0 && selectedRequestIds.length === displayRequests.length}
                                 onChange={handleToggleSelectAll}
                                 className="w-3.5 h-3.5 rounded border-border text-primary-500 focus:ring-primary-500/20 bg-surface cursor-pointer"
                                 onClick={(e) => e.stopPropagation()}
                             />
                             <span>
-                                {selectedRequestIds.length === requests.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                {selectedRequestIds.length === displayRequests.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
                             </span>
                         </button>
                     )}
                 </div>
                 <div className="space-y-3">
-                    {requests.map(req => {
+                    {displayRequests.map(req => {
                         const st = STATUS_STYLES[req.status] || STATUS_STYLES.PENDING_ASLAB;
                         const StIcon = st.icon;
                         const expanded = expandedId === req.id;

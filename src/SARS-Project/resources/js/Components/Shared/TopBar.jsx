@@ -12,10 +12,12 @@ const ROLE_LABELS = {
     mahasiswa: "Mahasiswa",
 };
 
-export default function TopBar({ user, sidebarCollapsed, actions }) {
+export default function TopBar({ user, sidebarCollapsed, actions, unreadCount: unreadCountProp, notifications: notificationsProp }) {
     const { auth } = usePage().props;
-    const notifications = auth?.notifications || [];
-    const unreadCount = notifications.filter(n => !n.dibaca).length;
+
+    // Use live polled data when provided by layout, fall back to Inertia shared props
+    const notifications = notificationsProp ?? auth?.notifications ?? [];
+    const unreadCount   = unreadCountProp   ?? notifications.filter(n => !n.dibaca).length;
 
     const [notifOpen, setNotifOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);

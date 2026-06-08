@@ -18,9 +18,12 @@ const NAV_ITEMS = [
     { label: 'Pengaturan', icon: Settings, route: 'dosen.pengaturan' },
 ];
 
-export default function Sidebar({ isCollapsed, onToggle }) {
+export default function Sidebar({ isCollapsed, onToggle, unreadCount: unreadCountProp }) {
     const { url, props } = usePage();
-    const unreadCount = props.unreadCount || 0;
+
+    // Use live polled data when provided by layout, fall back to Inertia shared props
+    const unreadCount = unreadCountProp ?? props.unreadCount ?? 0;
+
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     function isActive(routeName) {
