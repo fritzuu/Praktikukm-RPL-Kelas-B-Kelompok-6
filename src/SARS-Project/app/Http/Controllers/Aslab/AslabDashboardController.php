@@ -163,7 +163,7 @@ class AslabDashboardController extends Controller
             'query' => 'required|string|max:500',
         ]);
 
-        $query    = $request->input('query');
+        $query    = strip_tags($request->input('query'));
         $user     = $request->user();
         $semester = Semester::active();
 
