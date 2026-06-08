@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import MahasiswaSidebar from '../Components/Mahasiswa/Sidebar';
 import MahasiswaTopBar from '../Components/Mahasiswa/TopBar';
-import MahasiswaAiPanel from '../Components/Mahasiswa/AiAssistantPanel';
+import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import MahasiswaAiAssistantFab from '../Components/Mahasiswa/AiAssistantFab';
 
 export default function MahasiswaLayout({ children }) {
@@ -74,10 +74,11 @@ export default function MahasiswaLayout({ children }) {
                 {/* Right AI Panel */}
                 <AnimatePresence>
                     {aiPanelOpen && (
-                        <MahasiswaAiPanel
+                        <AiAssistantPanel
                             key="ai-panel"
                             isOpen={aiPanelOpen}
                             onClose={() => setAiPanelOpen(false)}
+                            role="mahasiswa"
                         />
                     )}
                 </AnimatePresence>

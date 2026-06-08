@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '../Components/Dosen/Sidebar';
 import TopBar from '../Components/Dosen/TopBar';
-import AiAssistantPanel from '../Components/Dosen/AiAssistantPanel';
+import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Dosen/AiAssistantFab';
 
 export default function DosenLayout({ children }) {
@@ -78,6 +78,7 @@ export default function DosenLayout({ children }) {
                             key="ai-panel"
                             isOpen={aiPanelOpen}
                             onClose={() => setAiPanelOpen(false)}
+                            role="dosen"
                         />
                     )}
                 </AnimatePresence>
