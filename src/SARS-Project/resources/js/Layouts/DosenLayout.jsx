@@ -3,8 +3,8 @@ import { usePage } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '../Components/Dosen/Sidebar';
 import TopBar from '../Components/Dosen/TopBar';
-import AiAssistantPanel from '../Components/Dosen/AiAssistantPanel';
-import AiAssistantFab from '../Components/Dosen/AiAssistantFab';
+import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
+import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 
 export default function DosenLayout({ children }) {
     const { auth } = usePage().props;
@@ -78,6 +78,7 @@ export default function DosenLayout({ children }) {
                             key="ai-panel"
                             isOpen={aiPanelOpen}
                             onClose={() => setAiPanelOpen(false)}
+                            role="dosen"
                         />
                     )}
                 </AnimatePresence>
