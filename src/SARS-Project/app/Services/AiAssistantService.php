@@ -827,4 +827,143 @@ PROMPT;
 
         return "Selamat siang Bapak/Ibu {$user->name}. Saya adalah AI Assistant SARS. Saya siap membantu Bapak/Ibu untuk memeriksa jadwal mengajar, ketersediaan ruangan/slot kosong, serta status pengajuan perubahan kelas yang mempengaruhi mata kuliah Anda. Silakan tanyakan hal yang ingin diketahui!";
     }
+
+    /**
+     * Stream an AI response for an aslab query.
+     */
+    public function streamAslabQuery(string $query, User $user, ?Semester $semester): ?StreamedResponse
+    {
+        if (!$this->isAvailable() || !$semester) {
+            return null;
+        }
+
+        $systemPrompt = $this->buildAslabSystemPrompt($user, $semester);
+        $url = "{$this->baseUrl}/models/{$this->model}:streamGenerateContent?alt=sse";
+
+        $body = [
+            'systemInstruction' => [
+                'parts' => [['text' => $systemPrompt]],
+            ],
+            'contents' => [
+                [
+                    'role'  => 'user',
+                    'parts' => [['text' => $query]],
+                ],
+            ],
+            'generationConfig' => [
+                'temperature'    => $this->temperature,
+                'maxOutputTokens' => $this->maxTokens,
+                'topP'           => 0.95,
+            ],
+        ];
+
+        return new StreamedResponse(function () use ($url, $body) {
+            $ch = curl_init($url);
+
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'x-goog-api-key: ' . $this->apiKey,
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($body),
+                CURLOPT_RETURNTRANSFER => false,
+                CURLOPT_TIMEOUT        => 60,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_WRITEFUNCTION  => function ($ch, $data) {
+                    echo $data;
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+
+                    return strlen($data);
+                },
+            ]);
+
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if ($result === false || $httpCode >= 400) {
+                $error = curl_error($ch);
+                Log::warning('Gemini API streaming failed for Aslab', [
+                    'http_code' => $httpCode,
+                    'error'     => $error,
+                ]);
+            }
+
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'  => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection'    => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Build the system prompt for aslab role with real DB context.
+     */
+    private function buildAslabSystemPrompt(User $user, Semester $semester): string
+    {
+        $schedules = Schedule::with(['course', 'room', 'teachingAssignments.user'])
+            ->where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->get();
+
+        $scheduleContext = $this->gatherScheduleContext($schedules);
+        $requestContext  = $this->gatherAdminRequestContext($semester);
+        $roomContext     = $this->gatherRoomContext($semester, $schedules);
+        $conflictContext = $this->gatherConflictContext($schedules);
+
+        $now = now()->translatedFormat('l, d F Y H:i');
+
+        return <<<PROMPT
+You are SARS AI Assistant — the Smart Academic Schedule & Room Change System assistant for the Informatics study program.
+
+## Your Role
+You are in ASLAB mode. You help lab assistants (Aslab) validate change requests. Your job is to analyze conflicts, check room availability, and recommend whether a request should be FORWARDED or REJECTED_ASLAB. You are helpful, analytical, and provide clear decision rationales. You respond in the same language the user uses (Bahasa Indonesia or English). You support Markdown formatting in your responses — use **bold**, lists, and tables when helpful.
+
+Always greet the user with a neutral, professional role-based greeting, addressing them as "Aslab" or "Lab Assistant".
+
+## Current Context
+- Current date/time: {$now}
+- Active semester: {$semester->name}
+- Lab Assistant: {$user->name} ({$user->email})
+
+## Schedule Data (Active Semester)
+{$scheduleContext}
+
+## Change Requests Summary
+{$requestContext}
+
+## Room Information
+{$roomContext}
+
+## Conflict Analysis
+{$conflictContext}
+
+## System Information
+- Request pipeline: Mahasiswa → PENDING_ASLAB → Aslab validates → FORWARDED / REJECTED_ASLAB → Admin decides → APPROVED / REJECTED_ADMIN
+- Request types: TEMPORARY (one specific date) or PERMANENT (rest of semester)
+- Your main action is to validate pending requests (PENDING_ASLAB stage) and either forward them to the Admin (FORWARDED) or reject them (REJECTED_ASLAB).
+- You can recommend a decision: suggest "FORWARDED" if there are no major conflicts and the reasoning is sound, or "REJECTED_ASLAB" if there are unresolvable conflicts (e.g., room/dosen clash or invalid time slots).
+
+## Rules
+1. Only answer questions related to request validation, schedules, rooms, conflicts, and statistics.
+2. If asked about something outside your scope, politely say it's outside your capabilities.
+3. Use the provided data to give accurate, analytical insights and validation recommendations.
+4. When suggesting a decision for a change request, always provide a clear, concise rationale based on conflict data and room/dosen availability.
+5. Keep responses concise but informative.
+PROMPT;
+    }
+
+    /**
+     * Rule-based fallback for aslab when Gemini is unavailable.
+     */
+    public function fallbackAslabResponse(string $query, ?Semester $semester, User $user): string
+    {
+        return "Maaf, AI Assistant sedang tidak dapat terhubung. Anda dapat melakukan validasi secara manual dengan membuka halaman Validasi (dari menu sidebar) dan memproses request yang masuk.";
+    }
 }
