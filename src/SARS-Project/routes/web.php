@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/notifikasi/{id}', [AslabNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
         Route::get('/pengaturan', [AslabSettingController::class, 'index'])->name('pengaturan');
         Route::post('/pengaturan', [AslabSettingController::class, 'updateProfile'])->name('pengaturan.update');
+        Route::post('/ai-query', [AslabDashboardController::class, 'aiQuery'])->name('aiQuery');
     });
 
     // ── Dosen routes ─────────────────────────────────────────────────────────
@@ -131,6 +132,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/notifikasi/{id}/read', [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
         Route::post('/notifikasi/read-all', [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
         Route::delete('/notifikasi/{id}', [DosenNotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+
+        // ── AI Assistant ─────────────────────────────────────────────────────
+        Route::post('/ai-query', [DosenDashboardController::class, 'aiQuery'])->name('aiQuery');
     });
 
     // ─── Mahasiswa routes ────────────────────────────────────────────────

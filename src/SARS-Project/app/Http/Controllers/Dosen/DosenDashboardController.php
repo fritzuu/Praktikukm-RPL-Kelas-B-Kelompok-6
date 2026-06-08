@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
+use App\Services\AiAssistantService;
 use App\Models\Schedule;
 use App\Models\Semester;
 use App\Models\TeachingAssignment;
@@ -13,6 +14,10 @@ use Carbon\Carbon;
 
 class DosenDashboardController extends Controller
 {
+    public function __construct(
+        private readonly AiAssistantService $aiAssistant,
+    ) {}
+
     /**
      * Display the dosen dashboard.
      */
@@ -119,5 +124,35 @@ class DosenDashboardController extends Controller
             'jadwalHariIni'      => 0,
             'pertemuanMingguIni' => 0,
         ];
+    }
+
+    /**
+     * AI Assistant - read-only query endpoint for Dosen.
+     * Returns SSE stream when Gemini is available, JSON fallback otherwise.
+     */
+    public function aiQuery(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|max:500',
+        ]);
+
+        $query    = $request->input('query');
+        $user     = $request->user();
+        $semester = Semester::active();
+
+        // Try streaming with Gemini first
+        $streamedResponse = $this->aiAssistant->streamDosenQuery($query, $user, $semester);
+
+        if ($streamedResponse) {
+            return $streamedResponse;
+        }
+
+        // Fallback to rule-based responses
+        $response = $this->aiAssistant->fallbackDosenResponse($query, $semester, $user);
+
+        return response()->json([
+            'answer' => $response,
+            'type'   => 'text',
+        ]);
     }
 }

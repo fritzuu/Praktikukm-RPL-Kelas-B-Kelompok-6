@@ -6,6 +6,7 @@ use App\Models\ChangeRequest;
 use App\Models\Room;
 use App\Models\Schedule;
 use App\Models\Semester;
+use App\Models\TeachingAssignment;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -425,7 +426,7 @@ PROMPT;
     private function gatherAdminRequestContext(Semester $semester): string
     {
         $pendingCount = ChangeRequest::where('semester_id', $semester->id)
-            ->whereIn('status', ['PENDING_ASLAB', 'FORWARDED'])->count();
+            ->whereIn('status', ['PENDING_ASLAB', 'PENDING_ADMIN'])->count();
         
         $approvedCount = ChangeRequest::where('semester_id', $semester->id)
             ->where('status', 'APPROVED')->count();
@@ -534,12 +535,12 @@ PROMPT;
 
         if (str_contains($query, 'statistik') || str_contains($query, 'statistics') || str_contains($query, 'stat')) {
             $totalRequests = ChangeRequest::where('semester_id', $semester->id)->count();
-            $pending = ChangeRequest::where('semester_id', $semester->id)->whereIn('status', ['PENDING_ASLAB', 'FORWARDED'])->count();
+            $pending = ChangeRequest::where('semester_id', $semester->id)->whereIn('status', ['PENDING_ASLAB', 'PENDING_ADMIN'])->count();
             return "Statistik semester {$semester->name}: Total Request: {$totalRequests}, Pending: {$pending}. Lihat halaman Statistik untuk detail lengkap.";
         }
 
         if (str_contains($query, 'request') || str_contains($query, 'pengajuan') || str_contains($query, 'ajukan')) {
-            $pending = ChangeRequest::where('semester_id', $semester->id)->whereIn('status', ['PENDING_ASLAB', 'FORWARDED'])->count();
+            $pending = ChangeRequest::where('semester_id', $semester->id)->whereIn('status', ['PENDING_ASLAB', 'PENDING_ADMIN'])->count();
             return "Terdapat {$pending} request yang menunggu persetujuan. Buka halaman Persetujuan untuk memprosesnya.";
         }
 
@@ -607,5 +608,362 @@ PROMPT;
     private function timeRangesOverlap(string $start1, string $end1, string $start2, string $end2): bool
     {
         return $start1 < $end2 && $end1 > $start2;
+    }
+
+    /**
+     * Stream an AI response for a dosen query.
+     */
+    public function streamDosenQuery(string $query, User $user, ?Semester $semester): ?StreamedResponse
+    {
+        if (!$this->isAvailable() || !$semester) {
+            return null;
+        }
+
+        $systemPrompt = $this->buildDosenSystemPrompt($user, $semester);
+        $url = "{$this->baseUrl}/models/{$this->model}:streamGenerateContent?alt=sse";
+
+        $body = [
+            'systemInstruction' => [
+                'parts' => [['text' => $systemPrompt]],
+            ],
+            'contents' => [
+                [
+                    'role'  => 'user',
+                    'parts' => [['text' => $query]],
+                ],
+            ],
+            'generationConfig' => [
+                'temperature'    => $this->temperature,
+                'maxOutputTokens' => $this->maxTokens,
+                'topP'           => 0.95,
+            ],
+        ];
+
+        return new StreamedResponse(function () use ($url, $body) {
+            $ch = curl_init($url);
+
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'x-goog-api-key: ' . $this->apiKey,
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($body),
+                CURLOPT_RETURNTRANSFER => false,
+                CURLOPT_TIMEOUT        => 60,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_WRITEFUNCTION  => function ($ch, $data) {
+                    echo $data;
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+
+                    return strlen($data);
+                },
+            ]);
+
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if ($result === false || $httpCode >= 400) {
+                $error = curl_error($ch);
+                Log::warning('Gemini API streaming failed for Dosen', [
+                    'http_code' => $httpCode,
+                    'error'     => $error,
+                ]);
+            }
+
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'  => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection'    => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Build the system prompt for dosen role with real DB context.
+     */
+    private function buildDosenSystemPrompt(User $user, Semester $semester): string
+    {
+        $schedules = Schedule::with(['course', 'room', 'teachingAssignments.user'])
+            ->where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->get();
+
+        $scheduleContext = $this->gatherScheduleContext($schedules);
+        $requestContext  = $this->gatherDosenRequestContext($user, $semester);
+        $roomContext     = $this->gatherRoomContext($semester, $schedules);
+
+        $now = now()->translatedFormat('l, d F Y H:i');
+
+        return <<<PROMPT
+You are SARS AI Assistant — the Smart Academic Schedule & Room Change System assistant for the Informatics study program.
+
+## Your Role
+You help lecturers (dosen) with academic schedules and change requests. You must maintain a professional, respectful, and helpful tone (e.g., address them politely with "Bapak/Ibu Dosen" or "Bapak/Ibu [Nama Dosen]"). You respond in the same language the lecturer uses (Bahasa Indonesia or English). You support Markdown formatting in your responses — use **bold**, lists, and tables when helpful.
+
+## Current Context
+- Current date/time: {$now}
+- Active semester: {$semester->name}
+- Lecturer: {$user->name} ({$user->email})
+
+## Schedule Data (All Active Schedules in Semester)
+{$scheduleContext}
+
+## Change Requests Affecting Your Courses (Lecturer's Courses Only)
+{$requestContext}
+
+## Room Information
+{$roomContext}
+
+## System Information
+- Request pipeline: Student submits request → PENDING_ASLAB → Lab Assistant validates and forwards/rejects → FORWARDED / REJECTED_ASLAB → Admin decides → APPROVED / REJECTED_ADMIN.
+- Request types: TEMPORARY (for a single date) or PERMANENT (applies to the rest of the semester).
+- While change requests are initiated by students, lecturers can view the status of requests impacting their classes.
+- To request a change or check schedule adjustments, refer them to the "Jadwal" and "Requests" pages on their dashboard.
+
+## Rules
+1. Only answer questions related to academic schedules, rooms, change requests, and the SARS system.
+2. If asked about something outside your scope, politely say it's outside your capabilities.
+3. Use the provided data to give accurate, specific answers — don't make up information.
+4. When listing schedules or requests, format them clearly with day, time, room, and details.
+5. Keep responses concise, helpful, and professional.
+PROMPT;
+    }
+
+    /**
+     * Gather change requests affecting Dosen's courses.
+     */
+    private function gatherDosenRequestContext(User $user, Semester $semester): string
+    {
+        $assignedScheduleIds = TeachingAssignment::where('user_id', $user->id)
+            ->where('role_in_class', 'PENGAJAR')
+            ->pluck('schedule_id');
+
+        if ($assignedScheduleIds->isEmpty()) {
+            return "You are not assigned to any teaching schedules this semester.";
+        }
+
+        // Optimize counts querying into a single database call (group by and aggregate)
+        $statusCounts = ChangeRequest::whereIn('schedule_id', $assignedScheduleIds)
+            ->where('semester_id', $semester->id)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $pendingCount = ($statusCounts['PENDING_ASLAB'] ?? 0) + ($statusCounts['PENDING_ADMIN'] ?? 0);
+        $approvedCount = $statusCounts['APPROVED'] ?? 0;
+        $rejectedCount = ($statusCounts['REJECTED_ASLAB'] ?? 0) + ($statusCounts['REJECTED_ADMIN'] ?? 0);
+
+        $recentRequests = ChangeRequest::with(['schedule.course', 'schedule.room', 'proposedRoom', 'requester'])
+            ->whereIn('schedule_id', $assignedScheduleIds)
+            ->where('semester_id', $semester->id)
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $lines = [
+            "Change requests affecting your classes:",
+            "- Pending Validation: {$pendingCount} | Approved: {$approvedCount} | Rejected: {$rejectedCount}",
+            "",
+        ];
+
+        if ($recentRequests->isNotEmpty()) {
+            $lines[] = "### Recent Requests (last 10):";
+            foreach ($recentRequests as $req) {
+                $course = $req->schedule?->course;
+                $requester = $req->requester?->name ?? 'Unknown';
+                $lines[] = "- [{$req->request_code}] {$course?->name} ({$course?->class_name}) | Requester: {$requester} | Type: {$req->request_type} | Status: **{$req->status}** | Reason: {$req->reason}";
+            }
+        } else {
+            $lines[] = "No change requests found affecting your classes this semester.";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Rule-based fallback for dosen when Gemini is unavailable.
+     */
+    public function fallbackDosenResponse(string $query, ?Semester $semester, User $user): string
+    {
+        if (!$semester) {
+            return 'Maaf Bapak/Ibu, tidak ada semester aktif saat ini. Silakan hubungi admin.';
+        }
+
+        $query = strtolower($query);
+
+        $assignedScheduleIds = TeachingAssignment::where('user_id', $user->id)
+            ->where('role_in_class', 'PENGAJAR')
+            ->pluck('schedule_id');
+
+        if (str_contains($query, 'jadwal') || str_contains($query, 'schedule') || str_contains($query, 'mengajar')) {
+            $myScheduleCount = Schedule::whereIn('id', $assignedScheduleIds)
+                ->where('semester_id', $semester->id)
+                ->where('is_active', true)
+                ->count();
+            return "Bapak/Ibu, pada semester {$semester->name}, Anda memiliki {$myScheduleCount} jadwal mengajar aktif yang terdaftar di sistem. Anda dapat melihat rincian lengkapnya di halaman dashboard atau menu Jadwal.";
+        }
+
+        if (str_contains($query, 'request') || str_contains($query, 'pengajuan') || str_contains($query, 'perubahan') || str_contains($query, 'ubah')) {
+            if ($assignedScheduleIds->isEmpty()) {
+                return "Bapak/Ibu, tidak ada pengajuan perubahan kelas saat ini karena Anda belum terdaftar di kelas manapun.";
+            }
+            $pending = ChangeRequest::whereIn('schedule_id', $assignedScheduleIds)
+                ->where('semester_id', $semester->id)
+                ->whereIn('status', ['PENDING_ASLAB', 'PENDING_ADMIN'])
+                ->count();
+            return "Bapak/Ibu, terdapat {$pending} pengajuan perubahan jadwal untuk kelas Anda yang saat ini sedang dalam proses review/persetujuan. Anda dapat melihat status pengajuan ini di menu Jadwal.";
+        }
+
+        if (str_contains($query, 'ruang') || str_contains($query, 'room') || str_contains($query, 'slot')) {
+            $roomCount = Room::where('is_active', true)->count();
+            return "Sistem memiliki {$roomCount} ruangan aktif yang dapat digunakan. Silakan cek menu Jadwal untuk melihat ketersediaan slot ruangan secara lengkap.";
+        }
+
+        return "Selamat siang Bapak/Ibu {$user->name}. Saya adalah AI Assistant SARS. Saya siap membantu Bapak/Ibu untuk memeriksa jadwal mengajar, ketersediaan ruangan/slot kosong, serta status pengajuan perubahan kelas yang mempengaruhi mata kuliah Anda. Silakan tanyakan hal yang ingin diketahui!";
+    }
+
+    /**
+     * Stream an AI response for an aslab query.
+     */
+    public function streamAslabQuery(string $query, User $user, ?Semester $semester): ?StreamedResponse
+    {
+        if (!$this->isAvailable() || !$semester) {
+            return null;
+        }
+
+        $systemPrompt = $this->buildAslabSystemPrompt($user, $semester);
+        $url = "{$this->baseUrl}/models/{$this->model}:streamGenerateContent?alt=sse";
+
+        $body = [
+            'systemInstruction' => [
+                'parts' => [['text' => $systemPrompt]],
+            ],
+            'contents' => [
+                [
+                    'role'  => 'user',
+                    'parts' => [['text' => $query]],
+                ],
+            ],
+            'generationConfig' => [
+                'temperature'    => $this->temperature,
+                'maxOutputTokens' => $this->maxTokens,
+                'topP'           => 0.95,
+            ],
+        ];
+
+        return new StreamedResponse(function () use ($url, $body) {
+            $ch = curl_init($url);
+
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'x-goog-api-key: ' . $this->apiKey,
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($body),
+                CURLOPT_RETURNTRANSFER => false,
+                CURLOPT_TIMEOUT        => 60,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_WRITEFUNCTION  => function ($ch, $data) {
+                    echo $data;
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+
+                    return strlen($data);
+                },
+            ]);
+
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if ($result === false || $httpCode >= 400) {
+                $error = curl_error($ch);
+                Log::warning('Gemini API streaming failed for Aslab', [
+                    'http_code' => $httpCode,
+                    'error'     => $error,
+                ]);
+            }
+
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'  => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection'    => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Build the system prompt for aslab role with real DB context.
+     */
+    private function buildAslabSystemPrompt(User $user, Semester $semester): string
+    {
+        $schedules = Schedule::with(['course', 'room', 'teachingAssignments.user'])
+            ->where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->get();
+
+        $scheduleContext = $this->gatherScheduleContext($schedules);
+        $requestContext  = $this->gatherAdminRequestContext($semester);
+        $roomContext     = $this->gatherRoomContext($semester, $schedules);
+        $conflictContext = $this->gatherConflictContext($schedules);
+
+        $now = now()->translatedFormat('l, d F Y H:i');
+
+        return <<<PROMPT
+You are SARS AI Assistant — the Smart Academic Schedule & Room Change System assistant for the Informatics study program.
+
+## Your Role
+You are in ASLAB mode. You help lab assistants (Aslab) validate change requests. Your job is to analyze conflicts, check room availability, and recommend whether a request should be FORWARDED or REJECTED_ASLAB. You are helpful, analytical, and provide clear decision rationales. You respond in the same language the user uses (Bahasa Indonesia or English). You support Markdown formatting in your responses — use **bold**, lists, and tables when helpful.
+
+Always greet the user with a neutral, professional role-based greeting, addressing them as "Aslab" or "Lab Assistant".
+
+## Current Context
+- Current date/time: {$now}
+- Active semester: {$semester->name}
+- Lab Assistant: {$user->name} ({$user->email})
+
+## Schedule Data (Active Semester)
+{$scheduleContext}
+
+## Change Requests Summary
+{$requestContext}
+
+## Room Information
+{$roomContext}
+
+## Conflict Analysis
+{$conflictContext}
+
+## System Information
+- Request pipeline: Mahasiswa → PENDING_ASLAB → Aslab validates → FORWARDED / REJECTED_ASLAB → Admin decides → APPROVED / REJECTED_ADMIN
+- Request types: TEMPORARY (one specific date) or PERMANENT (rest of semester)
+- Your main action is to validate pending requests (PENDING_ASLAB stage) and either forward them to the Admin (FORWARDED) or reject them (REJECTED_ASLAB).
+- You can recommend a decision: suggest "FORWARDED" if there are no major conflicts and the reasoning is sound, or "REJECTED_ASLAB" if there are unresolvable conflicts (e.g., room/dosen clash or invalid time slots).
+
+## Rules
+1. Only answer questions related to request validation, schedules, rooms, conflicts, and statistics.
+2. If asked about something outside your scope, politely say it's outside your capabilities.
+3. Use the provided data to give accurate, analytical insights and validation recommendations.
+4. When suggesting a decision for a change request, always provide a clear, concise rationale based on conflict data and room/dosen availability.
+5. Keep responses concise but informative.
+PROMPT;
+    }
+
+    /**
+     * Rule-based fallback for aslab when Gemini is unavailable.
+     */
+    public function fallbackAslabResponse(string $query, ?Semester $semester, User $user): string
+    {
+        return "Maaf, AI Assistant sedang tidak dapat terhubung. Anda dapat melakukan validasi secara manual dengan membuka halaman Validasi (dari menu sidebar) dan memproses request yang masuk.";
     }
 }
