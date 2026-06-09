@@ -10,6 +10,7 @@ import {
     FileText,
     ChevronDown,
     ChevronUp,
+    AlertTriangle,
 } from "lucide-react";
 
 export default function ValidationQueue({
@@ -125,6 +126,13 @@ export default function ValidationQueue({
                                             <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2 py-0.5 rounded-md uppercase">
                                                 {item.schedule.code}
                                             </span>
+                                            {/* Conflict badge — shown inline next to name */}
+                                            {item.hasConflict && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md uppercase">
+                                                    <AlertTriangle size={10} />
+                                                    Konflik
+                                                </span>
+                                            )}
                                         </div>
                                         <p className="text-xs text-text-muted">
                                             NIM: {item.requester.nimNip} •{" "}
@@ -211,6 +219,21 @@ export default function ValidationQueue({
                                                 </p>
                                             </div>
                                         </div>
+
+                                        {/* Conflict Warning — shown when slot has a detected conflict */}
+                                        {item.hasConflict && (
+                                            <div className="flex items-start gap-3 bg-danger/5 border border-danger/20 rounded-xl px-4 py-3">
+                                                <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="text-sm font-semibold text-danger">
+                                                        Terdeteksi konflik jadwal pada slot yang diusulkan
+                                                    </p>
+                                                    <p className="text-xs text-text-secondary mt-0.5">
+                                                        Slot waktu atau ruangan yang diminta bertabrakan dengan jadwal lain. Pertimbangkan hal ini sebelum meneruskan ke Admin.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Reason */}
                                         <div className="bg-primary-500/[0.03] border border-primary-500/10 rounded-xl p-5">

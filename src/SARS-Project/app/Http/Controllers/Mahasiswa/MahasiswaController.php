@@ -80,18 +80,38 @@ class MahasiswaController extends Controller
         $schedules = $this->getSchedulesData($semester);
         $rooms = Room::where('is_active', true)->orderBy('code')->get(['id', 'code', 'name', 'capacity', 'building']);
 
+        // Pending requests that have a detected conflict — show warning banner to student
+        $conflictRequests = $semester
+            ? ChangeRequest::where('requester_id', $user->id)
+                ->where('semester_id', $semester->id)
+                ->where('has_conflict', true)
+                ->whereIn('status', ['PENDING_ASLAB', 'PENDING_ADMIN'])
+                ->with(['schedule.course', 'schedule.room'])
+                ->latest()
+                ->get()
+                ->map(fn ($cr) => [
+                    'id'           => (string) $cr->id,
+                    'request_code' => $cr->request_code,
+                    'course_name'  => $cr->schedule?->course?->name ?? '-',
+                    'request_type' => $cr->request_type,
+                    'status'       => $cr->status,
+                ])
+                ->values()
+            : collect();
+
         return Inertia::render('Dashboard/Mahasiswa', [
-            'semester' => $semester,
+            'semester'         => $semester,
             'stats' => [
                 'totalRequests'    => $totalRequests,
                 'pendingRequests'  => $pendingRequests,
                 'approvedRequests' => $approvedRequests,
                 'rejectedRequests' => $rejectedRequests,
             ],
-            'recentRequests' => $recentRequests,
-            'schedules' => $schedules,
-            'rooms' => $rooms,
-            'campusWidgets' => $this->campusActivity->buildPayload($semester),
+            'recentRequests'   => $recentRequests,
+            'schedules'        => $schedules,
+            'rooms'            => $rooms,
+            'campusWidgets'    => $this->campusActivity->buildPayload($semester),
+            'conflictRequests' => $conflictRequests,
         ]);
     }
 
@@ -311,16 +331,54 @@ class MahasiswaController extends Controller
             'has_conflict'        => $hasConflict,
         ]);
 
+        // Build data_payload so NotificationDetailBuilder can populate modal fields
+        $schedule = \App\Models\Schedule::with(['course', 'room'])->find($validated['schedule_id']);
+        $proposedRoom = isset($validated['proposed_room_id'])
+            ? \App\Models\Room::find($validated['proposed_room_id'])
+            : null;
+
+        $oldSession = null;
+        if ($schedule && $schedule->session_start) {
+            $dur = $schedule->session_duration ?? 1;
+            $oldSession = $dur > 1
+                ? 'Sesi ' . $schedule->session_start . '–' . ($schedule->session_start + $dur - 1)
+                : 'Sesi ' . $schedule->session_start;
+        }
+
+        $notifPayload = [
+            'request_code'   => $changeRequest->request_code,
+            'course_name'    => $schedule?->course?->name,
+            'class_name'     => $schedule?->course?->class_name,
+            'request_type'   => $changeRequest->request_type,
+            'student_reason' => $changeRequest->reason,
+            'old_day'        => $schedule?->day_of_week,
+            'old_time'       => ($schedule && $schedule->start_time && $schedule->end_time)
+                                    ? substr($schedule->start_time, 0, 5) . ' – ' . substr($schedule->end_time, 0, 5)
+                                    : null,
+            'old_room'       => $schedule?->room?->code,
+            'old_room_name'  => $schedule?->room?->name,
+            'old_session'    => $oldSession,
+            'new_day'        => $changeRequest->proposed_day,
+            'new_time'       => ($changeRequest->proposed_start_time && $changeRequest->proposed_end_time)
+                                    ? substr($changeRequest->proposed_start_time, 0, 5) . ' – ' . substr($changeRequest->proposed_end_time, 0, 5)
+                                    : null,
+            'new_room'       => $proposedRoom?->code ?? $schedule?->room?->code,
+            'new_room_name'  => $proposedRoom?->name ?? $schedule?->room?->name,
+        ];
+
         // Send notifications to all Aslab users
         $aslabRole = \App\Models\Role::where('slug', 'aslab')->first();
         $aslabUsers = \App\Models\User::whereHas('roles', fn($q) => $q->where('role_id', $aslabRole->id))->get();
         
         foreach ($aslabUsers as $aslab) {
             $notif = \App\Models\Notification::create([
-                'type'    => 'REQUEST_SUBMITTED',
-                'title'   => 'Request Perubahan Jadwal Baru',
-                'message' => "Mahasiswa {$user->name} mengajukan perubahan jadwal ({$changeRequest->request_code}).",
-                'body'    => 'Silakan validasi di halaman Validasi.',
+                'request_id'   => $changeRequest->id,
+                'triggered_by' => $user->id,
+                'type'         => 'REQUEST_SUBMITTED',
+                'title'        => 'Request Perubahan Jadwal Baru',
+                'message'      => "Mahasiswa {$user->name} mengajukan perubahan jadwal ({$changeRequest->request_code}).",
+                'body'         => 'Silakan validasi di halaman Validasi.',
+                'data_payload' => $notifPayload,
             ]);
 
             \App\Models\NotificationRecipient::create([
@@ -417,6 +475,28 @@ class MahasiswaController extends Controller
     }
 
     /**
+     * JSON endpoint for live-reload of the requests list.
+     * Called by the frontend when the polling fingerprint detects a status change.
+     * Returns the same shape as MahasiswaController::requests() Inertia props,
+     * but as pure JSON so the page can update without a full Inertia navigation.
+     */
+    public function requestsList(Request $request)
+    {
+        $user = $request->user();
+        $semester = Semester::active();
+
+        $requests = $semester
+            ? ChangeRequest::with(['schedule.course', 'schedule.room', 'proposedRoom', 'approvals.actor'])
+                ->where('requester_id', $user->id)
+                ->where('semester_id', $semester->id)
+                ->latest()
+                ->paginate(10)
+            : collect();
+
+        return response()->json(['requests' => $requests]);
+    }
+
+    /**
      * Generate meeting dates for a given schedule.
      * Returns all dates matching the schedule's day_of_week within the active semester range.
      */
@@ -487,26 +567,19 @@ class MahasiswaController extends Controller
     {
         $user = $request->user();
 
-        $notifications = NotificationRecipient::with(['notification.changeRequest', 'notification.triggeredBy'])
-            ->where('recipient_id', $user->id)
-            ->whereHas('notification')
-            ->latest('notification_id')
-            ->paginate(15)
-            ->through(fn ($nr) => [
-                'id'        => $nr->id,
-                'notif_id'  => $nr->notification_id,
-                'title'     => $nr->notification->title,
-                'body'      => $nr->notification->body,
-                'type'      => $nr->notification->type,
-                'channel'   => $nr->channel,
-                'is_read'   => $nr->is_read,
-                'read_at'   => $nr->read_at?->format('Y-m-d H:i'),
-                'created_at' => $nr->notification->created_at?->diffForHumans(),
-                'request_code' => $nr->notification->changeRequest?->request_code,
-            ]);
+        $service = app(\App\Services\Notifications\NotificationService::class);
+
+        $notifications = $service->getArchive($user, 100, 'IN_APP');
+
+        $unreadCount = \App\Models\NotificationRecipient::where('recipient_id', $user->id)
+            ->where('channel', 'IN_APP')
+            ->whereNull('deleted_at')
+            ->where('is_read', false)
+            ->count();
 
         return Inertia::render('Dashboard/Mahasiswa/Notifications', [
             'notifications' => $notifications,
+            'unreadCount'   => $unreadCount,
         ]);
     }
 

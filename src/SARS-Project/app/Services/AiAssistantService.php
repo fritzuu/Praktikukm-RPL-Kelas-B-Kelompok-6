@@ -21,11 +21,11 @@ class AiAssistantService
 
     public function __construct()
     {
-        $this->apiKey      = config('ai.gemini.api_key', '');
-        $this->model       = config('ai.gemini.model', 'gemini-2.5-flash');
-        $this->baseUrl     = config('ai.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta');
-        $this->maxTokens   = config('ai.gemini.max_tokens', 8192);
-        $this->temperature = config('ai.gemini.temperature', 0.7);
+        $this->apiKey      = (string) (config('ai.gemini.api_key') ?? '');
+        $this->model       = (string) (config('ai.gemini.model', 'gemini-2.5-flash'));
+        $this->baseUrl     = (string) (config('ai.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta'));
+        $this->maxTokens   = (int)    (config('ai.gemini.max_tokens', 8192));
+        $this->temperature = (float)  (config('ai.gemini.temperature', 0.7));
     }
 
     /**

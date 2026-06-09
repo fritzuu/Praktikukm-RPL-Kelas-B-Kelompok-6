@@ -3,6 +3,7 @@ import { Search, Bell, HelpCircle, X } from 'lucide-react';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import { usePage } from '@inertiajs/react';
 import NotificationDropdown from './NotificationDropdown';
+import HelpModal from './HelpModal';
 
 const ROLE_LABELS = {
     admin: "Admin Fakultas",
@@ -11,12 +12,15 @@ const ROLE_LABELS = {
     mahasiswa: "Mahasiswa",
 };
 
-export default function TopBar({ user, sidebarCollapsed, actions }) {
+export default function TopBar({ user, sidebarCollapsed, actions, unreadCount: unreadCountProp, notifications: notificationsProp }) {
     const { auth } = usePage().props;
-    const notifications = auth?.notifications || [];
-    const unreadCount = notifications.filter(n => !n.dibaca).length;
+
+    // Use live polled data when provided by layout, fall back to Inertia shared props
+    const notifications = notificationsProp ?? auth?.notifications ?? [];
+    const unreadCount   = unreadCountProp   ?? notifications.filter(n => !n.dibaca).length;
 
     const [notifOpen, setNotifOpen] = useState(false);
+    const [helpOpen, setHelpOpen] = useState(false);
     const notifRef = useRef(null);
     const bellControls = useAnimationControls();
 
@@ -46,6 +50,17 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
         };
         window.addEventListener('global-search-reset', handleReset);
         return () => window.removeEventListener('global-search-reset', handleReset);
+    }, []);
+
+    // Ctrl+K to focus search, ? to open help
+    useEffect(() => {
+        function handleKeyDown(e) {
+            if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+                setHelpOpen(true);
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     const triggerBellWobble = () => {
@@ -82,6 +97,7 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
     const roleLabel = ROLE_LABELS[activeRole] || activeRole || 'User';
 
     return (
+        <>
         <header
             className={`
                 sticky top-0 z-40 bg-card border-b border-border
@@ -159,6 +175,8 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
 
                 {/* ── Help Icon ─────────────────────────────────────────── */}
                 <button
+                    onClick={() => setHelpOpen(true)}
+                    title="Bantuan (tekan ?)"
                     className="p-2 rounded-lg text-text-secondary hover:bg-surface
                                    hover:text-text-primary transition-colors"
                 >
@@ -184,5 +202,8 @@ export default function TopBar({ user, sidebarCollapsed, actions }) {
                 </div>
             </div>
         </header>
+
+        <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
+        </>
     );
 }

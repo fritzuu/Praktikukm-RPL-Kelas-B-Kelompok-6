@@ -14,6 +14,7 @@ import SyncStatusCard from '../../Components/Shared/SyncStatusCard';
 import Modal from '../../Components/Modal';
 import EmptyRoomsCard from '../../Components/Mahasiswa/EmptyRoomsCard';
 import LiveCampusActivityCard from '../../Components/Mahasiswa/LiveCampusActivityCard';
+import ConflictRequestsBanner from '../../Components/Mahasiswa/ConflictRequestsBanner';
 
 const HARI_MAP = {
     senin: 'Senin',
@@ -57,6 +58,7 @@ export default function MahasiswaDashboard({
     schedules = [],
     rooms = [],
     campusWidgets = EMPTY_CAMPUS_WIDGETS,
+    conflictRequests = [],
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -104,28 +106,28 @@ export default function MahasiswaDashboard({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
                     <StatCard
                         icon={FileText}
-                        label="Total Requests"
+                        label="TOTAL REQUESTS"
                         value={stats.totalRequests}
                         color="text-primary-500"
                         bgColor="bg-primary-500/10"
                     />
                     <StatCard
                         icon={Clock}
-                        label="Pending"
+                        label="PENDING"
                         value={stats.pendingRequests}
                         color="text-warning"
                         bgColor="bg-warning/10"
                     />
                     <StatCard
                         icon={CheckCircle}
-                        label="Disetujui"
+                        label="ACCEPTED"
                         value={stats.approvedRequests}
                         color="text-success"
                         bgColor="bg-success/10"
                     />
                     <StatCard
                         icon={XCircle}
-                        label="Ditolak"
+                        label="REJECTED"
                         value={stats.rejectedRequests}
                         color="text-danger"
                         bgColor="bg-danger/10"
@@ -134,6 +136,9 @@ export default function MahasiswaDashboard({
             </section>
 
             {/* ── Weekly Calendar Preview ───────────────────────────── */}
+            {/* Conflict banner — shown when student has conflict-flagged pending requests */}
+            <ConflictRequestsBanner conflictRequests={conflictRequests} />
+
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden p-6 mb-6">
                 <ScheduleGrid
                     jadwalItems={schedules}

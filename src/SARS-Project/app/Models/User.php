@@ -54,9 +54,15 @@ class User extends Authenticatable
 
     /**
      * Check if user has a specific role slug.
+     * Uses the loaded relationship if available to avoid redundant queries.
      */
     public function hasRole(string $slug): bool
     {
+        // If the roles relation is already loaded, use it (avoids N+1 on middleware)
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->contains('slug', $slug);
+        }
+
         return $this->roles()->where('slug', $slug)->exists();
     }
 
@@ -68,7 +74,10 @@ class User extends Authenticatable
     {
         $priority = ['admin', 'aslab', 'dosen', 'mahasiswa'];
 
-        $userSlugs = $this->roles()->pluck('slug')->toArray();
+        // Use loaded relation if available
+        $userSlugs = $this->relationLoaded('roles')
+            ? $this->roles->pluck('slug')->toArray()
+            : $this->roles()->pluck('slug')->toArray();
 
         foreach ($priority as $slug) {
             if (in_array($slug, $userSlugs)) {

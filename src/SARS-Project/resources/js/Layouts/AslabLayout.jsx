@@ -5,13 +5,23 @@ import Sidebar from '../Components/Aslab/Sidebar';
 import TopBar from '../Components/Aslab/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
+import useNotificationPoll from '../hooks/useNotificationPoll';
 
 export default function AslabLayout({ children }) {
-    const { auth } = usePage().props;
+    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs, pendingAslabCount: initialPending } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [aiPanelOpen, setAiPanelOpen] = useState(true);
+
+    // ── Live notification polling ────────────────────────────────────────────
+    // Polls /api/poll every 30 s — keeps bell badge and sidebar badge fresh
+    // without requiring a full page reload when new requests come in.
+    const { unreadCount, pendingAslabCount, notifications } = useNotificationPoll({
+        unreadCount:       initialUnread   ?? 0,
+        pendingAslabCount: initialPending  ?? 0,
+        notifications:     initialNotifs   ?? auth?.notifications ?? [],
+    });
 
     // Auto-collapse based on breakpoint
     useEffect(() => {
@@ -51,12 +61,16 @@ export default function AslabLayout({ children }) {
             <Sidebar
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                unreadCount={unreadCount}
+                pendingAslabCount={pendingAslabCount}
             />
 
             {/* ── Top Bar ─────────────────────────────────────────── */}
             <TopBar
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
+                unreadCount={unreadCount}
+                notifications={notifications}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}
