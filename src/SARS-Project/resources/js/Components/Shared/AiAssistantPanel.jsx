@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Bot, Send } from 'lucide-react';
+import { X, Bot, Send, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { usePage } from '@inertiajs/react';
 
 /**
  * Markdown components styled for chat bubble context.
@@ -138,17 +139,33 @@ const roleConfigs = {
 
 export default function AiAssistantPanel({ isOpen, onClose, role = 'mahasiswa', ref }) {
     const config = roleConfigs[role] || roleConfigs.mahasiswa;
+    const { auth } = usePage().props;
+    const user = auth?.user;
+    const userEmail = user?.email || 'guest';
+    const storageKey = `sars_ai_chat_${userEmail}_${role}`;
+
     const [chatInput, setChatInput] = useState('');
-    const [messages, setMessages] = useState([
-        {
-            role: 'assistant',
-            text: config.welcomeMessage,
-        },
-    ]);
+    const [messages, setMessages] = useState(() => {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error reading chat history from localStorage:', e);
+        }
+        return [
+            {
+                role: 'assistant',
+                text: config.welcomeMessage,
+            },
+        ];
+    });
     const [isStreaming, setIsStreaming] = useState(false);
     const [isWaitingFirstChunk, setIsWaitingFirstChunk] = useState(false);
     const chatContainerRef = useRef(null);
     const abortControllerRef = useRef(null);
+    const lastKeyRef = useRef(storageKey);
 
     // Auto-scroll to bottom when messages change or during streaming
     useEffect(() => {
@@ -156,6 +173,64 @@ export default function AiAssistantPanel({ isOpen, onClose, role = 'mahasiswa', 
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [messages]);
+
+    // Save to local storage or load on key change
+    useEffect(() => {
+        if (lastKeyRef.current !== storageKey) {
+            lastKeyRef.current = storageKey;
+            try {
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    setMessages(JSON.parse(saved));
+                } else {
+                    setMessages([
+                        {
+                            role: 'assistant',
+                            text: config.welcomeMessage,
+                        },
+                    ]);
+                }
+            } catch (e) {
+                console.error('Error loading chat history:', e);
+                setMessages([
+                    {
+                        role: 'assistant',
+                        text: config.welcomeMessage,
+                    },
+                ]);
+            }
+        } else {
+            try {
+                // Cap messages at 50 to prevent storage bloat
+                const messagesToSave = messages.slice(-50);
+                localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+            } catch (e) {
+                console.error('Error saving chat history:', e);
+            }
+        }
+    }, [messages, storageKey, config.welcomeMessage]);
+
+    function handleClearChat() {
+        if (isStreaming) return;
+        
+        const confirmMsg = role === 'mahasiswa' 
+            ? 'Apakah kamu yakin ingin menghapus riwayat chat?' 
+            : 'Apakah Anda yakin ingin menghapus riwayat chat?';
+            
+        if (confirm(confirmMsg)) {
+            try {
+                localStorage.removeItem(storageKey);
+            } catch (e) {
+                console.error('Error clearing chat history:', e);
+            }
+            setMessages([
+                {
+                    role: 'assistant',
+                    text: config.welcomeMessage,
+                },
+            ]);
+        }
+    }
 
     async function handleSend() {
         if (!chatInput.trim() || isStreaming) return;
@@ -333,6 +408,14 @@ export default function AiAssistantPanel({ isOpen, onClose, role = 'mahasiswa', 
                             </span>
                         </div>
                     </div>
+                    <button
+                        onClick={handleClearChat}
+                        disabled={isStreaming}
+                        title="Bersihkan Chat"
+                        className="p-1.5 rounded-lg text-text-muted hover:bg-danger/10 hover:text-danger disabled:opacity-50 disabled:cursor-not-allowed transition-colors mr-1"
+                    >
+                        <RotateCcw size={16} />
+                    </button>
                     <button
                         onClick={onClose}
                         className="p-1.5 rounded-lg text-text-muted hover:bg-surface hover:text-text-secondary transition-colors"
