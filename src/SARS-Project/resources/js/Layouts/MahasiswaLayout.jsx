@@ -6,6 +6,7 @@ import MahasiswaTopBar from '../Components/Mahasiswa/TopBar';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
 import useNotificationPoll from '../hooks/useNotificationPoll';
+import Echo from '../echo';
 
 export default function MahasiswaLayout({ children }) {
     const { auth, unreadCount: initialUnread, notifikasi: initialNotifs } = usePage().props;
@@ -49,6 +50,17 @@ export default function MahasiswaLayout({ children }) {
         } else {
             document.documentElement.classList.remove('dark');
         }
+    }, []);
+
+    // WebSocket: listen for database sync events
+    useEffect(() => {
+        const handleDatabaseSync = (event) => {
+            console.log('[Mahasiswa] Database sync:', event);
+            window.dispatchEvent(new CustomEvent('notifications:refresh'));
+        };
+
+        window.addEventListener('database-sync', handleDatabaseSync);
+        return () => window.removeEventListener('database-sync', handleDatabaseSync);
     }, []);
 
     return (

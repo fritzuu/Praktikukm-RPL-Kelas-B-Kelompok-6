@@ -109,12 +109,19 @@ export default function NotificationListPage({
 
     // ── Mark all as read ─────────────────────────────────────────────────────
     function markAllAsRead() {
+        // Optimistic update
         setItems(prev => prev.map(n => ({ ...n, dibaca: true })));
         notifyBadgeRefresh();
+        
         if (!readAllUrl) return;
+        
         fetch(readAllUrl, {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' },
+            headers: { 
+                'X-CSRF-TOKEN': csrfToken(), 
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
         }).catch(() => {});
     }
 
