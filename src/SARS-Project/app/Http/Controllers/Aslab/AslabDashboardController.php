@@ -84,17 +84,17 @@ class AslabDashboardController extends Controller
             });
 
         // Stats
-        $pendingVerification = ChangeRequest::where('status', 'PENDING_ASLAB')->count();
-        $validation = ChangeRequest::where('status', 'PENDING_ADMIN')->count();
-        $accepted = ChangeRequest::where('status', 'APPROVED')->count();
-        $rejected = ChangeRequest::where('status', 'REJECTED')->count();
-        
+        $statusCounts = ChangeRequest::select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
         $stats = [
-            'pendingVerification' => $pendingVerification,
-            'validation' => $validation,
-            'accepted' => $accepted,
-            'rejected' => $rejected
+            'pendingVerification' => $statusCounts->get('PENDING_ASLAB') ?? 0,
+            'validation'          => $statusCounts->get('PENDING_ADMIN') ?? 0,
+            'accepted'            => $statusCounts->get('APPROVED') ?? 0,
+            'rejected'            => ($statusCounts->get('REJECTED_ASLAB') ?? 0) + ($statusCounts->get('REJECTED_ADMIN') ?? 0) + ($statusCounts->get('REJECTED') ?? 0),
         ];
+
         
         $rooms = Room::whereIn('id', Schedule::where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))->pluck('name');
 

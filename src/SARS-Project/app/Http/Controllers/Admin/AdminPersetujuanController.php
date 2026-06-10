@@ -92,17 +92,24 @@ class AdminPersetujuanController extends Controller
 
         // ── Insight stats ──────────────────────────────────────────────
         $weekStart = Carbon::now()->startOfWeek();
+
+        $changeRequestStats = ChangeRequest::where('status', 'PENDING_ADMIN')
+            ->selectRaw('count(*) as total, sum(case when has_conflict = true then 1 else 0 end) as conflicts')
+            ->first();
+
+        $approvalStats = Approval::where('stage', 'ADMIN_DECISION')
+            ->where('decided_at', '>=', $weekStart)
+            ->select('decision', DB::raw('count(*) as count'))
+            ->groupBy('decision')
+            ->pluck('count', 'decision');
+
         $insights  = [
-            'pendingRequests'  => ChangeRequest::where('status', 'PENDING_ADMIN')->count(),
-            'conflictDetected' => ChangeRequest::where('status', 'PENDING_ADMIN')
-                ->where('has_conflict', true)->count(),
-            'acceptedThisWeek' => Approval::where('stage', 'ADMIN_DECISION')
-                ->where('decision', 'APPROVED')
-                ->where('decided_at', '>=', $weekStart)->count(),
-            'declinedThisWeek' => Approval::where('stage', 'ADMIN_DECISION')
-                ->where('decision', 'REJECTED_ADMIN')
-                ->where('decided_at', '>=', $weekStart)->count(),
+            'pendingRequests'  => (int) ($changeRequestStats->total ?? 0),
+            'conflictDetected' => (int) ($changeRequestStats->conflicts ?? 0),
+            'acceptedThisWeek' => $approvalStats->get('APPROVED') ?? 0,
+            'declinedThisWeek' => $approvalStats->get('REJECTED_ADMIN') ?? 0,
         ];
+
 
         return Inertia::render('Admin/Persetujuan', compact('pending', 'recent', 'insights'));
     }

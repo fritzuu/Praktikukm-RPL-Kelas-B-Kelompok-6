@@ -62,10 +62,24 @@ class MahasiswaController extends Controller
         $semester = Semester::active();
 
         // Summary counts for dashboard cards
-        $totalRequests    = $semester ? ChangeRequest::where('requester_id', $user->id)->where('semester_id', $semester->id)->count() : 0;
-        $pendingRequests  = $semester ? ChangeRequest::where('requester_id', $user->id)->where('semester_id', $semester->id)->whereIn('status', ['PENDING_ASLAB', 'PENDING_ADMIN'])->count() : 0;
-        $approvedRequests = $semester ? ChangeRequest::where('requester_id', $user->id)->where('semester_id', $semester->id)->where('status', 'APPROVED')->count() : 0;
-        $rejectedRequests = $semester ? ChangeRequest::where('requester_id', $user->id)->where('semester_id', $semester->id)->whereIn('status', ['REJECTED_ASLAB', 'REJECTED_ADMIN'])->count() : 0;
+        $totalRequests    = 0;
+        $pendingRequests  = 0;
+        $approvedRequests = 0;
+        $rejectedRequests = 0;
+
+        if ($semester) {
+            $counts = ChangeRequest::where('requester_id', $user->id)
+                ->where('semester_id', $semester->id)
+                ->select('status', DB::raw('count(*) as count'))
+                ->groupBy('status')
+                ->pluck('count', 'status');
+
+            $totalRequests    = $counts->sum();
+            $pendingRequests  = ($counts->get('PENDING_ASLAB') ?? 0) + ($counts->get('PENDING_ADMIN') ?? 0);
+            $approvedRequests = $counts->get('APPROVED') ?? 0;
+            $rejectedRequests = ($counts->get('REJECTED_ASLAB') ?? 0) + ($counts->get('REJECTED_ADMIN') ?? 0) + ($counts->get('REJECTED') ?? 0);
+        }
+
 
         // Recent requests (latest 5)
         $recentRequests = $semester

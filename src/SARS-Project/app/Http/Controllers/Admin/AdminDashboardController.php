@@ -62,7 +62,8 @@ class AdminDashboardController extends Controller
             ->pluck('name');
 
         // ─── Conflict Detection (via shared service) ──────────────────────────
-        $konflik = app(ConflictDetectionService::class)->detect(null, [], true);
+        $semester = Semester::active();
+        $konflik = $semester ? app(ConflictDetectionService::class)->detect($semester->id, [], true) : [];
 
         // ─── Database Sync Status Logic ─────────────────────────────────────────
         $latestSchedule = DB::table('schedules')->latest('created_at')->first();
@@ -77,12 +78,19 @@ class AdminDashboardController extends Controller
             'dbName' => DB::connection()->getDatabaseName()
         ];
 
+        $countsThisWeek = DB::table('change_requests')
+            ->where('updated_at', '>=', now()->subDays(7))
+            ->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
         $insights = [
             'pendingRequests' => DB::table('change_requests')->where('status', 'PENDING_ADMIN')->count(),
             'conflictDetected' => count($konflik),
-            'acceptedThisWeek' => DB::table('change_requests')->where('status', 'APPROVED')->where('updated_at', '>=', now()->subDays(7))->count(),
-            'declinedThisWeek' => DB::table('change_requests')->where('status', 'REJECTED')->where('updated_at', '>=', now()->subDays(7))->count(),
+            'acceptedThisWeek' => $countsThisWeek->get('APPROVED') ?? 0,
+            'declinedThisWeek' => ($countsThisWeek->get('REJECTED_ADMIN') ?? 0) + ($countsThisWeek->get('REJECTED_ASLAB') ?? 0) + ($countsThisWeek->get('REJECTED') ?? 0),
         ];
+
 
         $aktivitas = DB::table('activities')
             ->join('users', 'activities.user_id', '=', 'users.id')
