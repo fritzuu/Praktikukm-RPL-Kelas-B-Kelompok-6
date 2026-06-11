@@ -371,24 +371,26 @@ class AdminJadwalController extends Controller
     {
         DB::beginTransaction();
         try {
+            $semesterId = DB::table('semesters')->where('is_active', true)->value('id') ?? 0;
             $schedulesList = DB::table('schedules')
+                ->where('semester_id', $semesterId)
                 ->where('is_active', true)
                 ->get();
 
             $toDelete = [];
             $checked = [];
 
-            foreach ($schedulesList as $s1) {
-                foreach ($schedulesList as $s2) {
-                    if ($s1->id === $s2->id) continue;
+            // Group schedules by day of week and room to optimize nested loop checking
+            $groupedSchedules = $schedulesList->groupBy(fn($s) => strtolower($s->day_of_week) . '-' . $s->room_id);
 
-                    $pairKey = min($s1->id, $s2->id) . '-' . max($s1->id, $s2->id);
-                    if (in_array($pairKey, $checked)) continue;
+            foreach ($groupedSchedules as $key => $slotSchedules) {
+                foreach ($slotSchedules as $s1) {
+                    foreach ($slotSchedules as $s2) {
+                        if ($s1->id === $s2->id) continue;
 
-                    $sameDay = strtolower($s1->day_of_week) === strtolower($s2->day_of_week);
-                    $sameRoom = $s1->room_id === $s2->room_id;
+                        $pairKey = min($s1->id, $s2->id) . '-' . max($s1->id, $s2->id);
+                        if (in_array($pairKey, $checked)) continue;
 
-                    if ($sameDay && $sameRoom) {
                         $overlap = ($s1->session_start >= $s2->session_start && $s1->session_start < $s2->session_start + $s2->session_duration) ||
                                    ($s2->session_start >= $s1->session_start && $s2->session_start < $s1->session_start + $s1->session_duration);
 

@@ -2021,14 +2021,20 @@ class MahasiswaController extends Controller
      */
     private function isTeamTeachingSchedule($scheduleId): bool
     {
-        static $cache = [];
-        if (!isset($cache[$scheduleId])) {
-            $cache[$scheduleId] = \Illuminate\Support\Facades\DB::table('teaching_assignments')
-                ->where('schedule_id', $scheduleId)
-                ->where('role_in_class', 'PENGAJAR')
-                ->distinct()
-                ->count('user_id') > 1;
+        static $teamTeachingIds = null;
+        if ($teamTeachingIds === null) {
+            $semester = \App\Models\Semester::active();
+            $semesterId = $semester ? $semester->id : 0;
+
+            $teamTeachingIds = \Illuminate\Support\Facades\DB::table('teaching_assignments')
+                ->join('schedules', 'teaching_assignments.schedule_id', '=', 'schedules.id')
+                ->where('schedules.semester_id', $semesterId)
+                ->where('teaching_assignments.role_in_class', 'PENGAJAR')
+                ->groupBy('teaching_assignments.schedule_id')
+                ->havingRaw('COUNT(DISTINCT teaching_assignments.user_id) > 1')
+                ->pluck('teaching_assignments.schedule_id')
+                ->toArray();
         }
-        return $cache[$scheduleId];
+        return in_array($scheduleId, $teamTeachingIds);
     }
 }
