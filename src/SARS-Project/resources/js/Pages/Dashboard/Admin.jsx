@@ -3,6 +3,7 @@ import { usePage, router } from '@inertiajs/react';
 import { AlertTriangle, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import Modal from '../../Components/Modal';
+import ConfirmModal from '../../Components/Shared/ConfirmModal';
 import WelcomeHeader from '../../Components/Shared/WelcomeHeader';
 import ActivityTable from '../../Components/Shared/ActivityTable';
 import AdminStatCards from '../../Components/Admin/AdminStatCards';
@@ -72,6 +73,10 @@ export default function AdminDashboard({
     const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
+    // Resolve-all conflicts confirm state
+    const [resolveAllConfirmOpen, setResolveAllConfirmOpen] = useState(false);
+    const [resolveAllLoading, setResolveAllLoading] = useState(false);
+
     const [successMessage, setSuccessMessage] = useState(flash?.success || '');
     const [errorMessage, setErrorMessage] = useState(flash?.error || '');
 
@@ -126,13 +131,21 @@ export default function AdminDashboard({
     };
 
     const handleResolveAll = () => {
-        if (confirm("Apakah Anda yakin ingin menyelesaikan semua konflik secara otomatis? Tindakan ini akan menghapus jadwal-jadwal yang saling bertumpang tindih.")) {
-            router.post(route('admin.jadwal.resolve-conflicts'), {}, {
-                onSuccess: () => {
-                    // Success flash message will automatically handle notification
-                }
-            });
-        }
+        setResolveAllConfirmOpen(true);
+    };
+
+    const handleConfirmResolveAll = () => {
+        setResolveAllLoading(true);
+        router.post(route('admin.jadwal.resolve-conflicts'), {}, {
+            onSuccess: () => {
+                setResolveAllLoading(false);
+                setResolveAllConfirmOpen(false);
+            },
+            onError: () => {
+                setResolveAllLoading(false);
+                setResolveAllConfirmOpen(false);
+            },
+        });
     };
 
     const handleCardClick = (item) => {
@@ -317,6 +330,18 @@ export default function AdminDashboard({
                     </div>
                 </div>
             </Modal>
+            {/* Confirm Resolve-All Conflicts Modal */}
+            <ConfirmModal
+                open={resolveAllConfirmOpen}
+                onConfirm={handleConfirmResolveAll}
+                onCancel={() => !resolveAllLoading && setResolveAllConfirmOpen(false)}
+                loading={resolveAllLoading}
+                variant="warning"
+                title="Selesaikan Semua Konflik?"
+                description="Tindakan ini akan menghapus jadwal-jadwal yang saling bertumpang tindih secara otomatis. Tindakan ini tidak dapat dibatalkan."
+                confirmLabel="Ya, Selesaikan"
+                cancelLabel="Batal"
+            />
         </>
     );
 }

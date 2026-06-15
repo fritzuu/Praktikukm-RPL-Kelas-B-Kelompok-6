@@ -9,7 +9,6 @@ use App\Http\Controllers\Aslab\AslabNotifikasiController;
 use App\Http\Controllers\Aslab\AslabSettingController;
 use App\Http\Controllers\Dosen\DosenDashboardController;
 use App\Http\Controllers\Dosen\DosenJadwalController;
-use App\Http\Controllers\Dosen\DosenNotificationController;
 use App\Http\Controllers\Dosen\DosenNotifikasiController;
 use App\Http\Controllers\Dosen\DosenSettingController;
 use App\Http\Controllers\Admin\AdminDashboardController;
@@ -47,10 +46,31 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Shared Notification routes
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    // Shared Notification routes (new shared notification center)
+    Route::get('/notifications', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'index'])
+        ->name('notifications.center');
+
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'markAsRead'])
+        ->name('notifications.read');
+
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'delete'])
+        ->name('notifications.destroy');
+
+    Route::get('/notifications/{id}/detail', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'detail'])
+        ->name('notifications.detail');
+
+    // Compatibility route (existing mark-all read)
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // ── Lightweight polling endpoint ─────────────────────────────────────────
+    Route::get('/api/poll', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'poll'])
+        ->name('notifications.poll');
+
+    // ── Notification list for live refresh (used by NotificationListPage) ────
+    // Fetch the full archive as JSON — role-agnostic, no Inertia router.reload needed.
+    Route::get('/api/notifications/list', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'list'])
+        ->name('notifications.list');
+
 
     // Admin routes
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
@@ -122,12 +142,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan', [DosenSettingController::class, 'index'])->name('pengaturan');
         Route::post('/pengaturan', [DosenSettingController::class, 'updateProfile'])->name('pengaturan.update');
 
-        // ── Notifications (Jadwal Branch) ────────────────────────────────────
-        Route::get('/notification', [DosenNotificationController::class, 'index'])->name('notification');
-        Route::post('/notification/{notification}/read', [DosenNotificationController::class, 'markAsRead'])->name('notification.read');
-        Route::delete('/notification/{notification}', [DosenNotificationController::class, 'destroy'])->name('notification.destroy');
-
-        // ── Notifikasi (Notification Branch) ──────────────────────────────────
+        // ── Notifikasi ──────────────────────────────────────────────────────
         Route::get('/notifikasi', [DosenNotifikasiController::class, 'index'])->name('notifikasi');
         Route::post('/notifikasi/{id}/read', [DosenNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
         Route::post('/notifikasi/read-all', [DosenNotifikasiController::class, 'markAllAsRead'])->name('notifikasi.readAll');
@@ -144,7 +159,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/requests',       [MahasiswaController::class, 'requests'])->name('mahasiswa.requests');
         Route::post('/requests',      [MahasiswaController::class, 'submitRequest'])->name('mahasiswa.requests.submit');
         Route::delete('/requests',    [MahasiswaController::class, 'deleteRequests'])->name('mahasiswa.requests.delete');
+        Route::get('/requests/list',  [MahasiswaController::class, 'requestsList'])->name('mahasiswa.requests.list');
         Route::get('/notifications',  [MahasiswaController::class, 'notifications'])->name('mahasiswa.notifications');
+
+        // ── Notification actions (delegate to shared NotificationCenterController) ──
+        Route::get('/notifications/{id}/detail', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'detail'])
+            ->name('mahasiswa.notifications.detail');
+        Route::post('/notifications/{id}/read', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'markAsRead'])
+            ->name('mahasiswa.notifications.read');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+            ->name('mahasiswa.notifications.readAll');
+        Route::delete('/notifications/{id}', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'delete'])
+            ->name('mahasiswa.notifications.destroy');
+
         Route::get('/settings',       [MahasiswaController::class, 'settings'])->name('mahasiswa.settings');
         Route::post('/settings',      [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
 

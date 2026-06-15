@@ -1,6 +1,11 @@
 import { Calendar, AlertTriangle, CheckCircle, Info, Settings, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import NotificationDetailModal from '../Shared/NotificationDetailModal.jsx';
+
+
+
 
 const ICON_MAP = {
     jadwal: Calendar,
@@ -57,48 +62,53 @@ const itemVariants = {
     },
 };
 
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
 export default function NotificationDropdown({ onClose, notifications = [] }) {
-    const { props } = usePage();
-    const role = props.auth?.user?.primaryRole || 'admin';
-    
-    const routes = {
-        admin: '/admin/notifikasi',
-        dosen: '/dosen/notifikasi',
-        aslab: '/aslab/notifikasi',
-        mahasiswa: '/mahasiswa/notifications',
-    };
-    
-    const handleMarkAllRead = () => {
-        router.post('/notifications/read-all', {}, {
-            preserveScroll: true,
-        });
+    const [modalOpen, setModalOpen] = useState(false);
+    const [activeId, setActiveId] = useState(null);
+
+    const handleCloseModal = () => {
+        // Capture id BEFORE clearing state to avoid stale closure
+        const closingId = activeId;
+        setModalOpen(false);
+        setActiveId(null);
+        // Trigger polling hook to re-fetch badge counts immediately
+        window.dispatchEvent(new CustomEvent('notifications:refresh'));
     };
 
-    const handleMarkRead = (id) => {
-        const targetRoute = routes[role] || routes.admin;
-        router.post(`/notifications/${id}/read`, {}, {
-            preserveScroll: true,
-            onFinish: () => {
-                router.get(targetRoute);
-            }
-        });
+    const handleOpenDetail = (notifId) => {
+        setActiveId(notifId);
+        setModalOpen(true);
+        // Close dropdown while modal is open
+        onClose?.();
+    };
+
+    const handleMarkAllRead = () => {
+        // Use fetch with Accept: application/json so the server returns JSON (not redirect)
+        fetch('/notifications/read-all', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+        })
+            .then(() => window.dispatchEvent(new CustomEvent('notifications:refresh')))
+            .catch(() => {});
     };
 
     const handleViewAll = () => {
-        const routes = {
-            admin: '/admin/notifikasi',
-            dosen: '/dosen/notifikasi',
-            aslab: '/aslab/notifikasi',
-            mahasiswa: '/mahasiswa/notifications',
-        };
-        const targetRoute = routes[role] || routes.admin;
-        router.get(targetRoute);
-        onClose();
+        onClose?.();
+        router.get('/notifications');
     };
 
     const unreadCount = notifications.filter((n) => !n.dibaca).length;
 
+
     return (
+        <>
         <motion.div
             variants={dropdownVariants}
             initial="hidden"
@@ -111,9 +121,11 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                 <h3 className="text-sm font-semibold text-text-primary">
                     Notifikasi
                 </h3>
-                <span className="text-[10px] font-bold bg-danger/10 text-danger px-2 py-0.5 rounded-full">
-                    {unreadCount} baru
-                </span>
+                {unreadCount > 0 && (
+                    <span className="text-[10px] font-bold bg-danger/10 text-danger px-2 py-0.5 rounded-full">
+                        {unreadCount} baru
+                    </span>
+                )}
             </div>
             
             <motion.div 
@@ -127,7 +139,8 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                         <p className="text-xs text-text-muted mt-0.5">Semua pemberitahuan baru akan muncul di sini.</p>
                     </div>
                 ) : (
-                    notifications.slice(0, 3).map((notif) => {
+                    notifications.slice(0, 5).map((notif) => {
+
                         const Icon = ICON_MAP[notif.tipe] || Calendar;
                         return (
                             <motion.div
@@ -135,8 +148,9 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                                 whileHover={{ x: 4 }}
                                 whileTap={{ scale: 0.98 }}
                                 key={notif.id}
-                                onClick={() => handleMarkRead(notif.id)}
+                                onClick={() => handleOpenDetail(notif.id)}
                                 className={`flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors cursor-pointer ${!notif.dibaca ? 'bg-primary-50/50' : ''}`}
+
                             >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${!notif.dibaca ? 'bg-primary-500/10 text-primary-500' : 'bg-surface text-text-muted'}`}>
                                     <Icon size={16} />
@@ -182,5 +196,13 @@ export default function NotificationDropdown({ onClose, notifications = [] }) {
                 </div>
             )}
         </motion.div>
+
+        {/* Detail modal — rendered outside the dropdown so it persists after dropdown closes */}
+        <NotificationDetailModal
+            open={modalOpen}
+            onClose={handleCloseModal}
+            notificationId={activeId}
+        />
+    </>
     );
 }

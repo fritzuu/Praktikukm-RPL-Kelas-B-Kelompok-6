@@ -8,10 +8,15 @@ export default function Sidebar({
     branding = {},
     isCollapsed,
     onToggle,
+    pendingAdminCount: pendingAdminCountProp,
+    unreadCount: unreadCountProp,
 }) {
     const { url, props } = usePage();
     const [logoutOpen, setLogoutOpen] = useState(false);
-    const pendingAdminCount = props.pendingAdminCount ?? 0;
+
+    // Use live polled data when provided by layout, fall back to Inertia shared props
+    const pendingAdminCount = pendingAdminCountProp ?? props.pendingAdminCount ?? 0;
+    const unreadCount       = unreadCountProp       ?? props.unreadCount       ?? 0;
 
     const { initial = "S", title = "SARS", subtitle = "" } = branding;
 
@@ -100,10 +105,18 @@ export default function Sidebar({
                             <Icon size={20} className="shrink-0" />
                             {!isCollapsed && <span>{item.label}</span>}
                             {(() => {
+                                const NOTIF_ROUTES = [
+                                    "admin.notifikasi",
+                                    "aslab.notifikasi",
+                                    "dosen.notifikasi",
+                                    "notifications.center",
+                                ];
                                 const count =
                                     item.route === "admin.persetujuan"
                                         ? pendingAdminCount
-                                        : (item.badge ?? 0);
+                                        : NOTIF_ROUTES.includes(item.route)
+                                            ? unreadCount
+                                            : (item.badge ?? 0);
                                 if (!count) return null;
                                 return isCollapsed ? (
                                     <span className="absolute -top-1 -right-1 bg-danger text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">

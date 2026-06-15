@@ -7,6 +7,7 @@ use App\Services\AiAssistantService;
 use App\Models\Schedule;
 use App\Models\Semester;
 use App\Models\TeachingAssignment;
+use App\Services\Dashboard\ConflictDetectionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -112,6 +113,8 @@ class DosenDashboardController extends Controller
             'jadwal'        => $jadwal,
             'stats'         => $stats,
             'jadwalHariIni' => $jadwalHariIni,
+            'konflik'       => app(ConflictDetectionService::class)
+                                ->detect($semester->id, $assignedScheduleIds->toArray(), false),
         ]);
     }
 
@@ -136,7 +139,7 @@ class DosenDashboardController extends Controller
             'query' => 'required|string|max:500',
         ]);
 
-        $query    = $request->input('query');
+        $query    = strip_tags($request->input('query'));
         $user     = $request->user();
         $semester = Semester::active();
 

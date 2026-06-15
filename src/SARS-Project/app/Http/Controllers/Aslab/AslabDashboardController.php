@@ -7,9 +7,11 @@ use App\Models\ChangeRequest;
 use App\Models\NotificationRecipient;
 use App\Models\Schedule;
 use App\Models\Semester;
+use App\Services\Dashboard\ConflictDetectionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+
 use App\Models\Room;
 use App\Services\AiAssistantService;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,7 @@ class AslabDashboardController extends Controller
                 'rooms'           => [],
                 'notifikasi'      => [],
                 'pendingRequests' => [],
+                'konflik'         => [],
             ]);
         }
 
@@ -54,7 +57,7 @@ class AslabDashboardController extends Controller
                 'courses.code as kode',
                 'courses.name as nama',
                 'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '') as semesterNum"),
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'semesters.name as semester',
                 'rooms.name as ruangan',
                 DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
@@ -119,6 +122,7 @@ class AslabDashboardController extends Controller
                 'reason'        => $cr->reason,
                 'targetDate'    => $cr->target_date,
                 'createdAtDiff' => $cr->created_at->diffForHumans(),
+                'hasConflict'   => (bool) $cr->has_conflict,
             ])->values();
 
         // Notifications
@@ -144,6 +148,8 @@ class AslabDashboardController extends Controller
             'rooms'           => $rooms,
             'notifikasi'      => $notifikasi,
             'pendingRequests' => $pendingRequests,
+            'konflik'         => app(ConflictDetectionService::class)
+                                    ->detect($semester->id, [], false),
         ]);
     }
 
@@ -157,7 +163,7 @@ class AslabDashboardController extends Controller
             'query' => 'required|string|max:500',
         ]);
 
-        $query    = $request->input('query');
+        $query    = strip_tags($request->input('query'));
         $user     = $request->user();
         $semester = Semester::active();
 

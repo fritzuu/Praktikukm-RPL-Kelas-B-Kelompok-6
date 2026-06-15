@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+ import { useState, useEffect, useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import MahasiswaLayout from '../../../Layouts/MahasiswaLayout';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
     FileText, Plus, ChevronDown, ChevronUp, AlertTriangle, 
     CheckCircle, XCircle, Clock, Star, Sparkles, Check, 
@@ -97,7 +98,7 @@ const getWeekDate = (dayIndex, offset = 0) => {
 };
 
 /* ─────────────────────────────────────────────
-   Step indicator — simple horizontal bar
+   Step indicator — adaptive morph bar
    ───────────────────────────────────────────── */
 function StepIndicator({ isPermanent, currentStepKey }) {
     const ALL_STEPS = [
@@ -109,70 +110,123 @@ function StepIndicator({ isPermanent, currentStepKey }) {
         { key: 'review', label: 'Review & Kirim' },
     ];
 
-    let visibleCount = 0;
-    const stepsWithIndex = ALL_STEPS.map((step) => {
-        const isHidden = step.isConditional && isPermanent;
-        const stepNum = isHidden ? null : ++visibleCount;
-        return { ...step, isHidden, stepNum };
-    });
+    // Visible steps (5 vs 6)
+    const visibleBase = ALL_STEPS.filter(s => !(s.isConditional && isPermanent));
 
-    const activeSteps = stepsWithIndex.filter(s => !s.isHidden);
-    const currentIdx = activeSteps.findIndex(s => s.key === currentStepKey);
+    // Provide stable stepNum based on visible index (needed for numbering)
+    const visibleSteps = visibleBase.map((s, i) => ({
+        ...s,
+        stepNum: i + 1,
+    }));
+
+    const currentIdx = visibleSteps.findIndex(s => s.key === currentStepKey);
+
+    // Build an ordered list alternating: step, connector, step, connector...
+    // Connector is identified by (leftKey -> rightKey) so it can animate naturally with layout.
+    const sequence = [];
+    for (let i = 0; i < visibleSteps.length; i++) {
+        const step = visibleSteps[i];
+        sequence.push({ type: 'step', key: step.key });
+
+        if (i < visibleSteps.length - 1) {
+            const leftKey = visibleSteps[i].key;
+            const rightKey = visibleSteps[i + 1].key;
+            sequence.push({ type: 'connector', key: `c:${leftKey}->${rightKey}` });
+        }
+    }
+
+    const getStepByKey = (key) => visibleSteps.find(s => s.key === key);
 
     return (
-        <div className="flex items-center mb-6 overflow-hidden py-2 px-1">
-            {stepsWithIndex.map((step, idx) => {
-                const visibleIdx = step.isHidden ? -1 : activeSteps.findIndex(s => s.key === step.key);
-                const isActive = visibleIdx === currentIdx;
-                const isDone = visibleIdx !== -1 && visibleIdx < currentIdx;
-                const isHidden = step.isHidden;
+        <div className="flex items-center mb-6 py-2 px-1">
+            <motion.div
+                className="flex items-center w-full"
+                layout
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+                <AnimatePresence initial={false}>
+                    {sequence.map((item) => {
+                        if (item.type === 'connector') {
+                            const parts = item.key.replace(/^c:/, '').split('->');
+                            const leftKey = parts[0];
+                            const rightKey = parts[1];
 
-                const hasNextVisible = stepsWithIndex.slice(idx + 1).some(s => !s.isHidden);
-                const isLastVisible = !hasNextVisible && !isHidden;
+                            const leftIdx = visibleSteps.findIndex(s => s.key === leftKey);
+                            const rightIdx = visibleSteps.findIndex(s => s.key === rightKey);
 
-                return (
-                    <div
-                        key={step.key}
-                        className="flex items-center transition-all duration-500 ease-in-out py-2"
-                        style={{
-                            flex: isHidden ? '0 0 0px' : isLastVisible ? '0 0 auto' : '1 1 0px',
-                            opacity: isHidden ? 0 : 1,
-                            transform: isHidden ? 'scale(0.8)' : 'scale(1)',
-                            pointerEvents: isHidden ? 'none' : 'auto',
-                            marginRight: isHidden || isLastVisible ? '0px' : '4px',
-                        }}
-                    >
-                        <div className="flex flex-col items-center flex-1 min-w-[70px]">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                                isDone
-                                    ? 'bg-success text-white'
-                                    : isActive
-                                        ? 'bg-primary-500 text-white ring-4 ring-primary-500/20'
-                                        : 'bg-surface border-2 border-border text-text-muted'
-                            }`}>
-                                {isDone ? <Check size={14} /> : step.stepNum}
-                            </div>
-                            <span className={`text-[10px] mt-1.5 text-center font-semibold leading-tight whitespace-nowrap transition-colors duration-300 ${
-                                isActive ? 'text-primary-500' : isDone ? 'text-success' : 'text-text-muted'
-                            }`}>
-                                {step.label}
-                            </span>
-                        </div>
-                        {idx < stepsWithIndex.length - 1 && (
-                            <div
-                                className={`h-0.5 rounded-full transition-all duration-500 -mt-4 ${
-                                    isDone ? 'bg-success' : 'bg-border'
-                                }`}
-                                style={{
-                                    flex: hasNextVisible && !isHidden ? '1 1 0px' : '0 0 0px',
-                                    opacity: hasNextVisible && !isHidden ? 1 : 0,
-                                    margin: hasNextVisible && !isHidden ? '0 4px' : '0px',
-                                }}
-                            />
-                        )}
-                    </div>
-                );
-            })}
+                            // Connector should be "done" if everything up to the right side is done
+                            const isDone = rightIdx !== -1 && currentIdx !== -1 && rightIdx <= currentIdx;
+
+                            return (
+                                <motion.div
+                                    key={item.key}
+                                    layout="position"
+                                    layoutId={`connector-${leftKey}-${rightKey}`}
+                                    initial={{ opacity: 0, scale: 0.96 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.96 }}
+                                    transition={{
+                                        duration: 0.22,
+                                        ease: 'easeOut',
+                                        layout: { duration: 0.25, ease: 'easeOut' },
+                                    }}
+                                    className={`h-0.5 rounded-full -mt-4 mx-[6px]`}
+                                    style={{
+                                        flex: 1,
+                                        transformOrigin: 'center',
+                                        backgroundColor: isDone ? 'rgb(34 197 94)' : 'var(--border)',
+                                    }}
+                                />
+                            );
+                        }
+
+                        const step = getStepByKey(item.key);
+                        if (!step) return null;
+
+                        const idx = visibleSteps.findIndex(s => s.key === step.key);
+                        const isActive = idx === currentIdx;
+                        const isDone = idx < currentIdx;
+
+                            return (
+                                <motion.div
+                                    key={item.key}
+                                    layout="position"
+                                    layoutId={`step-${step.key}`}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{
+                                        duration: 0.22,
+                                        ease: 'easeOut',
+                                        layout: { duration: 0.25, ease: 'easeOut' },
+                                    }}
+                                    className="flex items-center flex-1 min-w-0"
+                                >
+                                <div className="flex flex-col items-center w-full min-w-[70px]">
+                                    <div
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                                            isDone
+                                                ? 'bg-success text-white'
+                                                : isActive
+                                                    ? 'bg-primary-500 text-white ring-4 ring-primary-500/20'
+                                                    : 'bg-surface border-2 border-border text-text-muted'
+                                        }`}
+                                    >
+                                        {isDone ? <Check size={14} /> : step.stepNum}
+                                    </div>
+                                    <span
+                                        className={`text-[10px] mt-1.5 text-center font-semibold leading-tight whitespace-nowrap transition-colors duration-300 ${
+                                            isActive ? 'text-primary-500' : isDone ? 'text-success' : 'text-text-muted'
+                                        }`}
+                                    >
+                                        {step.label}
+                                    </span>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </motion.div>
         </div>
     );
 }
@@ -192,6 +246,8 @@ export default function Requests({
     const [showForm, setShowForm] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
     const [step, setStep] = useState(1);
+    const [prevStep, setPrevStep] = useState(1);
+    const [stepDirection, setStepDirection] = useState(1); // 1=forward, -1=back
 
     const [form, setForm] = useState({
         schedule_id: '', request_type: 'TEMPORARY', target_date: '', effective_from_date: '',
@@ -257,10 +313,10 @@ export default function Requests({
     };
 
     const handleToggleSelectAll = () => {
-        if (selectedRequestIds.length === requests.length) {
+        if (selectedRequestIds.length === displayRequests.length) {
             setSelectedRequestIds([]);
         } else {
-            setSelectedRequestIds(requests.map(r => r.id));
+            setSelectedRequestIds(displayRequests.map(r => r.id));
         }
     };
 
@@ -278,6 +334,42 @@ export default function Requests({
             }
         });
     };
+
+    // ── Live status auto-refresh ─────────────────────────────────────────────
+    // Listens for `page:reload:my-requests` dispatched by useNotificationPoll
+    // when the poll fingerprint detects a status change (admin/aslab decision).
+    // Fetches fresh request data directly from the JSON list endpoint so the
+    // status badges update without a full page navigation.
+    const [liveRequests, setLiveRequests] = useState(null); // null = use Inertia props
+    const fetchingRequestsRef = useRef(false);
+
+    useEffect(() => {
+        const handler = async () => {
+            if (fetchingRequestsRef.current) return;
+            fetchingRequestsRef.current = true;
+            try {
+                const res = await fetch('/mahasiswa/requests/list', {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const rows = data.requests?.data ?? data.requests ?? [];
+                if (Array.isArray(rows)) {
+                    setLiveRequests(rows);
+                }
+            } catch (_) {}
+            finally {
+                fetchingRequestsRef.current = false;
+            }
+        };
+
+        window.addEventListener('page:reload:my-requests', handler);
+        return () => window.removeEventListener('page:reload:my-requests', handler);
+    }, []);
+
+    // Merge: prefer live data once it arrives, fall back to Inertia props
+    const displayRequests = liveRequests ?? requests;
 
     // Reset recommendations on schedule_id change and fetch meeting dates
     useEffect(() => {
@@ -740,12 +832,16 @@ export default function Requests({
             handleCariJadwalPengganti();
         }
         if (step < activeSteps.length) {
+            setPrevStep(step);
+            setStepDirection(1);
             setStep(prev => prev + 1);
         }
     };
 
     const handleBack = () => {
         if (step > 1) {
+            setPrevStep(step);
+            setStepDirection(-1);
             setStep(prev => prev - 1);
         }
     };
@@ -765,10 +861,38 @@ export default function Requests({
                 </div>
             </section>
 
-            {showForm && (
+                    {showForm && (
                 <section className="mb-6 bg-card border border-border rounded-2xl p-6 shadow-sm">
-                    <StepIndicator isPermanent={isPermanent} currentStepKey={currentStepKey} />
+                    {/* Animate stepper when visible step count changes (TEMPORARY vs PERMANENT) */}
+                    <motion.div
+                        key={`stepper-${isPermanent ? 'permanent' : 'temporary'}`}
+                        initial={{ opacity: 0, scale: 0.98, y: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: -6 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                        className="transition-all duration-300 ease-in-out"
+                    >
+                        <StepIndicator isPermanent={isPermanent} currentStepKey={currentStepKey} />
+                    </motion.div>
 
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentStepKey}
+                            initial={{
+                                opacity: 0,
+                                x: stepDirection === 1 ? 20 : -20,
+                            }}
+                            animate={{
+                                opacity: 1,
+                                x: 0,
+                            }}
+                            exit={{
+                                opacity: 0,
+                                x: stepDirection === 1 ? -20 : 20,
+                            }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className="w-full"
+                        >
                     {/* ══════════ STEP 1: Pilih Mata Kuliah ══════════ */}
                     {currentStepKey === 'course' && (
                         <div className="space-y-4 animate-in fade-in duration-300">
@@ -1544,6 +1668,9 @@ export default function Requests({
                             </div>
                         </div>
                     )}
+
+                        </motion.div>
+                    </AnimatePresence>
                 </section>
             )}
 
@@ -1921,9 +2048,9 @@ export default function Requests({
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
                         <Layers size={18} className="text-primary-500" />
-                        Riwayat Request ({requests.length})
+                        Riwayat Request ({displayRequests.length})
                     </h2>
-                    {requests.length > 0 && (
+                    {displayRequests.length > 0 && (
                         <button
                             type="button"
                             onClick={handleToggleSelectAll}
@@ -1931,19 +2058,19 @@ export default function Requests({
                         >
                             <input
                                 type="checkbox"
-                                checked={requests.length > 0 && selectedRequestIds.length === requests.length}
+                                checked={displayRequests.length > 0 && selectedRequestIds.length === displayRequests.length}
                                 onChange={handleToggleSelectAll}
                                 className="w-3.5 h-3.5 rounded border-border text-primary-500 focus:ring-primary-500/20 bg-surface cursor-pointer"
                                 onClick={(e) => e.stopPropagation()}
                             />
                             <span>
-                                {selectedRequestIds.length === requests.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                {selectedRequestIds.length === displayRequests.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
                             </span>
                         </button>
                     )}
                 </div>
                 <div className="space-y-3">
-                    {requests.map(req => {
+                    {displayRequests.map(req => {
                         const st = STATUS_STYLES[req.status] || STATUS_STYLES.PENDING_ASLAB;
                         const StIcon = st.icon;
                         const expanded = expandedId === req.id;

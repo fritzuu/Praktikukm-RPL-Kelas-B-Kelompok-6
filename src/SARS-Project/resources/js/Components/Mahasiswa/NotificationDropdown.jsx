@@ -67,9 +67,9 @@ export default function MahasiswaNotificationDropdown({ onClose, notifikasi = []
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 'Accept': 'application/json',
             },
-        }).then(() => {
-            router.reload({ only: ['notifikasi', 'unreadCount', 'auth'] });
-        }).catch(() => {});
+        })
+            .then(() => window.dispatchEvent(new CustomEvent('notifications:refresh')))
+            .catch(() => {});
     }
 
     function handleNotifClick(notif) {
@@ -80,9 +80,9 @@ export default function MahasiswaNotificationDropdown({ onClose, notifikasi = []
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                     'Accept': 'application/json',
                 },
-            }).then(() => {
-                router.reload({ only: ['notifikasi', 'unreadCount', 'auth'] });
-            }).catch(() => {});
+            })
+                .then(() => window.dispatchEvent(new CustomEvent('notifications:refresh')))
+                .catch(() => {});
         }
         try { router.get(route('mahasiswa.notifications')); } catch {}
         onClose();

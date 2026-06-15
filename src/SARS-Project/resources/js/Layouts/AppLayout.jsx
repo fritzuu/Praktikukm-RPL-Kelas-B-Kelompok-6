@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import Sidebar from '../Components/Shared/Sidebar';
 import TopBar from '../Components/Shared/TopBar';
+import useNotificationPoll from '../hooks/useNotificationPoll';
 
 export default function AppLayout({ navItems, branding, topBarActions, children, aiPanel, aiFab }) {
-    const { auth } = usePage().props;
+    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs, pendingAdminCount: initialPendingAdmin } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    // ── Live notification polling ────────────────────────────────────────────
+    const { unreadCount, pendingAdminCount, notifications } = useNotificationPoll({
+        unreadCount:       initialUnread        ?? 0,
+        pendingAdminCount: initialPendingAdmin  ?? 0,
+        notifications:     initialNotifs        ?? auth?.notifications ?? [],
+    });
 
     // Auto-collapse berdasarkan breakpoint
     useEffect(() => {
@@ -35,6 +43,8 @@ export default function AppLayout({ navItems, branding, topBarActions, children,
                 branding={branding}
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                pendingAdminCount={pendingAdminCount}
+                unreadCount={unreadCount}
             />
 
             {/* ── Top Bar ─────────────────────────────────────────── */}
@@ -42,6 +52,8 @@ export default function AppLayout({ navItems, branding, topBarActions, children,
                 user={user}
                 sidebarCollapsed={sidebarCollapsed}
                 actions={topBarActions}
+                unreadCount={unreadCount}
+                notifications={notifications}
             />
 
             {/* ── Main Content + AI Panel ─────────────────────────── */}
@@ -54,7 +66,7 @@ export default function AppLayout({ navItems, branding, topBarActions, children,
                 <main className="flex-1 min-w-0 p-6">
                     {children}
                 </main>
-                
+
                 {/* Right AI Panel slot */}
                 {aiPanel}
             </div>

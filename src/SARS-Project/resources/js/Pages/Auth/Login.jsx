@@ -1,5 +1,6 @@
 import { useForm, usePage } from '@inertiajs/react';
 import unsImage from '../../../img/uns.png';
+import PasswordInput from '../../Components/Shared/PasswordInput';
 
 const ROLES = [
     { key: 'mahasiswa', label: 'STUDENT',  placeholder: 'mahasiswa@student.university.ac.id' },
@@ -142,20 +143,17 @@ export default function Login() {
                                     Forgot password?
                                 </a>
                             </div>
-                            <input
+                            <PasswordInput
                                 id="password"
-                                type="password"
-                                autoComplete="current-password"
-                                placeholder="••••••••"
                                 value={data.password}
                                 onChange={e => setData('password', e.target.value)}
-                                className={`w-full px-4 py-3 bg-gray-100 rounded-xl text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#1e3a8a]/30 focus:bg-white transition-all duration-200 ${
-                                    errors.password ? 'ring-2 ring-red-400 bg-red-50' : ''
-                                }`}
+                                placeholder="••••••••"
+                                autoComplete="current-password"
+                                autoFocus={false}
+                                error={errors.password}
                             />
-                            {errors.password && (
-                                <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>
-                            )}
+
+
                         </div>
 
                         {/* Remember me */}

@@ -128,15 +128,19 @@ class AdminPersetujuanController extends Controller
         }
 
         DB::transaction(function () use ($cr, $request) {
-            // 1. Create approval record
-            Approval::create([
-                'request_id' => $cr->id,
-                'actor_id'   => $request->user()->id,
-                'stage'      => 'ADMIN_DECISION',
-                'decision'   => 'APPROVED',
-                'notes'      => $request->notes ?? 'Disetujui oleh Admin.',
-                'decided_at' => Carbon::now(),
-            ]);
+            // 1. Create/update approval record (idempotent per unique(request_id, stage))
+            Approval::updateOrCreate(
+                [
+                    'request_id' => $cr->id,
+                    'stage'      => 'ADMIN_DECISION',
+                ],
+                [
+                    'actor_id'   => $request->user()->id,
+                    'decision'   => 'APPROVED',
+                    'notes'      => $request->notes ?? 'Disetujui oleh Admin.',
+                    'decided_at' => Carbon::now(),
+                ]
+            );
 
             // 2. Apply schedule change
             if ($cr->request_type === 'TEMPORARY') {
@@ -170,11 +174,19 @@ class AdminPersetujuanController extends Controller
                 ]);
 
                 // Apply permanent change
+                $day = $cr->proposed_day ?? $schedule->day_of_week;
+                $startTime = $cr->proposed_start_time ?? $schedule->start_time;
+                $endTime = $cr->proposed_end_time ?? $schedule->end_time;
+                
+                list($sessionStart, $sessionDuration) = $this->calculateSessionRange($day, $startTime, $endTime);
+
                 $schedule->update([
-                    'day_of_week' => $cr->proposed_day   ?? $schedule->day_of_week,
-                    'start_time'  => $cr->proposed_start_time ?? $schedule->start_time,
-                    'end_time'    => $cr->proposed_end_time   ?? $schedule->end_time,
+                    'day_of_week' => $day,
+                    'start_time'  => $startTime,
+                    'end_time'    => $endTime,
                     'room_id'     => $cr->proposed_room_id    ?? $schedule->room_id,
+                    'session_start' => $sessionStart,
+                    'session_duration' => $sessionDuration,
                     'effective_from' => $cr->effective_from_date ?? Carbon::now()->toDateString(),
                 ]);
             }
@@ -183,11 +195,49 @@ class AdminPersetujuanController extends Controller
             $cr->update(['status' => 'APPROVED']);
         });
 
+        // Build shared data_payload for all notifications from this approval
+        $approvedSchedule = $cr->schedule()->with(['course', 'room'])->first();
+        $approvedProposedRoom = $cr->proposed_room_id
+            ? \App\Models\Room::find($cr->proposed_room_id)
+            : null;
+
+        $oldSessionApprove = null;
+        if ($approvedSchedule && $approvedSchedule->session_start) {
+            $dur = $approvedSchedule->session_duration ?? 1;
+            $oldSessionApprove = $dur > 1
+                ? 'Sesi ' . $approvedSchedule->session_start . '–' . ($approvedSchedule->session_start + $dur - 1)
+                : 'Sesi ' . $approvedSchedule->session_start;
+        }
+
+        $approvePayload = [
+            'request_code'   => $cr->request_code,
+            'course_name'    => $approvedSchedule?->course?->name,
+            'class_name'     => $approvedSchedule?->course?->class_name,
+            'request_type'   => $cr->request_type,
+            'student_reason' => $cr->reason,
+            'old_day'        => $approvedSchedule?->day_of_week,
+            'old_time'       => ($approvedSchedule && $approvedSchedule->start_time && $approvedSchedule->end_time)
+                                    ? substr($approvedSchedule->start_time, 0, 5) . ' – ' . substr($approvedSchedule->end_time, 0, 5)
+                                    : null,
+            'old_room'       => $approvedSchedule?->room?->code,
+            'old_room_name'  => $approvedSchedule?->room?->name,
+            'old_session'    => $oldSessionApprove,
+            'new_day'        => $cr->proposed_day,
+            'new_time'       => ($cr->proposed_start_time && $cr->proposed_end_time)
+                                    ? substr($cr->proposed_start_time, 0, 5) . ' – ' . substr($cr->proposed_end_time, 0, 5)
+                                    : null,
+            'new_room'       => $approvedProposedRoom?->code ?? $approvedSchedule?->room?->code,
+            'new_room_name'  => $approvedProposedRoom?->name ?? $approvedSchedule?->room?->name,
+        ];
+
         $notifMahasiswa = \App\Models\Notification::create([
-            'type'    => 'REQUEST_APPROVED',
-            'title'   => 'Request Disetujui Admin',
-            'message' => "Pengajuan {$cr->request_code} telah disetujui.",
-            'body'    => 'Perubahan jadwal telah diterapkan.',
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'type'         => 'REQUEST_APPROVED',
+            'title'        => 'Request Disetujui Admin',
+            'message'      => "Pengajuan {$cr->request_code} telah disetujui.",
+            'body'         => 'Perubahan jadwal telah diterapkan.',
+            'data_payload' => $approvePayload,
         ]);
         \App\Models\NotificationRecipient::create(['notification_id' => $notifMahasiswa->id, 'recipient_id' => $cr->requester_id, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => Carbon::now()]);
 
@@ -195,10 +245,13 @@ class AdminPersetujuanController extends Controller
         $aslabApproval = \DB::table('approvals')->where('request_id', $cr->id)->where('stage', 'ASLAB_CHECK')->first();
         if ($aslabApproval) {
             $notifAslab = \App\Models\Notification::create([
-                'type'    => 'REQUEST_APPROVED',
-                'title'   => 'Request Disetujui Admin',
-                'message' => "Pengajuan {$cr->request_code} yang Anda validasi telah disetujui.",
-                'body'    => 'Request berhasil diproses.',
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'type'         => 'REQUEST_APPROVED',
+                'title'        => 'Request Disetujui Admin',
+                'message'      => "Pengajuan {$cr->request_code} yang Anda validasi telah disetujui.",
+                'body'         => 'Request berhasil diproses.',
+                'data_payload' => $approvePayload,
             ]);
             \App\Models\NotificationRecipient::create(['notification_id' => $notifAslab->id, 'recipient_id' => $aslabApproval->actor_id, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => Carbon::now()]);
         }
@@ -210,10 +263,13 @@ class AdminPersetujuanController extends Controller
 
         foreach ($lecturerIds as $lecturerId) {
             $notifDosen = \App\Models\Notification::create([
-                'type'    => 'SCHEDULE_CHANGED',
-                'title'   => 'Perubahan Jadwal Kelas',
-                'message' => "Jadwal kelas {$cr->schedule->course->name} telah diubah.",
-                'body'    => 'Cek jadwal terbaru Anda.',
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'type'         => 'SCHEDULE_CHANGED',
+                'title'        => 'Perubahan Jadwal Kelas',
+                'message'      => "Jadwal kelas {$approvedSchedule?->course?->name} telah diubah.",
+                'body'         => 'Cek jadwal terbaru Anda.',
+                'data_payload' => $approvePayload,
             ]);
             \App\Models\NotificationRecipient::create(['notification_id' => $notifDosen->id, 'recipient_id' => $lecturerId, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => Carbon::now()]);
         }
@@ -239,22 +295,65 @@ class AdminPersetujuanController extends Controller
             return back()->with('error', 'Request ini sudah tidak dalam status PENDING_ADMIN.');
         }
 
-        Approval::create([
-            'request_id' => $cr->id,
-            'actor_id'   => $request->user()->id,
-            'stage'      => 'ADMIN_DECISION',
-            'decision'   => 'REJECTED_ADMIN',
-            'notes'      => $request->notes,
-            'decided_at' => Carbon::now(),
-        ]);
+        // Create/update approval record (idempotent per unique(request_id, stage))
+        Approval::updateOrCreate(
+            [
+                'request_id' => $cr->id,
+                'stage'      => 'ADMIN_DECISION',
+            ],
+            [
+                'actor_id'   => $request->user()->id,
+                'decision'   => 'REJECTED_ADMIN',
+                'notes'      => $request->notes,
+                'decided_at' => Carbon::now(),
+            ]
+        );
 
         $cr->update(['status' => 'REJECTED_ADMIN']);
 
+        // Build data_payload for detail modal
+        $rejectedSchedule = $cr->schedule()->with(['course', 'room'])->first();
+        $rejectedProposedRoom = $cr->proposed_room_id
+            ? \App\Models\Room::find($cr->proposed_room_id)
+            : null;
+
+        $oldSessionRejectAdmin = null;
+        if ($rejectedSchedule && $rejectedSchedule->session_start) {
+            $dur = $rejectedSchedule->session_duration ?? 1;
+            $oldSessionRejectAdmin = $dur > 1
+                ? 'Sesi ' . $rejectedSchedule->session_start . '–' . ($rejectedSchedule->session_start + $dur - 1)
+                : 'Sesi ' . $rejectedSchedule->session_start;
+        }
+
+        $rejectAdminPayload = [
+            'request_code'   => $cr->request_code,
+            'course_name'    => $rejectedSchedule?->course?->name,
+            'class_name'     => $rejectedSchedule?->course?->class_name,
+            'request_type'   => $cr->request_type,
+            'student_reason' => $cr->reason,
+            'old_day'        => $rejectedSchedule?->day_of_week,
+            'old_time'       => ($rejectedSchedule && $rejectedSchedule->start_time && $rejectedSchedule->end_time)
+                                    ? substr($rejectedSchedule->start_time, 0, 5) . ' – ' . substr($rejectedSchedule->end_time, 0, 5)
+                                    : null,
+            'old_room'       => $rejectedSchedule?->room?->code,
+            'old_room_name'  => $rejectedSchedule?->room?->name,
+            'old_session'    => $oldSessionRejectAdmin,
+            'new_day'        => $cr->proposed_day,
+            'new_time'       => ($cr->proposed_start_time && $cr->proposed_end_time)
+                                    ? substr($cr->proposed_start_time, 0, 5) . ' – ' . substr($cr->proposed_end_time, 0, 5)
+                                    : null,
+            'new_room'       => $rejectedProposedRoom?->code ?? $rejectedSchedule?->room?->code,
+            'new_room_name'  => $rejectedProposedRoom?->name ?? $rejectedSchedule?->room?->name,
+        ];
+
         $notifMahasiswa = \App\Models\Notification::create([
-            'type'    => 'REQUEST_REJECTED',
-            'title'   => 'Request Ditolak Admin',
-            'message' => "Pengajuan {$cr->request_code} ditolak.",
-            'body'    => "Alasan: {$request->notes}",
+            'request_id'   => $cr->id,
+            'triggered_by' => $request->user()->id,
+            'type'         => 'REQUEST_REJECTED',
+            'title'        => 'Request Ditolak Admin',
+            'message'      => "Pengajuan {$cr->request_code} ditolak.",
+            'body'         => "Alasan: {$request->notes}",
+            'data_payload' => $rejectAdminPayload,
         ]);
         \App\Models\NotificationRecipient::create(['notification_id' => $notifMahasiswa->id, 'recipient_id' => $cr->requester_id, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => Carbon::now()]);
 
@@ -262,14 +361,94 @@ class AdminPersetujuanController extends Controller
         $aslabApproval = \DB::table('approvals')->where('request_id', $cr->id)->where('stage', 'ASLAB_CHECK')->first();
         if ($aslabApproval) {
             $notifAslab = \App\Models\Notification::create([
-                'type'    => 'REQUEST_REJECTED',
-                'title'   => 'Request Ditolak Admin',
-                'message' => "Pengajuan {$cr->request_code} yang Anda validasi ditolak.",
-                'body'    => 'Request tidak disetujui Admin.',
+                'request_id'   => $cr->id,
+                'triggered_by' => $request->user()->id,
+                'type'         => 'REQUEST_REJECTED',
+                'title'        => 'Request Ditolak Admin',
+                'message'      => "Pengajuan {$cr->request_code} yang Anda validasi ditolak.",
+                'body'         => 'Request tidak disetujui Admin.',
+                'data_payload' => $rejectAdminPayload,
             ]);
             \App\Models\NotificationRecipient::create(['notification_id' => $notifAslab->id, 'recipient_id' => $aslabApproval->actor_id, 'channel' => 'IN_APP', 'is_sent' => true, 'sent_at' => Carbon::now()]);
         }
 
         return back()->with('success', 'Pengajuan berhasil ditolak.');
+    }
+
+    /**
+     * Calculate session start and duration from day of week, start time, and end time.
+     */
+    private function calculateSessionRange(string $day, string $startTime, string $endTime): array
+    {
+        $isFriday = (strtoupper($day) === 'JUMAT');
+        $sessionTimes = $isFriday ? [
+            1 => ['07:30', '08:20'],
+            2 => ['08:25', '09:15'],
+            3 => ['09:20', '10:10'],
+            4 => ['10:15', '11:05'],
+            5 => ['13:00', '13:50'],
+            6 => ['13:55', '14:45'],
+            7 => ['15:30', '16:20'],
+            8 => ['16:25', '17:15'],
+            9 => ['18:00', '18:50'],
+            10 => ['18:55', '19:20'],
+            11 => ['19:25', '20:15'],
+        ] : [
+            1 => ['07:30', '08:20'],
+            2 => ['08:25', '09:15'],
+            3 => ['09:20', '10:10'],
+            4 => ['10:15', '11:05'],
+            5 => ['11:10', '12:00'],
+            6 => ['13:00', '13:50'],
+            7 => ['13:55', '14:45'],
+            8 => ['15:30', '16:20'],
+            9 => ['16:25', '17:15'],
+            10 => ['18:00', '18:50'],
+            11 => ['18:55', '19:20'],
+        ];
+
+        // Format start/end times to H:i
+        $start = substr($startTime, 0, 5);
+        $end = substr($endTime, 0, 5);
+
+        $startSession = null;
+        $endSession = null;
+
+        // Try exact match
+        foreach ($sessionTimes as $idx => $range) {
+            if ($range[0] === $start) {
+                $startSession = $idx;
+            }
+            if ($range[1] === $end) {
+                $endSession = $idx;
+            }
+        }
+
+        // Fallback to closest match if not found exactly
+        if ($startSession === null) {
+            $minDiff = null;
+            foreach ($sessionTimes as $idx => $range) {
+                $diff = abs(strtotime($range[0]) - strtotime($start));
+                if ($minDiff === null || $diff < $minDiff) {
+                    $minDiff = $diff;
+                    $startSession = $idx;
+                }
+            }
+        }
+
+        if ($endSession === null) {
+            $minDiff = null;
+            foreach ($sessionTimes as $idx => $range) {
+                $diff = abs(strtotime($range[1]) - strtotime($end));
+                if ($minDiff === null || $diff < $minDiff) {
+                    $minDiff = $diff;
+                    $endSession = $idx;
+                }
+            }
+        }
+
+        $sessionDuration = max(1, $endSession - $startSession + 1);
+
+        return [$startSession, $sessionDuration];
     }
 }

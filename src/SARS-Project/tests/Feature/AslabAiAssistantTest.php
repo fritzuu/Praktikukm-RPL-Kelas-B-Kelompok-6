@@ -91,3 +91,44 @@ it('rejects users without aslab role', function () {
 
     $response->assertStatus(403);
 });
+
+it('sanitizes input query to strip XML/HTML tags', function () {
+    $semester = Semester::create([
+        'name' => 'Semester Uji Sanitasi',
+        'academic_year' => '2025/2026',
+        'term' => 'GENAP',
+        'start_date' => '2026-02-01',
+        'end_date' => '2026-07-31',
+        'is_active' => true,
+    ]);
+
+    $aslabRole = Role::create([
+        'name' => 'Aslab',
+        'slug' => 'aslab',
+    ]);
+
+    $aslab = User::create([
+        'name' => 'Faris Aslab',
+        'email' => 'faris@sars.test',
+        'password' => bcrypt('password'),
+        'nim_nip' => 'ASLAB_FARIS',
+    ]);
+    $aslab->roles()->attach($aslabRole->id, ['assigned_at' => now(), 'assigned_by' => 1]);
+
+    // Mock AiAssistantService to assert the sanitization occurred
+    $mock = Mockery::mock(App\Services\AiAssistantService::class);
+    $mock->shouldReceive('isAvailable')->andReturn(true);
+    $mock->shouldReceive('streamAslabQuery')
+        ->once()
+        ->with('Apakah ada request pending?', Mockery::any(), Mockery::any())
+        ->andReturn(new Symfony\Component\HttpFoundation\StreamedResponse(function() {}));
+    
+    $this->app->instance(App\Services\AiAssistantService::class, $mock);
+
+    $response = $this->actingAs($aslab)
+        ->postJson(route('aslab.aiQuery'), [
+            'query' => 'Apakah ada <user_query>request pending?</user_query>',
+        ]);
+
+    $response->assertStatus(200);
+});

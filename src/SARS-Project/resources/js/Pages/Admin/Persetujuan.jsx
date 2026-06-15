@@ -3,7 +3,8 @@ import AdminLayout from '../../Layouts/AdminLayout';
 import AdminInsightCards from '../../Components/Admin/AdminInsightCards';
 import ApprovalQueue from '../../Components/Admin/ApprovalQueue';
 import ActivityTable from '../../Components/Shared/ActivityTable';
-import { CheckCircle, History } from 'lucide-react';
+import { History } from 'lucide-react';
+import usePageDataRefresh from '../../hooks/usePageDataRefresh';
 
 const DECISION_STYLES = {
     APPROVED: 'bg-success/10 text-success',
@@ -98,6 +99,9 @@ export default function Persetujuan({
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
+
+    // Auto-refresh when polling detects a new PENDING_ADMIN request
+    usePageDataRefresh('page:reload:pending-admin', ['pending', 'recent', 'insights']);
 
     const handleApprove = (id, notes) => {
         router.post(route('admin.persetujuan.approve', id), { notes }, {

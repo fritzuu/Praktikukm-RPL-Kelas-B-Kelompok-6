@@ -19,7 +19,7 @@ const ICON_MAP = {
     info: AlertTriangle,
 };
 
-export default function TopBar({ user, sidebarCollapsed }) {
+export default function TopBar({ user, sidebarCollapsed, unreadCount: unreadCountProp, notifications: notificationsProp }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
@@ -30,9 +30,10 @@ export default function TopBar({ user, sidebarCollapsed }) {
     const { props } = usePage();
 
     const jadwal = props.jadwal || [];
-    const notifikasi = props.auth?.notifications || [];
 
-    const unreadCount = notifikasi.filter(n => !n.dibaca).length;
+    // Use live polled data when provided, fall back to Inertia shared props
+    const notifikasi   = notificationsProp ?? props.auth?.notifications ?? [];
+    const unreadCount  = unreadCountProp   ?? notifikasi.filter(n => !n.dibaca).length;
 
     const triggerBellWobble = () => {
         if (unreadCount === 0) return;

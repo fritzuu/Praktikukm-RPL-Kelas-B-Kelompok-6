@@ -12,6 +12,7 @@ import {
     XCircle,
     ArrowRight,
     Inbox,
+    AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -108,6 +109,12 @@ export default function RequestAlerts({ requests = [] }) {
                                             <span className="text-[10px] font-bold bg-primary-500/10 text-primary-500 px-2 py-0.5 rounded-md uppercase shrink-0">
                                                 {req.schedule?.code || '-'}
                                             </span>
+                                            {req.hasConflict && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded-md uppercase shrink-0">
+                                                    <AlertTriangle size={10} />
+                                                    Konflik
+                                                </span>
+                                            )}
                                         </div>
                                         <p className="text-[11px] text-text-muted truncate">
                                             {req.schedule?.course || '-'} • {req.createdAtDiff || 'baru saja'}
@@ -170,6 +177,21 @@ export default function RequestAlerts({ requests = [] }) {
                                                         </p>
                                                     </div>
                                                 </div>
+
+                                                {/* Conflict Warning */}
+                                                {req.hasConflict && (
+                                                    <div className="flex items-start gap-3 bg-danger/5 border border-danger/20 rounded-xl px-4 py-3">
+                                                        <AlertTriangle size={15} className="text-danger shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-danger">
+                                                                Terdeteksi konflik jadwal pada slot yang diusulkan
+                                                            </p>
+                                                            <p className="text-xs text-text-secondary mt-0.5">
+                                                                Slot waktu atau ruangan yang diminta bertabrakan dengan jadwal lain.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Reason */}
                                                 {req.reason && (
