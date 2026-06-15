@@ -181,6 +181,12 @@ class AslabValidationController extends Controller
             ]);
         }
 
+        // Broadcast database sync event for real-time updates
+        broadcast(new \App\Events\DatabaseSync('change_requests', 'forwarded', [
+            'request_id' => $cr->id,
+            'status' => 'PENDING_ADMIN'
+        ]))->toOthers();
+
         return redirect()->back()->with('success', 'Request berhasil diteruskan ke Admin.');
     }
 
@@ -267,6 +273,12 @@ class AslabValidationController extends Controller
             'is_sent'         => true,
             'sent_at'         => Carbon::now(),
         ]);
+
+        // Broadcast database sync event
+        broadcast(new \App\Events\DatabaseSync('change_requests', 'rejected', [
+            'request_id' => $cr->id,
+            'status' => 'REJECTED_ASLAB'
+        ]))->toOthers();
 
         return redirect()->back()->with('success', 'Request berhasil ditolak.');
     }

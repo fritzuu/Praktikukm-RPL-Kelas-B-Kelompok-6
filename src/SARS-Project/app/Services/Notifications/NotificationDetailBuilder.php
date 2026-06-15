@@ -42,14 +42,15 @@ class NotificationDetailBuilder
         ];
 
         // ── Schedule change: OLD (current/original schedule) ──────────────────
-        $oldDay     = $schedule?->day_of_week  ?? $payload['old_day']  ?? null;
-        $oldTime    = $this->formatTimeRange($schedule?->start_time, $schedule?->end_time)
-                        ?? $payload['old_time'] ?? null;
-        $oldRoom    = $schedule?->room?->code   ?? $payload['old_room'] ?? null;
-        $oldRoomName= $schedule?->room?->name   ?? $payload['old_room_name'] ?? null;
-        $oldSession = ($schedule && $schedule->session_start)
+        // ALWAYS prioritize payload first (contains original schedule snapshot)
+        // then fallback to current schedule model (may have been updated already)
+        $oldDay     = $payload['old_day']      ?? $schedule?->day_of_week  ?? null;
+        $oldTime    = $payload['old_time']     ?? $this->formatTimeRange($schedule?->start_time, $schedule?->end_time) ?? null;
+        $oldRoom    = $payload['old_room']     ?? $schedule?->room?->code   ?? null;
+        $oldRoomName= $payload['old_room_name'] ?? $schedule?->room?->name   ?? null;
+        $oldSession = $payload['old_session']  ?? (($schedule && $schedule->session_start)
                         ? $this->sessionLabel($schedule->session_start, $schedule->session_duration ?? 1)
-                        : ($payload['old_session'] ?? null);
+                        : null);
 
         // ── Schedule change: NEW (what was requested) ─────────────────────────
         $newDay      = $changeRequest?->proposed_day      ?? $payload['new_day']  ?? null;

@@ -10,6 +10,7 @@ import {
     ADMIN_NAV_ITEMS,
     ADMIN_BRANDING,
 } from "../Components/Admin/AdminNavConfig";
+import Echo from "../echo";
 
 export default function AdminLayout({ children }) {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -34,6 +35,18 @@ export default function AdminLayout({ children }) {
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // WebSocket: listen for database sync events
+    useEffect(() => {
+        const handleDatabaseSync = (event) => {
+            console.log('[Admin] Database sync:', event);
+            // Dispatch refresh event for polling hook to pick up
+            window.dispatchEvent(new CustomEvent('notifications:refresh'));
+        };
+
+        window.addEventListener('database-sync', handleDatabaseSync);
+        return () => window.removeEventListener('database-sync', handleDatabaseSync);
     }, []);
 
     /**
