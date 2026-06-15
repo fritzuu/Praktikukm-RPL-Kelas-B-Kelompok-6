@@ -36,22 +36,23 @@ class NotificationService
         $since = Carbon::now('Asia/Jakarta')->subDays(7);
 
         $rows = NotificationRecipient::query()
-            ->where('recipient_id', $user->id)
-            ->where('channel', $channel)
-            ->whereNull('deleted_at')
+            ->join('notifications', 'notification_recipients.notification_id', '=', 'notifications.id')
+            ->where('notification_recipients.recipient_id', $user->id)
+            ->where('notification_recipients.channel', $channel)
+            ->whereNull('notification_recipients.deleted_at')
             ->where(function ($q) use ($since) {
-                $q->where('is_read', false)
-                    ->orWhereHas('notification', function ($nq) use ($since) {
-                        $nq->where('created_at', '>=', $since);
-                    });
+                $q->where('notification_recipients.is_read', false)
+                    ->orWhere('notifications.created_at', '>=', $since);
             })
+            ->select('notification_recipients.*')
             ->with(['notification'])
-            ->orderByDesc('notification_id')
+            ->orderByDesc('notification_recipients.notification_id')
             ->limit($limit)
             ->get();
 
         return $rows->map(fn ($nr) => $this->formatListItem($nr))->values()->all();
     }
+
 
     public function getArchive(User $user, int $limit = 200, string $channel = 'IN_APP'): array
     {

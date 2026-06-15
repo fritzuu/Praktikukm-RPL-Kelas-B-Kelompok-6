@@ -21,6 +21,11 @@ class ConflictDetectionService
         array $scheduleIds = [],
         bool $withActions = false
     ): array {
+        if ($semesterId === null) {
+            $activeSem = \App\Models\Semester::active();
+            $semesterId = $activeSem ? $activeSem->id : 0;
+        }
+
         $query = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -60,81 +65,84 @@ class ConflictDetectionService
         $konflik = [];
         $checked = [];
 
-        foreach ($schedulesList as $s1) {
-            foreach ($schedulesList as $s2) {
-                if ($s1->id === $s2->id) continue;
+        // Group schedules by day of week to optimize the nested loops
+        $groupedSchedules = $schedulesList->groupBy(fn($item) => strtolower($item->hari));
 
-                $pairKey = min($s1->id, $s2->id) . '-' . max($s1->id, $s2->id);
-                if (in_array($pairKey, $checked)) continue;
+        foreach ($groupedSchedules as $day => $daySchedules) {
+            foreach ($daySchedules as $s1) {
+                foreach ($daySchedules as $s2) {
+                    if ($s1->id === $s2->id) continue;
 
-                // If $scheduleIds filter given, at least one must be involved
-                if (!empty($scheduleIds)) {
-                    if (!in_array($s1->id, $scheduleIds) && !in_array($s2->id, $scheduleIds)) {
+                    $pairKey = min($s1->id, $s2->id) . '-' . max($s1->id, $s2->id);
+                    if (in_array($pairKey, $checked)) continue;
+
+                    // If $scheduleIds filter given, at least one must be involved
+                    if (!empty($scheduleIds)) {
+                        if (!in_array($s1->id, $scheduleIds) && !in_array($s2->id, $scheduleIds)) {
+                            continue;
+                        }
+                    }
+
+                    // Must overlap in session time
+                    $overlap = ($s1->sesiMulai >= $s2->sesiMulai && $s1->sesiMulai < $s2->sesiMulai + $s2->durasi) ||
+                               ($s2->sesiMulai >= $s1->sesiMulai && $s2->sesiMulai < $s1->sesiMulai + $s1->durasi);
+
+                    if (!$overlap) continue;
+
+                    // ── Room conflict ──────────────────────────────────────────
+                    if ($s1->ruangan === $s2->ruangan) {
+                        $checked[] = $pairKey;
+                        $entry = [
+                            'id'        => 'room-' . $pairKey,
+                            'judul'     => 'Bentrok Ruangan: ' . $s1->ruangan,
+                            'deskripsi' => "MK {$s1->kode} ({$s1->nama} - {$s1->kelas}) bertabrakan dengan "
+                                         . "{$s2->kode} ({$s2->nama} - {$s2->kelas}) di {$s1->ruangan} "
+                                         . 'pada ' . ucfirst(strtolower($s1->hari))
+                                         . " (Sesi {$s1->sesiMulai}–" . ($s1->sesiMulai + $s1->durasi - 1)
+                                         . " vs Sesi {$s2->sesiMulai}–" . ($s2->sesiMulai + $s2->durasi - 1) . ').',
+                            'tipe'      => 'bentrok_ruangan',
+                            'aksi'      => $withActions ? [
+                                ['label' => "Hapus {$s1->kode} ({$s1->kelas})", 'variant' => 'primary',   'schedule_id' => $s1->id],
+                                ['label' => "Hapus {$s2->kode} ({$s2->kelas})", 'variant' => 'secondary', 'schedule_id' => $s2->id],
+                            ] : [],
+                        ];
+                        $konflik[] = $entry;
                         continue;
                     }
-                }
 
-                // Must be same day
-                if (strtolower($s1->hari) !== strtolower($s2->hari)) continue;
+                    // ── Lecturer conflict ──────────────────────────────────────
+                    if (!$s1->dosen_id || !$s2->dosen_id) continue;
+                    if ($s1->dosen_id !== $s2->dosen_id) continue;
 
-                // Must overlap in session time
-                $overlap = ($s1->sesiMulai >= $s2->sesiMulai && $s1->sesiMulai < $s2->sesiMulai + $s2->durasi) ||
-                           ($s2->sesiMulai >= $s1->sesiMulai && $s2->sesiMulai < $s1->sesiMulai + $s1->durasi);
+                    // Skip team-teaching pairs
+                    if (in_array($s1->id, $teamTeachingIds) || in_array($s2->id, $teamTeachingIds)) continue;
 
-                if (!$overlap) continue;
+                    // Practicum exemption
+                    $isP1 = $this->isPracticum($s1->nama, $s1->kelas);
+                    $isP2 = $this->isPracticum($s2->nama, $s2->kelas);
+                    if ($isP1 && $isP2) continue;
+                    if (($isP1 || $isP2) && $s1->ruangan !== $s2->ruangan) continue;
 
-                // ── Room conflict ──────────────────────────────────────────
-                if ($s1->ruangan === $s2->ruangan) {
                     $checked[] = $pairKey;
-                    $entry = [
-                        'id'        => 'room-' . $pairKey,
-                        'judul'     => 'Bentrok Ruangan: ' . $s1->ruangan,
-                        'deskripsi' => "MK {$s1->kode} ({$s1->nama} - {$s1->kelas}) bertabrakan dengan "
-                                     . "{$s2->kode} ({$s2->nama} - {$s2->kelas}) di {$s1->ruangan} "
-                                     . 'pada ' . ucfirst(strtolower($s1->hari))
-                                     . " (Sesi {$s1->sesiMulai}–" . ($s1->sesiMulai + $s1->durasi - 1)
+                    $konflik[] = [
+                        'id'        => 'dosen-' . $pairKey,
+                        'judul'     => 'Bentrok Jadwal Dosen: ' . $s1->dosen_nama,
+                        'deskripsi' => "Dosen {$s1->dosen_nama} mengajar dua kelas sekaligus "
+                                     . 'pada ' . ucfirst(strtolower($s1->hari)) . ": "
+                                     . "{$s1->kode} ({$s1->nama} - {$s1->kelas}) di {$s1->ruangan} "
+                                     . "dan {$s2->kode} ({$s2->nama} - {$s2->kelas}) di {$s2->ruangan} "
+                                     . "(Sesi {$s1->sesiMulai}–" . ($s1->sesiMulai + $s1->durasi - 1)
                                      . " vs Sesi {$s2->sesiMulai}–" . ($s2->sesiMulai + $s2->durasi - 1) . ').',
-                        'tipe'      => 'bentrok_ruangan',
+                        'tipe'      => 'bentrok_jadwal',
                         'aksi'      => $withActions ? [
                             ['label' => "Hapus {$s1->kode} ({$s1->kelas})", 'variant' => 'primary',   'schedule_id' => $s1->id],
                             ['label' => "Hapus {$s2->kode} ({$s2->kelas})", 'variant' => 'secondary', 'schedule_id' => $s2->id],
                         ] : [],
                     ];
-                    $konflik[] = $entry;
-                    continue;
                 }
-
-                // ── Lecturer conflict ──────────────────────────────────────
-                if (!$s1->dosen_id || !$s2->dosen_id) continue;
-                if ($s1->dosen_id !== $s2->dosen_id) continue;
-
-                // Skip team-teaching pairs
-                if (in_array($s1->id, $teamTeachingIds) || in_array($s2->id, $teamTeachingIds)) continue;
-
-                // Practicum exemption
-                $isP1 = $this->isPracticum($s1->nama, $s1->kelas);
-                $isP2 = $this->isPracticum($s2->nama, $s2->kelas);
-                if ($isP1 && $isP2) continue;
-                if (($isP1 || $isP2) && $s1->ruangan !== $s2->ruangan) continue;
-
-                $checked[] = $pairKey;
-                $konflik[] = [
-                    'id'        => 'dosen-' . $pairKey,
-                    'judul'     => 'Bentrok Jadwal Dosen: ' . $s1->dosen_nama,
-                    'deskripsi' => "Dosen {$s1->dosen_nama} mengajar dua kelas sekaligus "
-                                 . 'pada ' . ucfirst(strtolower($s1->hari)) . ": "
-                                 . "{$s1->kode} ({$s1->nama} - {$s1->kelas}) di {$s1->ruangan} "
-                                 . "dan {$s2->kode} ({$s2->nama} - {$s2->kelas}) di {$s2->ruangan} "
-                                 . "(Sesi {$s1->sesiMulai}–" . ($s1->sesiMulai + $s1->durasi - 1)
-                                 . " vs Sesi {$s2->sesiMulai}–" . ($s2->sesiMulai + $s2->durasi - 1) . ').',
-                    'tipe'      => 'bentrok_jadwal',
-                    'aksi'      => $withActions ? [
-                        ['label' => "Hapus {$s1->kode} ({$s1->kelas})", 'variant' => 'primary',   'schedule_id' => $s1->id],
-                        ['label' => "Hapus {$s2->kode} ({$s2->kelas})", 'variant' => 'secondary', 'schedule_id' => $s2->id],
-                    ] : [],
-                ];
             }
         }
+
 
         return $konflik;
     }

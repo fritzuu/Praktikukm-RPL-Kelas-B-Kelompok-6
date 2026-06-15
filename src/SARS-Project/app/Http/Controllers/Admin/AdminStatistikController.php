@@ -81,26 +81,28 @@ class AdminStatistikController extends Controller
         ];
 
         // ── Weekly trend (last 8 weeks) ──────────────────────────────────
+        $startDate = Carbon::now()->startOfWeek()->subWeeks(7);
+        
+        $changeRequests = ChangeRequest::where('created_at', '>=', $startDate)->get(['created_at']);
+        $approvals = Approval::where('decided_at', '>=', $startDate)->get(['stage', 'decision', 'decided_at']);
+
         $weeklyTrend = [];
         for ($i = 7; $i >= 0; $i--) {
             $weekStart = Carbon::now()->startOfWeek()->subWeeks($i);
             $weekEnd   = $weekStart->copy()->endOfWeek();
 
-            $total = ChangeRequest::whereBetween('created_at', [$weekStart, $weekEnd])->count();
+            $total = $changeRequests->filter(fn($cr) => $cr->created_at->between($weekStart, $weekEnd))->count();
 
-            $approved = Approval::where('stage', 'ADMIN_DECISION')
-                ->where('decision', 'APPROVED')
-                ->whereBetween('decided_at', [$weekStart, $weekEnd])
-                ->count();
+            $approved = $approvals->filter(fn($a) => 
+                $a->stage === 'ADMIN_DECISION' && 
+                $a->decision === 'APPROVED' && 
+                $a->decided_at->between($weekStart, $weekEnd)
+            )->count();
 
-            $rejected = Approval::where('stage', 'ADMIN_DECISION')
-                ->where('decision', 'REJECTED_ADMIN')
-                ->whereBetween('decided_at', [$weekStart, $weekEnd])
-                ->count()
-                + Approval::where('stage', 'ASLAB_CHECK')
-                ->where('decision', 'REJECTED_ASLAB')
-                ->whereBetween('decided_at', [$weekStart, $weekEnd])
-                ->count();
+            $rejected = $approvals->filter(fn($a) => 
+                ($a->stage === 'ADMIN_DECISION' && $a->decision === 'REJECTED_ADMIN' && $a->decided_at->between($weekStart, $weekEnd)) ||
+                ($a->stage === 'ASLAB_CHECK' && $a->decision === 'REJECTED_ASLAB' && $a->decided_at->between($weekStart, $weekEnd))
+            )->count();
 
             $weeklyTrend[] = [
                 'label'    => $weekStart->format('d M'),
@@ -109,6 +111,7 @@ class AdminStatistikController extends Controller
                 'rejected' => (int) $rejected,
             ];
         }
+
 
         // ── Top rooms ────────────────────────────────────────────────────
         $topRooms = DB::table('change_requests')
