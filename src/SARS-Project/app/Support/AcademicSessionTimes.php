@@ -179,6 +179,7 @@ class AcademicSessionTimes
                 'schedule_overrides.schedule_id',
                 'schedule_overrides.room_id',
                 'rooms.code as room_code',
+                'rooms.name as room_name',
                 'schedule_overrides.new_day_of_week',
                 'schedule_overrides.new_start_time',
                 'schedule_overrides.new_end_time'
@@ -190,7 +191,11 @@ class AcademicSessionTimes
             return $collection;
         }
 
-        return $collection->map(function ($s) use ($overrides) {
+        $allRooms = \Illuminate\Support\Facades\DB::table('rooms')->get();
+        $roomsByCode = $allRooms->keyBy(fn($r) => strtolower(trim($r->code)));
+        $roomsByName = $allRooms->keyBy(fn($r) => strtolower(trim($r->name)));
+
+        return $collection->map(function ($s) use ($overrides, $roomsByCode, $roomsByName) {
             $isObj = is_object($s);
             $scheduleId = $isObj ? ($s->id ?? null) : ($s['id'] ?? null);
 
@@ -203,9 +208,26 @@ class AcademicSessionTimes
             $newStart = substr($ov->new_start_time, 0, 5);
             $newEnd = substr($ov->new_end_time, 0, 5);
             $roomCode = $ov->room_code;
+            $roomName = $ov->room_name;
             $roomId = $ov->room_id;
 
             list($sessionStart, $sessionDuration) = self::calculateSessionRange($newDay, $newStart, $newEnd);
+
+            $origRuangan = $isObj ? ($s->ruangan ?? '') : ($s['ruangan'] ?? '');
+            $origRuanganClean = strtolower(trim($origRuangan));
+
+            $useCode = false;
+            if (isset($roomsByCode[$origRuanganClean])) {
+                $useCode = true;
+            } elseif (isset($roomsByName[$origRuanganClean])) {
+                $useCode = false;
+            } else {
+                if ($origRuanganClean && $origRuangan === strtoupper($origRuangan)) {
+                    $useCode = true;
+                }
+            }
+
+            $selectedRoomValue = $useCode ? $roomCode : $roomName;
 
             if ($isObj) {
                 // Check and set day
@@ -217,7 +239,7 @@ class AcademicSessionTimes
 
                 // Check and set room
                 if (property_exists($s, 'ruangan')) {
-                    $s->ruangan = $roomCode;
+                    $s->ruangan = $selectedRoomValue;
                 }
                 if (property_exists($s, 'ruangan_id')) {
                     $s->ruangan_id = $roomId;
@@ -276,7 +298,7 @@ class AcademicSessionTimes
                 }
 
                 if (array_key_exists('ruangan', $s)) {
-                    $s['ruangan'] = $roomCode;
+                    $s['ruangan'] = $selectedRoomValue;
                 }
                 if (array_key_exists('ruangan_id', $s)) {
                     $s['ruangan_id'] = $roomId;

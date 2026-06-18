@@ -59,8 +59,26 @@ class AslabJadwalController extends Controller
         $schedules = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($schedules);
 
         $semester = DB::table('semesters')->where('is_active', true)->first();
+        $semesterId = $semester->id ?? 0;
+
+        $now = \Carbon\Carbon::now('Asia/Jakarta');
+        $startOfWeek = $now->copy()->startOfWeek()->toDateString();
+        $endOfWeek = $now->copy()->endOfWeek()->toDateString();
+
+        $activeRoomIds = DB::table('schedules')
+            ->where('semester_id', $semesterId)
+            ->where('is_active', true)
+            ->pluck('room_id')
+            ->merge(
+                DB::table('schedule_overrides')
+                    ->where('is_active', true)
+                    ->whereBetween('override_date', [$startOfWeek, $endOfWeek])
+                    ->pluck('room_id')
+            )
+            ->unique();
+
         $rooms = DB::table('rooms')
-            ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id ?? 0)->where('is_active', true)->pluck('room_id'))
+            ->whereIn('id', $activeRoomIds)
             ->pluck('name');
 
         return Inertia::render('Aslab/Jadwal', [

@@ -134,8 +134,24 @@ class DosenJadwalController extends Controller
 
         $allSchedules = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($allSchedules);
 
+        $now = \Carbon\Carbon::now('Asia/Jakarta');
+        $startOfWeek = $now->copy()->startOfWeek()->toDateString();
+        $endOfWeek = $now->copy()->endOfWeek()->toDateString();
+
+        $activeRoomIds = DB::table('schedules')
+            ->where('semester_id', $semester->id)
+            ->where('is_active', true)
+            ->pluck('room_id')
+            ->merge(
+                DB::table('schedule_overrides')
+                    ->where('is_active', true)
+                    ->whereBetween('override_date', [$startOfWeek, $endOfWeek])
+                    ->pluck('room_id')
+            )
+            ->unique();
+
         $rooms = DB::table('rooms')
-            ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))
+            ->whereIn('id', $activeRoomIds)
             ->get(['id', 'code', 'name']);
 
         $stats = [

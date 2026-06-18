@@ -136,8 +136,8 @@ it('applies active weekly overrides to schedules collection', function () {
     expect($item['durasi'])->toBe(2); // 09:20 - 11:05 spans sessions 3-4 (duration 2)
     expect($item['tipe'])->toBe('override');
 
-    // 8. Test with a mock stdClass object (as returned in admin/aslab queries)
-    $schedulesObject = [
+    // 8. Test with a mock stdClass object using room CODE (as returned in Mahasiswa/Dosen queries)
+    $schedulesObjectWithCode = [
         (object)[
             'id' => $schedule->id,
             'kode' => $course->code,
@@ -153,16 +153,46 @@ it('applies active weekly overrides to schedules collection', function () {
         ]
     ];
 
-    $resultObj = AcademicSessionTimes::applyWeeklyOverrides($schedulesObject);
+    $resultObjWithCode = AcademicSessionTimes::applyWeeklyOverrides($schedulesObjectWithCode);
 
-    expect($resultObj)->toHaveCount(1);
-    $itemObj = $resultObj->first();
+    expect($resultObjWithCode)->toHaveCount(1);
+    $itemObjWithCode = $resultObjWithCode->first();
 
-    expect($itemObj->hari)->toBe('rabu');
-    expect($itemObj->ruangan)->toBe($room2->code);
-    expect($itemObj->jamMulai)->toBe('09:20');
-    expect($itemObj->jamAkhir)->toBe('11:05');
-    expect($itemObj->sesiMulai)->toBe(3);
-    expect($itemObj->durasi)->toBe(2);
-    expect($itemObj->tipe)->toBe('override');
+    expect($itemObjWithCode->hari)->toBe('rabu');
+    expect($itemObjWithCode->ruangan)->toBe($room2->code); // Must be the CODE
+    expect($itemObjWithCode->jamMulai)->toBe('09:20');
+    expect($itemObjWithCode->jamAkhir)->toBe('11:05');
+    expect($itemObjWithCode->sesiMulai)->toBe(3);
+    expect($itemObjWithCode->durasi)->toBe(2);
+    expect($itemObjWithCode->tipe)->toBe('override');
+
+    // 9. Test with a mock stdClass object using room NAME (as returned in Admin/Aslab queries)
+    $schedulesObjectWithName = [
+        (object)[
+            'id' => $schedule->id,
+            'kode' => $course->code,
+            'nama' => $course->name,
+            'kelas' => $course->class_name,
+            'ruangan' => $room1->name,
+            'hari' => 'senin',
+            'sesiMulai' => 1,
+            'durasi' => 3,
+            'jamMulai' => '07:30:00',
+            'jamAkhir' => '10:10:00',
+            'tipe' => 'resmi',
+        ]
+    ];
+
+    $resultObjWithName = AcademicSessionTimes::applyWeeklyOverrides($schedulesObjectWithName);
+
+    expect($resultObjWithName)->toHaveCount(1);
+    $itemObjWithName = $resultObjWithName->first();
+
+    expect($itemObjWithName->hari)->toBe('rabu');
+    expect($itemObjWithName->ruangan)->toBe($room2->name); // Must be the NAME
+    expect($itemObjWithName->jamMulai)->toBe('09:20');
+    expect($itemObjWithName->jamAkhir)->toBe('11:05');
+    expect($itemObjWithName->sesiMulai)->toBe(3);
+    expect($itemObjWithName->durasi)->toBe(2);
+    expect($itemObjWithName->tipe)->toBe('override');
 });
