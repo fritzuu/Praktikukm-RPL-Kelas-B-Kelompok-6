@@ -40,7 +40,7 @@ class AdminPersetujuanController extends Controller
                     'id'            => (string) $cr->id,
                     'requestCode'   => $cr->request_code,
                     'requestType'   => $cr->request_type,
-                    'createdAtDiff' => $cr->created_at->diffForHumans(),
+                    'createdAtDiff' => $cr->created_at?->diffForHumans() ?? '-',
                     'requester'     => [
                         'name'   => $cr->requester->name,
                         'nimNip' => $cr->requester->nim_nip,

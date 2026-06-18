@@ -42,8 +42,8 @@ class AslabValidationController extends Controller
                 'proposedTime'  => substr($cr->proposed_start_time, 0, 5) . ' - ' . substr($cr->proposed_end_time, 0, 5),
                 'reason'        => $cr->reason,
                 'targetDate'    => $cr->target_date,
-                'createdAt'     => $cr->created_at->translatedFormat('d M Y'),
-                'createdAtDiff' => $cr->created_at->diffForHumans(),
+                'createdAt'     => $cr->created_at?->translatedFormat('d M Y') ?? '-',
+                'createdAtDiff' => $cr->created_at?->diffForHumans() ?? '-',
                 'hasConflict'   => (bool) $cr->has_conflict,
             ])->values();
 
