@@ -67,14 +67,61 @@ class ChangeRequestTest extends TestCase
     public function test_prevents_duplicate_codes(): void
     {
         // ARRANGE
+        $semester = \App\Models\Semester::create([
+            'name' => 'Semester Ganjil 2026',
+            'academic_year' => '2026/2027',
+            'term' => 'GANJIL',
+            'start_date' => '2026-09-01',
+            'end_date' => '2027-02-28',
+            'is_active' => true,
+        ]);
+
+        $user = \App\Models\User::create([
+            'name' => 'Test User',
+            'email' => 'test@student.sars.test',
+            'password' => bcrypt('password'),
+            'nim_nip' => '123456',
+        ]);
+
+        $room = \App\Models\Room::create([
+            'name' => 'Lab Komputer',
+            'code' => 'LAB-COMP',
+            'capacity' => 30,
+            'building' => 'Gedung B',
+            'type' => 'LABORATORIUM',
+            'is_active' => true,
+        ]);
+
+        $course = \App\Models\Course::create([
+            'semester_id' => $semester->id,
+            'code' => 'MK-TEST',
+            'name' => 'Test Course',
+            'class_name' => 'A',
+            'credits' => 3,
+        ]);
+
+        $schedule = \App\Models\Schedule::create([
+            'course_id' => $course->id,
+            'room_id' => $room->id,
+            'semester_id' => $semester->id,
+            'day_of_week' => 'SENIN',
+            'start_time' => '07:30:00',
+            'end_time' => '10:10:00',
+            'session_start' => 1,
+            'session_duration' => 3,
+            'effective_from' => '2026-09-01',
+            'is_active' => true,
+        ]);
+
         $existingCode = 'CR-20260616-AAAA';
         ChangeRequest::create([
             'request_code' => $existingCode,
-            'requester_id' => 1,
-            'schedule_id' => 1,
-            'semester_id' => 1,
-            'request_type' => 'reschedule',
-            'status' => 'pending',
+            'requester_id' => $user->id,
+            'schedule_id' => $schedule->id,
+            'semester_id' => $semester->id,
+            'request_type' => 'TEMPORARY',
+            'status' => 'PENDING_ASLAB',
+            'reason' => 'Test reason for reschedule',
         ]);
 
         // ACT
