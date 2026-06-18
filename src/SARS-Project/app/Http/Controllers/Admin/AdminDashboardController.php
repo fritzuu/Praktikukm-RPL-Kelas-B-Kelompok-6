@@ -108,7 +108,7 @@ class AdminDashboardController extends Controller
             ->get()
             ->map(function ($act) {
                 $avatarInitial = strtoupper(substr($act->nama, 0, 1));
-                $waktu = \Carbon\Carbon::parse($act->created_at)->timezone('Asia/Jakarta')->diffForHumans();
+                $waktu = $act->created_at ? \Carbon\Carbon::parse($act->created_at)->timezone('Asia/Jakarta')->diffForHumans() : '-';
                 return [
                     'id' => (string) $act->id,
                     'nama' => $act->nama,

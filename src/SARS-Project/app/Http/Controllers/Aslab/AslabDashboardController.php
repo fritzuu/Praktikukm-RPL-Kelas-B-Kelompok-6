@@ -57,10 +57,14 @@ class AslabDashboardController extends Controller
                 'courses.code as kode',
                 'courses.name as nama',
                 'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
+                DB::connection()->getDriverName() === 'sqlite'
+                    ? DB::raw("courses.description as \"semesterNum\"")
+                    : DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'semesters.name as semester',
                 'rooms.name as ruangan',
-                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
+                DB::connection()->getDriverName() === 'sqlite'
+                    ? DB::raw("group_concat(users.name, ' & ') as dosen")
+                    : DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedules.day_of_week as hari',
                 'schedules.session_start as sesiMulai',
                 'schedules.session_duration as durasi',
@@ -136,12 +140,12 @@ class AslabDashboardController extends Controller
             ->get()
             ->map(fn ($nr) => [
                 'id'     => (string) $nr->notification_id,
-                'judul'  => $nr->notification->title,
-                'pesan'  => $nr->notification->body,
-                'waktu'  => $nr->notification->created_at?->diffForHumans() ?? '-',
+                'judul'  => $nr->notification->title ?? '-',
+                'pesan'  => $nr->notification->body ?? '-',
+                'waktu'  => $nr->notification?->created_at?->diffForHumans() ?? '-',
                 'dibaca' => $nr->is_read,
-                'tipe'   => strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
-                          : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info'),
+                'tipe'   => $nr->notification ? (strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
+                          : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info')) : 'info',
             ])->values();
 
         return Inertia::render('Dashboard/Aslab', [

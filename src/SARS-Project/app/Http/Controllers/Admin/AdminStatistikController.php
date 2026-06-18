@@ -96,12 +96,12 @@ class AdminStatistikController extends Controller
             $approved = $approvals->filter(fn($a) => 
                 $a->stage === 'ADMIN_DECISION' && 
                 $a->decision === 'APPROVED' && 
-                $a->decided_at->between($weekStart, $weekEnd)
+                $a->decided_at && $a->decided_at->between($weekStart, $weekEnd)
             )->count();
 
             $rejected = $approvals->filter(fn($a) => 
-                ($a->stage === 'ADMIN_DECISION' && $a->decision === 'REJECTED_ADMIN' && $a->decided_at->between($weekStart, $weekEnd)) ||
-                ($a->stage === 'ASLAB_CHECK' && $a->decision === 'REJECTED_ASLAB' && $a->decided_at->between($weekStart, $weekEnd))
+                ($a->stage === 'ADMIN_DECISION' && $a->decision === 'REJECTED_ADMIN' && $a->decided_at && $a->decided_at->between($weekStart, $weekEnd)) ||
+                ($a->stage === 'ASLAB_CHECK' && $a->decision === 'REJECTED_ASLAB' && $a->decided_at && $a->decided_at->between($weekStart, $weekEnd))
             )->count();
 
             $weeklyTrend[] = [
