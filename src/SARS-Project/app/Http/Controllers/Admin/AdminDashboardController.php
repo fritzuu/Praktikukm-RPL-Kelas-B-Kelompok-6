@@ -57,6 +57,8 @@ class AdminDashboardController extends Controller
                 return $s;
             });
 
+        $schedules = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($schedules);
+
         $rooms = DB::table('rooms')
             ->whereIn('id', DB::table('schedules')->where('is_active', true)->pluck('room_id'))
             ->pluck('name');

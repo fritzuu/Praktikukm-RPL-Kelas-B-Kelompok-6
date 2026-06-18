@@ -78,6 +78,8 @@ class DosenJadwalController extends Controller
             ];
         })->values();
 
+        $jadwal = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($jadwal);
+
         $allSchedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -129,6 +131,8 @@ class DosenJadwalController extends Controller
                     'isOwn'     => $assignedScheduleIds->contains($s->id),
                 ];
             });
+
+        $allSchedules = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($allSchedules);
 
         $rooms = DB::table('rooms')
             ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))

@@ -83,6 +83,8 @@ class AslabDashboardController extends Controller
                 return $s;
             });
 
+        $jadwal = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($jadwal);
+
         // Stats
         $statusCounts = ChangeRequest::select('status', DB::raw('count(*) as count'))
             ->groupBy('status')

@@ -63,6 +63,8 @@ class DosenDashboardController extends Controller
             'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
         ])->values();
 
+        $jadwal = \App\Support\AcademicSessionTimes::applyWeeklyOverrides($jadwal);
+
         // 4. Filter jadwal HARI INI
         // Karena data dummy menggunakan nama hari Indonesia (SENIN, dll)
         $hariIniMap = [

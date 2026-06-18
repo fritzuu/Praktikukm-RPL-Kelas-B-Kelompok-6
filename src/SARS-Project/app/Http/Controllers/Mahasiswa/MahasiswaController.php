@@ -138,7 +138,7 @@ class MahasiswaController extends Controller
             return collect();
         }
 
-        return Schedule::with([
+        $formatted = Schedule::with([
             'course', 
             'room', 
             'overrides' => fn ($q) => $q->where('is_active', true)->with(['room', 'changeRequest']), 
@@ -172,6 +172,8 @@ class MahasiswaController extends Controller
             ]),
         ])
         ->values();
+
+        return \App\Support\AcademicSessionTimes::applyWeeklyOverrides($formatted);
     }
 
     /**
