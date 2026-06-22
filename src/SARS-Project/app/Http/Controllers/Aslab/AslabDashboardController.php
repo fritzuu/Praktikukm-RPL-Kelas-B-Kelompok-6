@@ -121,7 +121,7 @@ class AslabDashboardController extends Controller
                 'proposedTime'  => substr($cr->proposed_start_time, 0, 5) . ' - ' . substr($cr->proposed_end_time, 0, 5),
                 'reason'        => $cr->reason,
                 'targetDate'    => $cr->target_date,
-                'createdAtDiff' => $cr->created_at->diffForHumans(),
+                'createdAtDiff' => $cr->created_at?->diffForHumans() ?? '-',
                 'hasConflict'   => (bool) $cr->has_conflict,
             ])->values();
 
@@ -136,7 +136,7 @@ class AslabDashboardController extends Controller
                 'id'     => (string) $nr->notification_id,
                 'judul'  => $nr->notification->title,
                 'pesan'  => $nr->notification->body,
-                'waktu'  => $nr->notification->created_at->diffForHumans(),
+                'waktu'  => $nr->notification->created_at?->diffForHumans() ?? '-',
                 'dibaca' => $nr->is_read,
                 'tipe'   => strtolower($nr->notification->type) === 'status_change' ? 'jadwal'
                           : (strtolower($nr->notification->type) === 'conflict_alert' ? 'validasi' : 'info'),

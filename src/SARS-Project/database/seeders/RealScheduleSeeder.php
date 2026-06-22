@@ -277,7 +277,9 @@ class RealScheduleSeeder extends Seeder
 
             // ── Wiranto ──
             ['wiranto@sars.test', 'Struktur Data & Algoritma', 'C', 'RABU', 1],
+            ['wiranto@sars.test', 'Struktur Data & Algoritma', 'C P', 'KAMIS', 3],
             ['wiranto@sars.test', 'Struktur Data & Algoritma', 'D', 'RABU', 6],
+            ['wiranto@sars.test', 'Struktur Data & Algoritma', 'D P', 'SELASA', 4],
 
             // ── Fajar (X) ──
             // ── Dewi (X) ──
@@ -301,8 +303,8 @@ class RealScheduleSeeder extends Seeder
             ['herdito@sars.test', 'Organisasi Sistem Komputer', 'D P', 'SENIN', 6],
             
             // ── Wiharto ──
-            ['wiharto@sars.test', 'Kecerdasan Buatan', 'A', 'RABU', 1],
-            ['wiharto@sars.test', 'Kecerdasan Buatan', 'B', 'RABU', 6],
+            ['wiharto@sars.test', 'Kecerdasan Buatan', 'A', 'RABU', 6],
+            ['wiharto@sars.test', 'Kecerdasan Buatan', 'B', 'RABU', 1],
             ['wiharto@sars.test', 'Kecerdasan Buatan', 'C', 'KAMIS', 1],
             ['wiharto@sars.test', 'Kecerdasan Buatan', 'D', 'SENIN', 3],
 
@@ -323,7 +325,7 @@ class RealScheduleSeeder extends Seeder
             ['ristu@sars.test', 'Metode Penelitian', 'A', 'SELASA', 1],
             ['ristu@sars.test', 'Teori Bahasa & Automata', 'C', 'RABU', 6],
             ['ristu@sars.test', 'Teori Bahasa & Automata', 'D', 'JUMAT', 5],
-            ['ristu@sars.test', 'Kapita Selekta Ilmiah', 'A', 'KAMIS', 4],
+            ['ristu@sars.test', 'Kapita Selekta Ilmu Komputer', 'A', 'KAMIS', 4],
             
 
             // ── Ery ──

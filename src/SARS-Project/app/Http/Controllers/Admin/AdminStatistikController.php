@@ -91,7 +91,7 @@ class AdminStatistikController extends Controller
             $weekStart = Carbon::now()->startOfWeek()->subWeeks($i);
             $weekEnd   = $weekStart->copy()->endOfWeek();
 
-            $total = $changeRequests->filter(fn($cr) => $cr->created_at->between($weekStart, $weekEnd))->count();
+            $total = $changeRequests->filter(fn($cr) => $cr->created_at && $cr->created_at->between($weekStart, $weekEnd))->count();
 
             $approved = $approvals->filter(fn($a) => 
                 $a->stage === 'ADMIN_DECISION' && 
