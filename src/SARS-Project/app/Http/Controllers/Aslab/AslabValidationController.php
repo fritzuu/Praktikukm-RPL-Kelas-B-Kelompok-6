@@ -7,6 +7,8 @@ use App\Models\Approval;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
+use App\Models\Semester;
+use App\Traits\ChecksConflicts;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,6 +16,7 @@ use Inertia\Response;
 
 class AslabValidationController extends Controller
 {
+    use ChecksConflicts;
     /**
      * Display the validation queue for aslab.
      */
@@ -80,11 +83,41 @@ class AslabValidationController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $cr = ChangeRequest::findOrFail($id);
+        $cr = ChangeRequest::with(['schedule'])->findOrFail($id);
 
         if ($cr->status !== 'PENDING_ASLAB') {
             return redirect()->back()->with('error', 'Request ini sudah tidak dalam status PENDING_ASLAB.');
         }
+
+        // Perform conflict detection before forwarding
+        $hasConflict = false;
+        $conflictReason = null;
+
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $semester = Semester::active();
+            if ($semester) {
+                $targetRoomId = $cr->proposed_room_id ?? $cr->schedule->room_id;
+                $conflictReason = $this->checkSlotConflict(
+                    $cr->schedule_id,
+                    $semester->id,
+                    $cr->proposed_day,
+                    $cr->proposed_start_time,
+                    $cr->proposed_end_time,
+                    $targetRoomId,
+                    $cr->target_date ?? null
+                );
+
+                if ($conflictReason) {
+                    $hasConflict = true;
+                }
+            }
+        }
+
+        // Update has_conflict flag on change request
+        $cr->update([
+            'conflict_checked' => true,
+            'has_conflict' => $hasConflict,
+        ]);
 
         // Create/update approval record (idempotent per unique(request_id, stage))
         Approval::updateOrCreate(

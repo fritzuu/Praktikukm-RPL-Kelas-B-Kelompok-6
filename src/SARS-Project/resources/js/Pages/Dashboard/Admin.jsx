@@ -10,6 +10,7 @@ import AdminStatCards from '../../Components/Admin/AdminStatCards';
 import AdminInsightCards from '../../Components/Admin/AdminInsightCards';
 import ScheduleGrid from '../../Components/Shared/ScheduleGrid';
 import ConflictAlerts from '../../Components/Admin/ConflictAlerts';
+import { useDatabaseSync } from '../../hooks/useDatabaseSync';
 const STATUS_STYLES = {
     disetujui: 'bg-success/10 text-success',
     tertunda: 'bg-warning/10 text-warning',
@@ -79,6 +80,9 @@ export default function AdminDashboard({
 
     const [successMessage, setSuccessMessage] = useState(flash?.success || '');
     const [errorMessage, setErrorMessage] = useState(flash?.error || '');
+
+    // Setup live websocket sync for dashboard widgets
+    useDatabaseSync(['schedules', 'change_requests', 'schedule_overrides', 'approvals']);
 
     useEffect(() => {
         if (flash?.success) {

@@ -8,6 +8,8 @@ use App\Models\ChangeRequest;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
 use App\Models\ScheduleOverride;
+use App\Models\Semester;
+use App\Traits\ChecksConflicts;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,7 @@ use Inertia\Inertia;
 
 class AdminPersetujuanController extends Controller
 {
+    use ChecksConflicts;
     /**
      * Display the admin approval/persetujuan page.
      *
@@ -117,6 +120,8 @@ class AdminPersetujuanController extends Controller
     /**
      * Approve a change request.
      *
+     * - Runs conflict detection BEFORE approval
+     * - If conflict detected, blocks approval with error message
      * - Creates ADMIN_DECISION / APPROVED approval record.
      * - TEMPORARY → inserts ScheduleOverride row.
      * - PERMANENT → updates Schedule fields + snapshots to schedule_history.
@@ -132,6 +137,35 @@ class AdminPersetujuanController extends Controller
 
         if ($cr->status !== 'PENDING_ADMIN') {
             return back()->with('error', 'Request ini sudah tidak dalam status PENDING_ADMIN.');
+        }
+
+        // Perform conflict detection before approval
+        $hasConflict = false;
+        $conflictReason = null;
+
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $semester = Semester::active();
+            if ($semester) {
+                $targetRoomId = $cr->proposed_room_id ?? $cr->schedule->room_id;
+                $conflictReason = $this->checkSlotConflict(
+                    $cr->schedule_id,
+                    $semester->id,
+                    $cr->proposed_day,
+                    $cr->proposed_start_time,
+                    $cr->proposed_end_time,
+                    $targetRoomId,
+                    $cr->target_date ?? null
+                );
+
+                if ($conflictReason) {
+                    $hasConflict = true;
+                }
+            }
+        }
+
+        // Block approval if conflict detected
+        if ($hasConflict) {
+            return back()->with('error', "Tidak dapat menyetujui request: {$conflictReason}");
         }
 
         DB::transaction(function () use ($cr, $request) {
