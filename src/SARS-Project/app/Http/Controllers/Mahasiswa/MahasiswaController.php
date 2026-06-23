@@ -141,39 +141,48 @@ class MahasiswaController extends Controller
         }
 
         // Get baseline schedules
-        $schedules = Schedule::with([
-            'course', 
-            'room', 
-            'overrides' => fn ($q) => $q->where('is_active', true)->with(['room', 'changeRequest']), 
-            'teachingAssignments.user'
-        ])
-        ->where('semester_id', $semester->id)
-        ->where('is_active', true)
-        ->get()
-        ->map(fn ($s) => [
-            'id'         => (string) $s->id,
-            'kode'       => $s->course->code,
-            'nama'       => $s->course->name,
-            'kelas'      => $s->course->class_name,
-            'semesterNum'=> (string) preg_replace('/[^0-9]/', '', $s->course->description ?? ''),
-            'ruangan'    => $s->room->code,
-            'hari'       => strtolower($s->day_of_week),
-            'sesiMulai'  => $s->session_start,
-            'durasi'     => $s->session_duration,
-            'dosen'      => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->map(fn ($ta) => $ta->user->name)->join(' & ') ?: '-',
-            'mulai'      => substr($s->start_time, 0, 5),
-            'selesai'    => substr($s->end_time, 0, 5),
-            'tipe'       => 'resmi',
-            'overrides'  => $s->overrides->map(fn ($o) => [
-                'id'          => $o->id,
-                'tanggal'     => $o->override_date->format('Y-m-d'),
-                'hari_baru'   => $o->new_day_of_week ? strtolower($o->new_day_of_week) : null,
-                'mulai_baru'  => substr($o->new_start_time, 0, 5),
-                'selesai_baru' => substr($o->new_end_time, 0, 5),
-                'ruangan_baru' => $o->room->code ?? null,
-                'tipe'        => $o->changeRequest?->request_type === 'TEMPORARY' ? 'temp' : 'permanent',
-            ]),
-        ]);
+        $schedules = DB::table('schedules')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('course_students', 'courses.id', '=', 'course_students.course_id')
+            ->join('students', 'course_students.student_id', '=', 'students.id')
+            ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
+            ->leftJoin('teaching_assignments', function($join) {
+                $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
+                     ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
+            })
+            ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
+            ->where('schedules.is_active', true)
+            ->where('courses.semester_id', $semester->id)
+            ->where('students.user_id', auth()->id())
+            ->select(
+                'schedules.id',
+                'courses.code as kode',
+                'courses.name as nama',
+                'courses.class_name as kelas',
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
+                'rooms.name as ruangan',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
+                'schedules.day_of_week as hari',
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
+                'schedules.start_time as jamMulai',
+                'schedules.end_time as jamAkhir'
+            )
+            ->groupBy(
+                'schedules.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'courses.description', 'rooms.name',
+                'schedules.day_of_week', 'schedules.session_start',
+                'schedules.session_duration', 'schedules.start_time', 'schedules.end_time'
+            )
+            ->get()
+            ->map(function ($s) {
+                $s->hari = strtolower($s->hari);
+                $s->mulai = substr($s->jamMulai, 0, 5);
+                $s->selesai = substr($s->jamAkhir, 0, 5);
+                $s->tipe = 'resmi';
+                $s->dosen = $s->dosen ?? 'Belum Ditentukan';
+                return $s;
+            });
 
         // Collect schedule IDs that have active overrides for today or later
         $today = Carbon::now()->toDateString();
@@ -184,12 +193,14 @@ class MahasiswaController extends Controller
             ->unique();
 
         // Filter out baseline schedules that have active overrides
-        $schedules = $schedules->filter(fn ($s) => !$schedulesWithOverrides->contains((int) $s['id']));
+        $schedules = $schedules->filter(fn ($s) => !$schedulesWithOverrides->contains((int) $s->id));
 
         // Get active override items as separate schedule entries
         $overrideItems = DB::table('schedule_overrides')
             ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('course_students', 'courses.id', '=', 'course_students.course_id')
+            ->join('students', 'course_students.student_id', '=', 'students.id')
             ->join('rooms', 'schedule_overrides.room_id', '=', 'rooms.id')
             ->leftJoin('teaching_assignments', function($join) {
                 $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
@@ -198,49 +209,41 @@ class MahasiswaController extends Controller
             ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
             ->where('schedule_overrides.is_active', true)
             ->where('schedule_overrides.override_date', '>=', $today)
-            ->where('schedules.semester_id', $semester->id)
+            ->where('courses.semester_id', $semester->id)
+            ->where('students.user_id', auth()->id())
             ->select(
                 'schedules.id as schedule_id',
                 DB::raw("'override_' || schedule_overrides.id as id"),
                 'courses.code as kode',
                 'courses.name as nama',
                 'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as semesterNum"),
-                'rooms.code as ruangan',
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
+                DB::raw("'Semester ' || schedule_overrides.override_date as semester"),
+                'rooms.name as ruangan',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedule_overrides.new_day_of_week as hari',
                 DB::raw("0 as sesiMulai"),
                 DB::raw("0 as durasi"),
-                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedule_overrides.new_start_time as jamMulai',
                 'schedule_overrides.new_end_time as jamAkhir',
-                'schedule_overrides.override_date as tanggalSementara'
+                'schedule_overrides.override_date as tanggal'
             )
             ->groupBy(
                 'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
-                'courses.description', 'rooms.code', 'schedule_overrides.new_day_of_week',
-                'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time', 
-                'schedule_overrides.override_date'
+                'courses.description', 'schedule_overrides.override_date', 'rooms.name',
+                'schedule_overrides.new_day_of_week', 'schedule_overrides.new_start_time',
+                'schedule_overrides.new_end_time'
             )
             ->get()
-            ->map(fn ($o) => [
-                'id'         => (string) $o->id,
-                'schedule_id' => (string) $o->schedule_id,
-                'kode'       => $o->kode,
-                'nama'       => $o->nama,
-                'kelas'      => $o->kelas,
-                'semesterNum'=> (string) ($o->semesterNum ?? ''),
-                'ruangan'    => $o->ruangan,
-                'hari'       => strtolower($o->hari ?? 'senin'),
-                'sesiMulai'  => (int) ($o->sesiMulai ?? 0),
-                'durasi'     => (int) ($o->durasi ?? 0),
-                'dosen'      => (string) ($o->dosen ?? '-'),
-                'mulai'      => substr($o->jamMulai, 0, 5),
-                'selesai'    => substr($o->jamAkhir, 0, 5),
-                'tipe'       => 'override',
-                'label'      => 'Jadwal Sementara',
-                'tanggal'    => $o->tanggalSementara,
-                'overrides'  => [],
-            ]);
+            ->map(function ($o) {
+                $o->hari = strtolower($o->hari);
+                $o->mulai = substr($o->jamMulai, 0, 5);
+                $o->selesai = substr($o->jamAkhir, 0, 5);
+                $o->tipe = 'override';
+                $o->label = 'Jadwal Sementara';
+                $o->dosen = $o->dosen ?? 'Belum Ditentukan';
+                return $o;
+            });
 
         // Merge baseline + override items
         return $schedules->concat($overrideItems)->values();
