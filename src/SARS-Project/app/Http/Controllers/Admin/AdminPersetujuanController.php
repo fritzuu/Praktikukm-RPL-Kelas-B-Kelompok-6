@@ -63,6 +63,9 @@ class AdminPersetujuanController extends Controller
                     'proposedTime'  => $cr->proposed_start_time
                         ? substr($cr->proposed_start_time, 0, 5) . ' - ' . substr($cr->proposed_end_time, 0, 5)
                         : null,
+                    'durationMins'  => $cr->proposed_start_time && $cr->proposed_end_time
+                        ? (int) (\Carbon\Carbon::parse($cr->proposed_end_time)->diffInMinutes(\Carbon\Carbon::parse($cr->proposed_start_time)))
+                        : null,
                     'proposedRoom'  => $cr->proposedRoom->code ?? null,
                     'targetDate'    => $cr->target_date?->toDateString(),
                     'reason'        => $cr->reason,
