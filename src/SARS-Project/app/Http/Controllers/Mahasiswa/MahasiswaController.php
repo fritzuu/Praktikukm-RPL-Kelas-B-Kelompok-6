@@ -12,6 +12,7 @@ use App\Models\Room;
 use App\Models\Schedule;
 use App\Models\ScheduleOverride;
 use App\Models\Semester;
+use App\Traits\CalculatesSessionRange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ use Inertia\Inertia;
 
 class MahasiswaController extends Controller
 {
+    use CalculatesSessionRange;
     private const SESSION_TIMES_NORMAL = [
         1 => ['07:30', '08:20'],
         2 => ['08:25', '09:15'],
@@ -413,6 +415,16 @@ class MahasiswaController extends Controller
                 : 'Sesi ' . $schedule->session_start;
         }
 
+        // Calculate new session if proposed time is given
+        $newSession = null;
+        if ($changeRequest->proposed_day && $changeRequest->proposed_start_time && $changeRequest->proposed_end_time) {
+            $newSession = $this->calculateSessionLabel(
+                $changeRequest->proposed_day,
+                $changeRequest->proposed_start_time,
+                $changeRequest->proposed_end_time
+            );
+        }
+
         $notifPayload = [
             'request_code'   => $changeRequest->request_code,
             'course_name'    => $schedule?->course?->name,
@@ -432,6 +444,7 @@ class MahasiswaController extends Controller
                                     : null,
             'new_room'       => $proposedRoom?->code ?? $schedule?->room?->code,
             'new_room_name'  => $proposedRoom?->name ?? $schedule?->room?->name,
+            'new_session'    => $newSession,
         ];
 
         // Send notifications to all Aslab users

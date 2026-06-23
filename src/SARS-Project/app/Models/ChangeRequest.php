@@ -12,12 +12,12 @@ class ChangeRequest extends Model
 {
     use BroadcastsChanges;
     /**
-     * Generate a unique request code like CR-20260602-A3X7.
+     * Generate a unique request code like REQ-20260602-A3X7.
      */
     public static function generateCode(): string
     {
         do {
-            $code = 'CR-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
+            $code = 'REQ-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4));
         } while (self::where('request_code', $code)->exists());
 
         return $code;

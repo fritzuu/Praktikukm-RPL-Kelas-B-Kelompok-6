@@ -10,6 +10,7 @@ use App\Models\NotificationRecipient;
 use App\Models\ScheduleOverride;
 use App\Models\Semester;
 use App\Traits\ChecksConflicts;
+use App\Traits\CalculatesSessionRange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ use Inertia\Inertia;
 
 class AdminPersetujuanController extends Controller
 {
-    use ChecksConflicts;
+    use ChecksConflicts, CalculatesSessionRange;
     /**
      * Display the admin approval/persetujuan page.
      *
@@ -250,6 +251,16 @@ class AdminPersetujuanController extends Controller
                 : 'Sesi ' . $approvedSchedule->session_start;
         }
 
+        // Calculate new session
+        $newSessionApprove = null;
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $newSessionApprove = $this->calculateSessionLabel(
+                $cr->proposed_day,
+                $cr->proposed_start_time,
+                $cr->proposed_end_time
+            );
+        }
+
         $approvePayload = [
             'request_code'   => $cr->request_code,
             'course_name'    => $approvedSchedule?->course?->name,
@@ -269,6 +280,7 @@ class AdminPersetujuanController extends Controller
                                     : null,
             'new_room'       => $approvedProposedRoom?->code ?? $approvedSchedule?->room?->code,
             'new_room_name'  => $approvedProposedRoom?->name ?? $approvedSchedule?->room?->name,
+            'new_session'    => $newSessionApprove,
         ];
 
         $notifMahasiswa = \App\Models\Notification::create([
@@ -366,6 +378,16 @@ class AdminPersetujuanController extends Controller
                 : 'Sesi ' . $rejectedSchedule->session_start;
         }
 
+        // Calculate new session
+        $newSessionReject = null;
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $newSessionReject = $this->calculateSessionLabel(
+                $cr->proposed_day,
+                $cr->proposed_start_time,
+                $cr->proposed_end_time
+            );
+        }
+
         $rejectAdminPayload = [
             'request_code'   => $cr->request_code,
             'course_name'    => $rejectedSchedule?->course?->name,
@@ -385,6 +407,7 @@ class AdminPersetujuanController extends Controller
                                     : null,
             'new_room'       => $rejectedProposedRoom?->code ?? $rejectedSchedule?->room?->code,
             'new_room_name'  => $rejectedProposedRoom?->name ?? $rejectedSchedule?->room?->name,
+            'new_session'    => $newSessionReject,
         ];
 
         $notifMahasiswa = \App\Models\Notification::create([
