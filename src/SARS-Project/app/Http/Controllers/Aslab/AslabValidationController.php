@@ -311,8 +311,6 @@ class AslabValidationController extends Controller
             'new_room_name'  => $proposedRoomForReject?->name ?? $scheduleForReject?->room?->name,
             'new_session'    => $newSessionRej,
         ];
-            'new_room_name'  => $proposedRoomForReject?->name ?? $scheduleForReject?->room?->name,
-        ];
 
         $notif = \App\Models\Notification::create([
             'request_id'   => $cr->id,
