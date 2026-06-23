@@ -100,7 +100,7 @@ it('allows admin to approve a PERMANENT request and updates schedule session ran
 
     // Create a PERMANENT request proposed: Tuesday, 09:20 - 12:00 in Room 2 (Sesi 3-5, duration 3)
     $cr = ChangeRequest::create([
-        'request_code' => 'CR-PERM-001',
+        'request_code' => 'REQ-PERM-001',
         'requester_id' => $context['student']->id,
         'schedule_id' => $context['schedule']->id,
         'semester_id' => $context['semester']->id,
@@ -158,7 +158,7 @@ it('allows admin to approve a TEMPORARY request and creates schedule overrides',
     // Create a TEMPORARY request proposed: Friday (Jumat), 13:00 - 14:45 in Room 2 (Jumat Sesi 5-6, duration 2)
     $targetDate = Carbon::today()->addDays(2)->format('Y-m-d');
     $cr = ChangeRequest::create([
-        'request_code' => 'CR-TEMP-002',
+        'request_code' => 'REQ-TEMP-002',
         'requester_id' => $context['student']->id,
         'schedule_id' => $context['schedule']->id,
         'semester_id' => $context['semester']->id,

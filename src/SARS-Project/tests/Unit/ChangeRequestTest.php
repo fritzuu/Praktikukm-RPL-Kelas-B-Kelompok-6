@@ -14,7 +14,7 @@ class ChangeRequestTest extends TestCase
      * TEST 1: Code format validation
      * ARRANGE: No setup needed for pure function
      * ACT: Call generateCode()
-     * ASSERT: Format should match CR-YYYYMMDD-XXXX
+     * ASSERT: Format should match REQ-YYYYMMDD-XXXX
      */
     public function test_generates_unique_request_code_with_correct_format(): void
     {
@@ -25,11 +25,11 @@ class ChangeRequestTest extends TestCase
         $code = ChangeRequest::generateCode();
 
         // ASSERT
-        // Format: CR-YYYYMMDD-[4 random chars]
+        // Format: REQ-YYYYMMDD-[4 random chars]
         $this->assertMatchesRegularExpression(
-            '/^CR-\d{8}-[A-Z0-9]{4}$/',
+            '/^REQ-\d{8}-[A-Z0-9]{4}$/',
             $code,
-            'Code should match format CR-YYYYMMDD-XXXX'
+            'Code should match format REQ-YYYYMMDD-XXXX'
         );
     }
 
@@ -67,7 +67,7 @@ class ChangeRequestTest extends TestCase
     public function test_prevents_duplicate_codes(): void
     {
         // ARRANGE
-        $existingCode = 'CR-20260616-AAAA';
+        $existingCode = 'REQ-20260616-AAAA';
         ChangeRequest::create([
             'request_code' => $existingCode,
             'requester_id' => 1,
