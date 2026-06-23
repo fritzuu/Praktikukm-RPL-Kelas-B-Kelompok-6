@@ -210,16 +210,16 @@ class MahasiswaController extends Controller
             )
             ->get()
             ->map(fn ($o) => [
-                'id'         => $o->id,
+                'id'         => (string) $o->id,
                 'kode'       => $o->kode,
                 'nama'       => $o->nama,
                 'kelas'      => $o->kelas,
-                'semesterNum'=> $o->semesterNum,
+                'semesterNum'=> (string) ($o->semesterNum ?? ''),
                 'ruangan'    => $o->ruangan,
-                'hari'       => strtolower($o->hari),
-                'sesiMulai'  => $o->sesiMulai,
-                'durasi'     => $o->durasi,
-                'dosen'      => $o->dosen ?? '-',
+                'hari'       => strtolower($o->hari ?? 'senin'),
+                'sesiMulai'  => (int) ($o->sesiMulai ?? 0),
+                'durasi'     => (int) ($o->durasi ?? 0),
+                'dosen'      => (string) ($o->dosen ?? '-'),
                 'mulai'      => substr($o->jamMulai, 0, 5),
                 'selesai'    => substr($o->jamAkhir, 0, 5),
                 'tipe'       => 'override',
