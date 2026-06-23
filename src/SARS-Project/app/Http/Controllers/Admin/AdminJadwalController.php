@@ -59,7 +59,21 @@ class AdminJadwalController extends Controller
                 'schedules.day_of_week', 'schedules.session_start',
                 'schedules.session_duration', 'schedules.start_time', 'schedules.end_time'
             )
-            ->get()
+            ->get();
+
+        // Get schedule IDs that have active overrides
+        $today = Carbon::now()->toDateString();
+        $schedulesWithOverrides = DB::table('schedule_overrides')
+            ->where('is_active', true)
+            ->where('override_date', '>=', $today)
+            ->pluck('schedule_id')
+            ->unique();
+
+        // Map baseline schedules, filtering out those with active overrides
+        $baselineSchedules = $schedules
+            ->filter(function ($s) use ($schedulesWithOverrides) {
+                return !$schedulesWithOverrides->contains((int) $s->id);
+            })
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
                 $s->mulai = substr($s->jamMulai, 0, 5);
@@ -70,7 +84,6 @@ class AdminJadwalController extends Controller
             });
 
         // Get active overrides and convert to schedule items
-        $today = Carbon::now()->toDateString();
         $overrides = DB::table('schedule_overrides')
             ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
@@ -98,7 +111,9 @@ class AdminJadwalController extends Controller
                 'schedules.session_duration as durasi',
                 'schedule_overrides.new_start_time as jamMulai',
                 'schedule_overrides.new_end_time as jamAkhir',
-                'schedule_overrides.override_date as tanggal'
+                'schedule_overrides.override_date as tanggal',
+                DB::raw("SUBSTR(CAST(schedule_overrides.new_start_time AS TEXT), 1, 5) as mulai"),
+                DB::raw("SUBSTR(CAST(schedule_overrides.new_end_time AS TEXT), 1, 5) as selesai")
             )
             ->groupBy(
                 'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
@@ -117,8 +132,8 @@ class AdminJadwalController extends Controller
                 return $o;
             });
 
-        // Merge baseline + overrides (NO filtering yet)
-        $allSchedules = $schedules->concat($overrides);
+        // Merge baseline + overrides
+        $allSchedules = $baselineSchedules->concat($overrides)->values();
 
         $rooms = DB::table('rooms')
             ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))

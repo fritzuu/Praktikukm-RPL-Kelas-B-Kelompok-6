@@ -78,6 +78,8 @@ class AslabDashboardController extends Controller
             ->get()
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
+                $s->mulai = substr($s->jamMulai, 0, 5);
+                $s->selesai = substr($s->jamAkhir, 0, 5);
                 $s->tipe = 'resmi';
                 $s->dosen = $s->dosen ?? 'Belum Ditentukan';
                 return $s;
@@ -112,7 +114,9 @@ class AslabDashboardController extends Controller
                 'schedules.session_duration as durasi',
                 'schedule_overrides.new_start_time as jamMulai',
                 'schedule_overrides.new_end_time as jamAkhir',
-                'schedule_overrides.override_date as tanggal'
+                'schedule_overrides.override_date as tanggal',
+                DB::raw("SUBSTR(CAST(schedule_overrides.new_start_time AS TEXT), 1, 5) as mulai"),
+                DB::raw("SUBSTR(CAST(schedule_overrides.new_end_time AS TEXT), 1, 5) as selesai")
             )
             ->groupBy(
                 'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
@@ -123,6 +127,8 @@ class AslabDashboardController extends Controller
             ->get()
             ->map(function ($o) {
                 $o->hari = strtolower($o->hari);
+                $o->mulai = $o->mulai ?? substr($o->jamMulai, 0, 5);
+                $o->selesai = $o->selesai ?? substr($o->jamAkhir, 0, 5);
                 $o->tipe = 'override';
                 $o->label = 'Jadwal Sementara';
                 $o->dosen = $o->dosen ?? 'Belum Ditentukan';

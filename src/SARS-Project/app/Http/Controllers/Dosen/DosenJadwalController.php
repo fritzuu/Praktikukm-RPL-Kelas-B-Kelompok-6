@@ -38,7 +38,7 @@ class DosenJadwalController extends Controller
             ->where('role_in_class', 'PENGAJAR')
             ->pluck('schedule_id');
 
-        // Baseline schedules assigned to dosen
+        // Baseline schedules assigned to dosen (no overrides)
         $schedulesData = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -63,35 +63,7 @@ class DosenJadwalController extends Controller
             )
             ->get();
 
-        // Add overrides where dosen is assigned
-        $today = Carbon::now()->toDateString();
-        $overridesData = DB::table('schedule_overrides')
-            ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
-            ->join('courses', 'schedules.course_id', '=', 'courses.id')
-            ->join('rooms', 'schedule_overrides.room_id', '=', 'rooms.id')
-            ->whereIn('schedules.id', $assignedScheduleIds)
-            ->where('schedule_overrides.is_active', true)
-            ->where('schedule_overrides.override_date', '>=', $today)
-            ->select(
-                'schedules.id as schedule_id',
-                'schedule_overrides.id as override_id',
-                'schedule_overrides.override_date',
-                'courses.code as kode',
-                'courses.name as nama',
-                'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
-                'courses.credits',
-                'schedules.course_id',
-                'rooms.code as ruangan',
-                'rooms.capacity as mahasiswa',
-                'schedule_overrides.new_day_of_week as hari',
-                'schedules.session_start as sesiMulai',
-                'schedules.session_duration as durasi',
-                'schedule_overrides.new_start_time as jamMulai',
-                'schedule_overrides.new_end_time as jamAkhir'
-            )
-            ->get();
-
+        // Jadwal resmi saja (baseline, no overrides)
         $jadwal = $schedulesData->map(function ($s) {
             return [
                 'id'        => (string) $s->id,
@@ -108,34 +80,9 @@ class DosenJadwalController extends Controller
                 'tipe'      => 'resmi',
                 'waktu'     => substr($s->jamMulai, 0, 5) . ' - ' . substr($s->jamAkhir, 0, 5),
             ];
-        })->concat($overridesData->map(function ($o) {
-            return [
-                'id'        => 'override_' . $o->override_id,
-                'schedule_id' => (string) $o->schedule_id,
-                'kode'      => $o->kode,
-                'nama'      => $o->nama,
-                'kelas'     => $o->kelas,
-                'semesterNum'=> $o->semesterNum,
-                'ruangan'   => $o->ruangan,
-                'hari'      => strtolower($o->hari),
-                'sesiMulai' => $o->sesiMulai,
-                'durasi'    => $o->durasi,
-                'mahasiswa' => $o->mahasiswa,
-                'tipe'      => 'override',
-                'label'     => 'Jadwal Sementara',
-                'tanggal'   => $o->override_date ?? null,
-                'waktu'     => substr($o->jamMulai, 0, 5) . ' - ' . substr($o->jamAkhir, 0, 5),
-            ];
-        }))->values();
+        })->values();
 
-        // All campus schedules (for grid view) - filter baseline if override exists
-        $today = Carbon::now()->toDateString();
-        $schedulesWithOverrides = DB::table('schedule_overrides')
-            ->where('is_active', true)
-            ->where('override_date', '>=', $today)
-            ->pluck('schedule_id')
-            ->unique();
-
+        // All campus schedules (baseline only, no overrides)
         $allSchedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -169,7 +116,6 @@ class DosenJadwalController extends Controller
                 'courses.description', 'schedules.start_time', 'schedules.end_time'
             )
             ->get()
-            ->filter(fn ($s) => !$schedulesWithOverrides->contains((int) $s->id))
             ->map(function ($s) use ($assignedScheduleIds) {
                 return [
                     'id'        => (string) $s->id,
@@ -192,70 +138,6 @@ class DosenJadwalController extends Controller
                 ];
             });
 
-        // Add overrides to grid
-        $allSchedules = $allSchedules->concat(DB::table('schedule_overrides')
-            ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
-            ->join('courses', 'schedules.course_id', '=', 'courses.id')
-            ->join('rooms', 'schedule_overrides.room_id', '=', 'rooms.id')
-            ->leftJoin('teaching_assignments', function($join) {
-                $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
-                     ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
-            })
-            ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
-            ->where('schedule_overrides.is_active', true)
-            ->where('schedule_overrides.override_date', '>=', $today)
-            ->where('courses.semester_id', $semester->id)
-            ->select(
-                'schedules.id as schedule_id',
-                DB::raw("'override_' || schedule_overrides.id as id"),
-                'courses.code as kode',
-                'courses.name as nama',
-                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
-                'schedule_overrides.room_id',
-                'rooms.code as ruangan',
-                'schedule_overrides.new_day_of_week as hari',
-                'schedules.session_start as sesiMulai',
-                'schedules.session_duration as durasi',
-                'courses.class_name as kelas',
-                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
-                'schedule_overrides.new_start_time as jamMulai',
-                'schedule_overrides.new_end_time as jamAkhir',
-                'schedule_overrides.override_date as tanggal'
-            )
-            ->groupBy(
-                'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name',
-                'schedule_overrides.room_id', 'rooms.code',
-                'schedule_overrides.new_day_of_week', 'courses.class_name',
-                'courses.description', 'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time',
-                'schedule_overrides.override_date'
-            )
-            ->get()
-            ->map(function ($o) use ($assignedScheduleIds) {
-                return [
-                    'id'        => $o->id,
-                    'schedule_id' => (string) $o->schedule_id,
-                    'kode'      => $o->kode,
-                    'nama'      => $o->nama,
-                    'dosen'     => $o->dosen ?? '-',
-                    'ruangan_id'=> $o->room_id,
-                    'ruangan'   => $o->ruangan,
-                    'hari'      => strtolower($o->hari),
-                    'sesiMulai' => $o->sesiMulai,
-                    'durasi'    => $o->durasi,
-                    'kelas'     => $o->kelas,
-                    'semesterNum'=> $o->semesterNum,
-                    'jamMulai'  => $o->jamMulai,
-                    'jamAkhir'  => $o->jamAkhir,
-                    'mulai'     => substr($o->jamMulai, 0, 5),
-                    'selesai'   => substr($o->jamAkhir, 0, 5),
-                    'tipe'      => 'override',
-                    'label'     => 'Jadwal Sementara',
-                    'tanggal'   => $o->tanggal,
-                    'isOwn'     => false,
-                ];
-            })
-        );
-
         $rooms = DB::table('rooms')
             ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))
             ->get(['id', 'code', 'name']);
@@ -263,7 +145,7 @@ class DosenJadwalController extends Controller
         $stats = [
             'totalMataKuliah' => $schedulesData->pluck('course_id')->unique()->count(),
             'totalSks'        => $schedulesData->unique('course_id')->sum('credits'),
-            'totalJadwal'     => $schedulesData->count() + $overridesData->count(),
+            'totalJadwal'     => $schedulesData->count(),
         ];
 
         return Inertia::render('Dosen/Jadwal', [
