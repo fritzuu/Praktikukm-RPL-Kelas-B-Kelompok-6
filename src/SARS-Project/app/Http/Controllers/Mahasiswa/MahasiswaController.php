@@ -200,6 +200,7 @@ class MahasiswaController extends Controller
             ->where('schedule_overrides.override_date', '>=', $today)
             ->where('schedules.semester_id', $semester->id)
             ->select(
+                'schedules.id as schedule_id',
                 DB::raw("'override_' || schedule_overrides.id as id"),
                 'courses.code as kode',
                 'courses.name as nama',
@@ -215,7 +216,7 @@ class MahasiswaController extends Controller
                 'schedule_overrides.override_date as tanggalSementara'
             )
             ->groupBy(
-                'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
                 'courses.description', 'rooms.code', 'schedule_overrides.new_day_of_week',
                 'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time', 
                 'schedule_overrides.override_date'
@@ -223,6 +224,7 @@ class MahasiswaController extends Controller
             ->get()
             ->map(fn ($o) => [
                 'id'         => (string) $o->id,
+                'schedule_id' => (string) $o->schedule_id,
                 'kode'       => $o->kode,
                 'nama'       => $o->nama,
                 'kelas'      => $o->kelas,

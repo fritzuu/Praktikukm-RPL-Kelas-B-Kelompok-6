@@ -95,6 +95,7 @@ class AslabJadwalController extends Controller
             ->where('schedule_overrides.override_date', '>=', $today)
             ->where('courses.semester_id', $semester->id)
             ->select(
+                'schedules.id as schedule_id',
                 DB::raw("'override_' || schedule_overrides.id as id"),
                 'courses.code as kode',
                 'courses.name as nama',
@@ -111,7 +112,7 @@ class AslabJadwalController extends Controller
                 'schedule_overrides.override_date as tanggal'
             )
             ->groupBy(
-                'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
                 'courses.description', 'schedule_overrides.override_date', 'rooms.name',
                 'schedule_overrides.new_day_of_week', 'schedule_overrides.new_start_time',
                 'schedule_overrides.new_end_time'

@@ -73,6 +73,7 @@ class DosenJadwalController extends Controller
             ->where('schedule_overrides.is_active', true)
             ->where('schedule_overrides.override_date', '>=', $today)
             ->select(
+                'schedules.id as schedule_id',
                 'schedule_overrides.id as override_id',
                 'schedule_overrides.override_date',
                 'courses.code as kode',
@@ -94,6 +95,7 @@ class DosenJadwalController extends Controller
         $jadwal = $schedulesData->map(function ($s) {
             return [
                 'id'        => (string) $s->id,
+                'schedule_id' => (string) $s->id,
                 'kode'      => $s->kode,
                 'nama'      => $s->nama,
                 'kelas'     => $s->kelas,
@@ -109,6 +111,7 @@ class DosenJadwalController extends Controller
         })->concat($overridesData->map(function ($o) {
             return [
                 'id'        => 'override_' . $o->override_id,
+                'schedule_id' => (string) $o->schedule_id,
                 'kode'      => $o->kode,
                 'nama'      => $o->nama,
                 'kelas'     => $o->kelas,
@@ -203,6 +206,7 @@ class DosenJadwalController extends Controller
             ->where('schedule_overrides.override_date', '>=', $today)
             ->where('courses.semester_id', $semester->id)
             ->select(
+                'schedules.id as schedule_id',
                 DB::raw("'override_' || schedule_overrides.id as id"),
                 'courses.code as kode',
                 'courses.name as nama',
@@ -219,7 +223,7 @@ class DosenJadwalController extends Controller
                 'schedule_overrides.override_date as tanggal'
             )
             ->groupBy(
-                'schedule_overrides.id', 'courses.code', 'courses.name',
+                'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name',
                 'schedule_overrides.room_id', 'rooms.code',
                 'schedule_overrides.new_day_of_week', 'courses.class_name',
                 'courses.description', 'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time',
@@ -229,6 +233,7 @@ class DosenJadwalController extends Controller
             ->map(function ($o) use ($assignedScheduleIds) {
                 return [
                     'id'        => $o->id,
+                    'schedule_id' => (string) $o->schedule_id,
                     'kode'      => $o->kode,
                     'nama'      => $o->nama,
                     'dosen'     => $o->dosen ?? '-',
