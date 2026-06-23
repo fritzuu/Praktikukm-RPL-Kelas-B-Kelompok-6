@@ -157,7 +157,7 @@ function ScheduleCard({ item, isConflict, onCardClick, variants }) {
                 </p>
                 <p className="text-[9px] mt-1 font-semibold opacity-85 truncate">
                     Sesi {item.sesiMulai}{item.durasi > 1 ? ` - ${item.sesiMulai + item.durasi - 1}` : ''}
-                    {!isMahasiswa && item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
+                    {item.mulai && item.selesai && ` (${item.mulai.substring(0,5)} - ${item.selesai.substring(0,5)})`}
                 </p>
                 {item.tipe === 'override' && item.label && (
                     <div className="text-[8px] mt-1.5 opacity-75 font-semibold border-t border-current/30 pt-1">
