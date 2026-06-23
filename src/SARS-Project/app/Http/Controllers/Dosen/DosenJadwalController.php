@@ -85,8 +85,8 @@ class DosenJadwalController extends Controller
                 'rooms.code as ruangan',
                 'rooms.capacity as mahasiswa',
                 'schedule_overrides.new_day_of_week as hari',
-                DB::raw("0 as sesiMulai"),
-                DB::raw("0 as durasi"),
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
                 'schedule_overrides.new_start_time as jamMulai',
                 'schedule_overrides.new_end_time as jamAkhir'
             )
@@ -214,8 +214,8 @@ class DosenJadwalController extends Controller
                 'schedule_overrides.room_id',
                 'rooms.code as ruangan',
                 'schedule_overrides.new_day_of_week as hari',
-                DB::raw("0 as sesiMulai"),
-                DB::raw("0 as durasi"),
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
                 'courses.class_name as kelas',
                 DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'schedule_overrides.new_start_time as jamMulai',
