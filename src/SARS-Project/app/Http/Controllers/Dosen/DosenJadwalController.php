@@ -74,6 +74,7 @@ class DosenJadwalController extends Controller
             ->where('schedule_overrides.override_date', '>=', $today)
             ->select(
                 'schedule_overrides.id as override_id',
+                'schedule_overrides.override_date',
                 'courses.code as kode',
                 'courses.name as nama',
                 'courses.class_name as kelas',
@@ -118,11 +119,20 @@ class DosenJadwalController extends Controller
                 'durasi'    => $o->durasi,
                 'mahasiswa' => $o->mahasiswa,
                 'tipe'      => 'override',
+                'label'     => 'Jadwal Sementara',
+                'tanggal'   => $o->override_date ?? null,
                 'waktu'     => substr($o->jamMulai, 0, 5) . ' - ' . substr($o->jamAkhir, 0, 5),
             ];
         }))->values();
 
-        // All campus schedules (for grid view)
+        // All campus schedules (for grid view) - filter baseline if override exists
+        $today = Carbon::now()->toDateString();
+        $schedulesWithOverrides = DB::table('schedule_overrides')
+            ->where('is_active', true)
+            ->where('override_date', '>=', $today)
+            ->pluck('schedule_id')
+            ->unique();
+
         $allSchedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -156,6 +166,7 @@ class DosenJadwalController extends Controller
                 'courses.description', 'schedules.start_time', 'schedules.end_time'
             )
             ->get()
+            ->filter(fn ($s) => !$schedulesWithOverrides->contains((int) $s->id))
             ->map(function ($s) use ($assignedScheduleIds) {
                 return [
                     'id'        => (string) $s->id,
@@ -171,6 +182,9 @@ class DosenJadwalController extends Controller
                     'semesterNum'=> $s->semesterNum,
                     'jamMulai'  => $s->jamMulai,
                     'jamAkhir'  => $s->jamAkhir,
+                    'mulai'     => substr($s->jamMulai, 0, 5),
+                    'selesai'   => substr($s->jamAkhir, 0, 5),
+                    'tipe'      => 'resmi',
                     'isOwn'     => $assignedScheduleIds->contains($s->id),
                 ];
             });
@@ -187,6 +201,7 @@ class DosenJadwalController extends Controller
             ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
             ->where('schedule_overrides.is_active', true)
             ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('courses.semester_id', $semester->id)
             ->select(
                 DB::raw("'override_' || schedule_overrides.id as id"),
                 'courses.code as kode',
@@ -200,13 +215,15 @@ class DosenJadwalController extends Controller
                 'courses.class_name as kelas',
                 DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
                 'schedule_overrides.new_start_time as jamMulai',
-                'schedule_overrides.new_end_time as jamAkhir'
+                'schedule_overrides.new_end_time as jamAkhir',
+                'schedule_overrides.override_date as tanggal'
             )
             ->groupBy(
                 'schedule_overrides.id', 'courses.code', 'courses.name',
                 'schedule_overrides.room_id', 'rooms.code',
                 'schedule_overrides.new_day_of_week', 'courses.class_name',
-                'courses.description', 'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time'
+                'courses.description', 'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time',
+                'schedule_overrides.override_date'
             )
             ->get()
             ->map(function ($o) use ($assignedScheduleIds) {
@@ -224,6 +241,11 @@ class DosenJadwalController extends Controller
                     'semesterNum'=> $o->semesterNum,
                     'jamMulai'  => $o->jamMulai,
                     'jamAkhir'  => $o->jamAkhir,
+                    'mulai'     => substr($o->jamMulai, 0, 5),
+                    'selesai'   => substr($o->jamAkhir, 0, 5),
+                    'tipe'      => 'override',
+                    'label'     => 'Jadwal Sementara',
+                    'tanggal'   => $o->tanggal,
                     'isOwn'     => false,
                 ];
             })

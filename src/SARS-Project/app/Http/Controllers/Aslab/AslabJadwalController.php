@@ -17,6 +17,16 @@ class AslabJadwalController extends Controller
      */
     public function index(Request $request): Response
     {
+        $semester = DB::table('semesters')->where('is_active', true)->first();
+
+        if (!$semester) {
+            return Inertia::render('Aslab/Jadwal', [
+                'jadwal'   => [],
+                'rooms'    => [],
+                'semester' => null,
+            ]);
+        }
+
         // Get baseline schedules
         $schedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
@@ -27,6 +37,8 @@ class AslabJadwalController extends Controller
                      ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
             })
             ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
+            ->where('schedules.is_active', true)
+            ->where('courses.semester_id', $semester->id)
             ->select(
                 'schedules.id',
                 'courses.code as kode',
@@ -42,7 +54,6 @@ class AslabJadwalController extends Controller
                 'schedules.start_time as jamMulai',
                 'schedules.end_time as jamAkhir'
             )
-            ->where('schedules.is_active', true)
             ->groupBy(
                 'schedules.id', 'courses.code', 'courses.name', 'courses.class_name',
                 'courses.description', 'semesters.name', 'rooms.name',
@@ -52,13 +63,25 @@ class AslabJadwalController extends Controller
             ->get()
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
+                $s->mulai = substr($s->jamMulai, 0, 5);
+                $s->selesai = substr($s->jamAkhir, 0, 5);
                 $s->tipe = 'resmi';
                 $s->dosen = $s->dosen ?? 'Belum Ditentukan';
                 return $s;
             });
 
-        // Get active overrides and convert to schedule items
+        // Collect schedule IDs that have active overrides
         $today = Carbon::now()->toDateString();
+        $schedulesWithOverrides = DB::table('schedule_overrides')
+            ->where('is_active', true)
+            ->where('override_date', '>=', $today)
+            ->pluck('schedule_id')
+            ->unique();
+
+        // Filter out baseline schedules that have active overrides
+        $schedules = $schedules->filter(fn ($s) => !$schedulesWithOverrides->contains((int) $s->id));
+
+        // Get active overrides and convert to schedule items
         $overrides = DB::table('schedule_overrides')
             ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
@@ -68,6 +91,9 @@ class AslabJadwalController extends Controller
                      ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
             })
             ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
+            ->where('schedule_overrides.is_active', true)
+            ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('courses.semester_id', $semester->id)
             ->select(
                 DB::raw("'override_' || schedule_overrides.id as id"),
                 'courses.code as kode',
@@ -81,10 +107,9 @@ class AslabJadwalController extends Controller
                 DB::raw("0 as sesiMulai"),
                 DB::raw("0 as durasi"),
                 'schedule_overrides.new_start_time as jamMulai',
-                'schedule_overrides.new_end_time as jamAkhir'
+                'schedule_overrides.new_end_time as jamAkhir',
+                'schedule_overrides.override_date as tanggal'
             )
-            ->where('schedule_overrides.is_active', true)
-            ->where('schedule_overrides.override_date', '>=', $today)
             ->groupBy(
                 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
                 'courses.description', 'schedule_overrides.override_date', 'rooms.name',
@@ -94,7 +119,10 @@ class AslabJadwalController extends Controller
             ->get()
             ->map(function ($o) {
                 $o->hari = strtolower($o->hari);
+                $o->mulai = substr($o->jamMulai, 0, 5);
+                $o->selesai = substr($o->jamAkhir, 0, 5);
                 $o->tipe = 'override';
+                $o->label = 'Jadwal Sementara';
                 $o->dosen = $o->dosen ?? 'Belum Ditentukan';
                 return $o;
             });
@@ -102,9 +130,8 @@ class AslabJadwalController extends Controller
         // Merge baseline + overrides
         $allSchedules = $schedules->concat($overrides);
 
-        $semester = DB::table('semesters')->where('is_active', true)->first();
         $rooms = DB::table('rooms')
-            ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id ?? 0)->where('is_active', true)->pluck('room_id'))
+            ->whereIn('id', DB::table('schedules')->where('semester_id', $semester->id)->where('is_active', true)->pluck('room_id'))
             ->pluck('name');
 
         return Inertia::render('Aslab/Jadwal', [
