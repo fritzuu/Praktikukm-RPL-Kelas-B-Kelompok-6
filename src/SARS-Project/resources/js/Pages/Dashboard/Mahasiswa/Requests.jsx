@@ -87,13 +87,13 @@ const formatDateIndo = (dateStr) => {
 
 const getWeekDate = (dayIndex, offset = 0) => {
     const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
-    const distanceToMonday = 1 - currentDay;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + distanceToMonday + (offset * 7));
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysSinceSaturday = (currentDay + 1) % 7;
+    const saturday = new Date(today);
+    saturday.setDate(today.getDate() - daysSinceSaturday + (offset * 7));
     
-    const targetDate = new Date(monday);
-    targetDate.setDate(monday.getDate() + dayIndex);
+    const targetDate = new Date(saturday);
+    targetDate.setDate(saturday.getDate() + dayIndex + 2);
     return targetDate;
 };
 
