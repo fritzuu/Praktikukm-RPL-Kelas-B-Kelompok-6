@@ -49,7 +49,23 @@ class AdminDashboardController extends Controller
                 'schedules.day_of_week', 'schedules.session_start',
                 'schedules.session_duration', 'schedules.start_time', 'schedules.end_time'
             )
-            ->get()
+            ->get();
+
+        // Get schedule IDs that have active APPROVED overrides
+        $today = \Carbon\Carbon::now()->toDateString();
+        $schedulesWithApprovedOverrides = DB::table('schedule_overrides')
+            ->join('change_requests', 'schedule_overrides.request_id', '=', 'change_requests.id')
+            ->where('schedule_overrides.is_active', true)
+            ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('change_requests.status', 'APPROVED')
+            ->pluck('schedule_overrides.schedule_id')
+            ->toArray();
+
+        // Filter baseline schedules: exclude those with APPROVED overrides
+        $schedules = $schedules
+            ->filter(function ($s) use ($schedulesWithApprovedOverrides) {
+                return !in_array((int) $s->id, $schedulesWithApprovedOverrides);
+            })
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
                 $s->mulai = substr($s->jamMulai, 0, 5);
@@ -60,11 +76,11 @@ class AdminDashboardController extends Controller
             });
 
         // Get active overrides for dashboard
-        $today = \Carbon\Carbon::now()->toDateString();
         $overrides = DB::table('schedule_overrides')
             ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedule_overrides.room_id', '=', 'rooms.id')
+            ->join('change_requests', 'schedule_overrides.request_id', '=', 'change_requests.id')
             ->leftJoin('teaching_assignments', function($join) {
                 $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
                      ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
@@ -72,6 +88,7 @@ class AdminDashboardController extends Controller
             ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
             ->where('schedule_overrides.is_active', true)
             ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('change_requests.status', 'APPROVED')
             ->select(
                 'schedules.id as schedule_id',
                 DB::raw("'override_' || schedule_overrides.id as id"),
@@ -99,16 +116,38 @@ class AdminDashboardController extends Controller
             )
             ->get()
             ->map(function ($o) {
+                $sessionTimesMap = [
+                    'SENIN'  => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+                    'SELASA' => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+                    'RABU'   => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+                    'KAMIS'  => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+                    'JUMAT'  => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['13:00', '13:50'], 6 => ['13:55', '14:45'], 7 => ['15:30', '16:20'], 8 => ['16:25', '17:15'], 9 => ['18:00', '18:50'], 10 => ['18:55', '19:20'], 11 => ['19:25', '20:15']],
+                ];
+                
                 $o->hari = strtolower($o->hari);
-                $o->mulai = $o->mulai ?? substr($o->jamMulai, 0, 5);
-                $o->selesai = $o->selesai ?? substr($o->jamAkhir, 0, 5);
+                $o->mulai = substr($o->jamMulai, 0, 5);
+                $o->selesai = substr($o->jamAkhir, 0, 5);
+                
+                // Calculate session from new override times
+                $dayUpper = strtoupper($o->hari);
+                $times = $sessionTimesMap[$dayUpper] ?? $sessionTimesMap['SENIN'];
+                
+                $sesiMulai = 1;
+                $sesiSelesai = 1;
+                foreach ($times as $sess => $range) {
+                    if ($range[0] === $o->mulai) $sesiMulai = $sess;
+                    if ($range[1] === $o->selesai) $sesiSelesai = $sess;
+                }
+                
+                $o->sesiMulai = $sesiMulai;
+                $o->durasi = $sesiSelesai - $sesiMulai + 1;
                 $o->tipe = 'override';
                 $o->label = 'Jadwal Sementara';
                 $o->dosen = $o->dosen ?? 'Belum Ditentukan';
                 return $o;
             });
 
-        $schedules = $schedules->concat($overrides);
+        $schedules = $schedules->concat($overrides)->values();
 
         $rooms = DB::table('rooms')
             ->whereIn('id', DB::table('schedules')->where('is_active', true)->pluck('room_id'))
