@@ -26,12 +26,11 @@ Smart Academic Schedule & Room Change System (SARS) adalah sistem manajemen jadw
 
 ## Struktur Repository & Branching
 Repository ini menggunakan format penamaan `praktikum-rpl-[kelas]-[nomor]`.
-Branch `dev` wajib dijadikan default branch di pengaturan GitHub.
+Branch `dev` dijadikan default branch untuk pengembangan fitur sebelum dirilis ke branch `main`.
 
 * `docs/`: Berisi dokumen kontrak tim, SRS, ERD, API Spec, dan Wireframe.
-* `src/backend/`: Source code server API.
-* `src/frontend/`: Source code web dashboard Admin.
-* `src/android/`: Source code aplikasi mobile.
+* `src/SARS-Project/`: Source code utama aplikasi web (monolit Laravel 11 + Inertia.js React).
+* `CHANGELOG.md`: Catatan riwayat perubahan proyek (changelog).
 
 ## Panduan Setup untuk Developer Baru
 
