@@ -5,15 +5,16 @@ import TopBar from '../Components/Shared/TopBar';
 import useNotificationPoll from '../hooks/useNotificationPoll';
 
 export default function AppLayout({ navItems, branding, topBarActions, children, aiPanel, aiFab }) {
-    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs, pendingAdminCount: initialPendingAdmin } = usePage().props;
+    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs, pendingAdminCount: initialPendingAdmin, pendingAslabCount: initialPendingAslab } = usePage().props;
     const user = auth?.user;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // ── Live notification polling ────────────────────────────────────────────
-    const { unreadCount, pendingAdminCount, notifications } = useNotificationPoll({
+    const { unreadCount, pendingAdminCount, pendingAslabCount, notifications } = useNotificationPoll({
         unreadCount:       initialUnread        ?? 0,
         pendingAdminCount: initialPendingAdmin  ?? 0,
+        pendingAslabCount: initialPendingAslab  ?? 0,
         notifications:     initialNotifs        ?? auth?.notifications ?? [],
     });
 
@@ -44,6 +45,7 @@ export default function AppLayout({ navItems, branding, topBarActions, children,
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
                 pendingAdminCount={pendingAdminCount}
+                pendingAslabCount={pendingAslabCount}
                 unreadCount={unreadCount}
             />
 

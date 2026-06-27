@@ -9,6 +9,7 @@ export default function Sidebar({
     isCollapsed,
     onToggle,
     pendingAdminCount: pendingAdminCountProp,
+    pendingAslabCount: pendingAslabCountProp,
     unreadCount: unreadCountProp,
 }) {
     const { url, props } = usePage();
@@ -16,6 +17,7 @@ export default function Sidebar({
 
     // Use live polled data when provided by layout, fall back to Inertia shared props
     const pendingAdminCount = pendingAdminCountProp ?? props.pendingAdminCount ?? 0;
+    const pendingAslabCount = pendingAslabCountProp ?? props.pendingAslabCount ?? 0;
     const unreadCount       = unreadCountProp       ?? props.unreadCount       ?? 0;
 
     const { initial = "S", title = "SARS", subtitle = "" } = branding;
@@ -115,9 +117,11 @@ export default function Sidebar({
                                 const count =
                                     item.route === "admin.persetujuan"
                                         ? pendingAdminCount
-                                        : NOTIF_ROUTES.includes(item.route)
-                                            ? unreadCount
-                                            : (item.badge ?? 0);
+                                        : item.route === "aslab.validasi"
+                                            ? pendingAslabCount
+                                            : NOTIF_ROUTES.includes(item.route)
+                                                ? unreadCount
+                                                : (item.badge ?? 0);
                                 if (!count) return null;
                                 return isCollapsed ? (
                                     <span className="absolute -top-1 -right-1 bg-danger text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
