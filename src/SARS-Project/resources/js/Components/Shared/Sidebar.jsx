@@ -110,6 +110,7 @@ export default function Sidebar({
                                     "aslab.notifikasi",
                                     "dosen.notifikasi",
                                     "notifications.center",
+                                    "mahasiswa.notifications",
                                 ];
                                 const count =
                                     item.route === "admin.persetujuan"

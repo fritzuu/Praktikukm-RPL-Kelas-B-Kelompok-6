@@ -1,36 +1,29 @@
 import { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
-import MahasiswaSidebar from '../Components/Mahasiswa/Sidebar';
-import MahasiswaTopBar from '../Components/Mahasiswa/TopBar';
+import AppLayout from './AppLayout';
 import AiAssistantPanel from '../Components/Shared/AiAssistantPanel';
 import AiAssistantFab from '../Components/Shared/AiAssistantFab';
-import useNotificationPoll from '../hooks/useNotificationPoll';
-import Echo from '../echo';
+import {
+    MAHASISWA_NAV_ITEMS,
+    MAHASISWA_BRANDING,
+} from '../Components/Mahasiswa/MahasiswaNavConfig';
 
 export default function MahasiswaLayout({ children }) {
-    const { auth, unreadCount: initialUnread, notifikasi: initialNotifs } = usePage().props;
-    const user = auth?.user;
-
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const { url, component } = usePage();
     const [aiPanelOpen, setAiPanelOpen] = useState(true);
 
-    // ── Live notification polling ────────────────────────────────────────────
-    const { unreadCount, notifications } = useNotificationPoll({
-        unreadCount:   initialUnread ?? 0,
-        notifications: initialNotifs ?? auth?.notifications ?? [],
-    });
+    const isRequestsTab = component === 'Dashboard/Mahasiswa/Requests' || url?.startsWith('/mahasiswa/requests');
 
+    // Auto-collapse AI panel based on breakpoint
     useEffect(() => {
         const mediaLg = window.matchMedia('(max-width: 1024px)');
         const mediaMd = window.matchMedia('(max-width: 768px)');
 
         function handleResize() {
             if (mediaMd.matches) {
-                setSidebarCollapsed(true);
                 setAiPanelOpen(false);
             } else if (mediaLg.matches) {
-                setSidebarCollapsed(false);
                 setAiPanelOpen(false);
             } else {
                 setAiPanelOpen(true);
@@ -63,54 +56,50 @@ export default function MahasiswaLayout({ children }) {
         return () => window.removeEventListener('database-sync', handleDatabaseSync);
     }, []);
 
+    const topBarActions = !isRequestsTab && (
+        <button
+            onClick={() => {
+                try { router.get(route('mahasiswa.requests')); } catch {}
+            }}
+            className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600
+                       text-white text-sm font-medium px-4 py-2 rounded-lg
+                       transition-colors duration-150 shrink-0"
+        >
+            <span className="text-lg leading-none">+</span>
+            <span className="hidden sm:inline">New Request</span>
+        </button>
+    );
+
+    const aiPanelSlot = (
+        <AnimatePresence>
+            {aiPanelOpen && (
+                <AiAssistantPanel
+                    key="mahasiswa-ai-panel"
+                    isOpen={aiPanelOpen}
+                    onClose={() => setAiPanelOpen(false)}
+                    role="mahasiswa"
+                />
+            )}
+        </AnimatePresence>
+    );
+
+    const aiFabSlot = (
+        <AnimatePresence>
+            {!aiPanelOpen && (
+                <AiAssistantFab key="mahasiswa-ai-fab" onClick={() => setAiPanelOpen(true)} />
+            )}
+        </AnimatePresence>
+    );
+
     return (
-        <div className="min-h-screen bg-surface font-sans">
-            {/* ── Left Sidebar ────────────────────────────────────── */}
-            <MahasiswaSidebar
-                isCollapsed={sidebarCollapsed}
-                onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                unreadCount={unreadCount}
-            />
-
-            {/* ── Top Bar ─────────────────────────────────────────── */}
-            <MahasiswaTopBar
-                user={user}
-                sidebarCollapsed={sidebarCollapsed}
-                unreadCount={unreadCount}
-                notifications={notifications}
-            />
-
-            {/* ── Main Content + AI Panel ─────────────────────────── */}
-            <div
-                className={`
-                    flex transition-all duration-250
-                    ${sidebarCollapsed ? 'ml-16' : 'ml-60'}
-                `}
-            >
-                {/* Main content area */}
-                <main className="flex-1 min-w-0 p-6">
-                    {children}
-                </main>
-
-                {/* Right AI Panel */}
-                <AnimatePresence>
-                    {aiPanelOpen && (
-                        <AiAssistantPanel
-                            key="ai-panel"
-                            isOpen={aiPanelOpen}
-                            onClose={() => setAiPanelOpen(false)}
-                            role="mahasiswa"
-                        />
-                    )}
-                </AnimatePresence>
-            </div>
-
-            {/* FAB when AI panel is closed */}
-            <AnimatePresence>
-                {!aiPanelOpen && (
-                    <AiAssistantFab key="ai-fab" onClick={() => setAiPanelOpen(true)} />
-                )}
-            </AnimatePresence>
-        </div>
+        <AppLayout
+            navItems={MAHASISWA_NAV_ITEMS}
+            branding={MAHASISWA_BRANDING}
+            topBarActions={topBarActions}
+            aiPanel={aiPanelSlot}
+            aiFab={aiFabSlot}
+        >
+            {children}
+        </AppLayout>
     );
 }
