@@ -61,18 +61,20 @@ class AdminJadwalController extends Controller
             )
             ->get();
 
-        // Get schedule IDs that have active overrides
+        // Get schedule IDs that have active overrides, with their status
         $today = Carbon::now()->toDateString();
-        $schedulesWithOverrides = DB::table('schedule_overrides')
-            ->where('is_active', true)
-            ->where('override_date', '>=', $today)
-            ->pluck('schedule_id')
-            ->unique();
+        $schedulesWithActiveOverrides = DB::table('schedule_overrides')
+            ->join('change_requests', 'schedule_overrides.request_id', '=', 'change_requests.id')
+            ->where('schedule_overrides.is_active', true)
+            ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('change_requests.status', 'APPROVED')
+            ->pluck('schedule_overrides.schedule_id')
+            ->toArray();
 
-        // Map baseline schedules, filtering out those with active overrides
+        // Modify baseline query to exclude schedules with APPROVED overrides
         $baselineSchedules = $schedules
-            ->filter(function ($s) use ($schedulesWithOverrides) {
-                return !$schedulesWithOverrides->contains((int) $s->id);
+            ->filter(function ($s) use ($schedulesWithActiveOverrides) {
+                return !in_array((int) $s->id, $schedulesWithActiveOverrides);
             })
             ->map(function ($s) {
                 $s->hari = strtolower($s->hari);
@@ -84,6 +86,14 @@ class AdminJadwalController extends Controller
             });
 
         // Get active overrides and convert to schedule items
+        $sessionTimesMap = [
+            'SENIN'  => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+            'SELASA' => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+            'RABU'   => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+            'KAMIS'  => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['11:10', '12:00'], 6 => ['13:00', '13:50'], 7 => ['13:55', '14:45'], 8 => ['15:30', '16:20'], 9 => ['16:25', '17:15'], 10 => ['18:00', '18:50'], 11 => ['18:55', '19:20']],
+            'JUMAT'  => [1 => ['07:30', '08:20'], 2 => ['08:25', '09:15'], 3 => ['09:20', '10:10'], 4 => ['10:15', '11:05'], 5 => ['13:00', '13:50'], 6 => ['13:55', '14:45'], 7 => ['15:30', '16:20'], 8 => ['16:25', '17:15'], 9 => ['18:00', '18:50'], 10 => ['18:55', '19:20'], 11 => ['19:25', '20:15']],
+        ];
+
         $overrides = DB::table('schedule_overrides')
             ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
@@ -107,8 +117,6 @@ class AdminJadwalController extends Controller
                 'rooms.name as ruangan',
                 DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
                 'schedule_overrides.new_day_of_week as hari',
-                'schedules.session_start as sesiMulai',
-                'schedules.session_duration as durasi',
                 'schedule_overrides.new_start_time as jamMulai',
                 'schedule_overrides.new_end_time as jamAkhir',
                 'schedule_overrides.override_date as tanggal',
@@ -122,10 +130,24 @@ class AdminJadwalController extends Controller
                 'schedule_overrides.new_end_time'
             )
             ->get()
-            ->map(function ($o) {
+            ->map(function ($o) use ($sessionTimesMap) {
                 $o->hari = strtolower($o->hari);
                 $o->mulai = substr($o->jamMulai, 0, 5);
                 $o->selesai = substr($o->jamAkhir, 0, 5);
+                
+                // Calculate session from new override times
+                $dayUpper = strtoupper($o->hari);
+                $times = $sessionTimesMap[$dayUpper] ?? $sessionTimesMap['SENIN'];
+                
+                $sesiMulai = 1;
+                $sesiSelesai = 1;
+                foreach ($times as $sess => $range) {
+                    if ($range[0] === $o->mulai) $sesiMulai = $sess;
+                    if ($range[1] === $o->selesai) $sesiSelesai = $sess;
+                }
+                
+                $o->sesiMulai = $sesiMulai;
+                $o->durasi = $sesiSelesai - $sesiMulai + 1;
                 $o->tipe = 'override';
                 $o->label = 'Jadwal Sementara';
                 $o->dosen = $o->dosen ?? 'Belum Ditentukan';

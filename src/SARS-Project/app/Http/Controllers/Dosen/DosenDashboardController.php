@@ -47,7 +47,39 @@ class DosenDashboardController extends Controller
             ->with(['course', 'room'])
             ->get();
 
-        // 3. Format jadwal untuk ScheduleGrid (mingguan)
+        // 2b. Get APPROVED overrides for dosen
+        $today = Carbon::now()->toDateString();
+        $overrides = \Illuminate\Support\Facades\DB::table('schedule_overrides')
+            ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('rooms', 'schedule_overrides.room_id', '=', 'rooms.id')
+            ->join('change_requests', 'schedule_overrides.request_id', '=', 'change_requests.id')
+            ->whereIn('schedules.id', $assignedScheduleIds)
+            ->where('schedule_overrides.is_active', true)
+            ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('change_requests.status', 'APPROVED')
+            ->select(
+                'schedules.id as schedule_id',
+                'courses.code as kode',
+                'courses.name as nama',
+                'courses.class_name as kelas',
+                'courses.description as courseDescription',
+                'rooms.code as ruangan',
+                'schedule_overrides.new_day_of_week as hari',
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
+                'rooms.capacity as mahasiswa',
+                'schedule_overrides.new_start_time as jamMulai',
+                'schedule_overrides.new_end_time as jamAkhir',
+                'schedule_overrides.override_date as tanggal'
+            )
+            ->get()
+            ->map(function ($o) {
+                $o->semesterNum = preg_replace('/[^0-9]/', '', $o->courseDescription);
+                return $o;
+            });
+
+        // 3. Format jadwal untuk ScheduleGrid (mingguan) - baseline only
         $jadwal = $schedules->map(fn (Schedule $s) => [
             'id'        => (string) $s->id,
             'kode'      => $s->course->code,
@@ -63,7 +95,7 @@ class DosenDashboardController extends Controller
             'waktu'     => substr($s->start_time, 0, 5) . ' - ' . substr($s->end_time, 0, 5),
         ])->values();
 
-        // 4. Filter jadwal HARI INI
+        // 4. Filter jadwal HARI INI (baseline + overrides)
         // Karena data dummy menggunakan nama hari Indonesia (SENIN, dll)
         $hariIniMap = [
             0 => 'MINGGU', 1 => 'SENIN', 2 => 'SELASA', 3 => 'RABU',
@@ -76,7 +108,6 @@ class DosenDashboardController extends Controller
         $schedulesToday = $schedules->filter(fn($s) => strtoupper($s->day_of_week) === $hariIniString);
         
         $jadwalHariIni = $schedulesToday->map(function(Schedule $s) {
-            // Tentukan status (mock simple logic)
             $nowTime = Carbon::now()->format('H:i:s');
             $status = 'belum_dimulai';
             if ($nowTime >= $s->start_time && $nowTime <= $s->end_time) {
@@ -95,6 +126,7 @@ class DosenDashboardController extends Controller
                 'sesi'      => 'Sesi ' . $s->session_start . '-' . ($s->session_start + $s->session_duration - 1),
                 'mahasiswa' => $s->room->capacity,
                 'status'    => $status,
+                'tipe'      => 'resmi',
             ];
         })->values();
 
