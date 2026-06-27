@@ -7,6 +7,7 @@ use App\Models\Schedule;
 use App\Models\Semester;
 use App\Models\TeachingAssignment;
 use App\Models\Room;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -37,6 +38,7 @@ class DosenJadwalController extends Controller
             ->where('role_in_class', 'PENGAJAR')
             ->pluck('schedule_id');
 
+        // Baseline schedules assigned to dosen (no overrides)
         $schedulesData = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -61,9 +63,11 @@ class DosenJadwalController extends Controller
             )
             ->get();
 
+        // Jadwal resmi saja (baseline, no overrides)
         $jadwal = $schedulesData->map(function ($s) {
             return [
                 'id'        => (string) $s->id,
+                'schedule_id' => (string) $s->id,
                 'kode'      => $s->kode,
                 'nama'      => $s->nama,
                 'kelas'     => $s->kelas,
@@ -78,6 +82,7 @@ class DosenJadwalController extends Controller
             ];
         })->values();
 
+        // All campus schedules (baseline only, no overrides)
         $allSchedules = DB::table('schedules')
             ->join('courses', 'schedules.course_id', '=', 'courses.id')
             ->join('rooms', 'schedules.room_id', '=', 'rooms.id')
@@ -126,6 +131,9 @@ class DosenJadwalController extends Controller
                     'semesterNum'=> $s->semesterNum,
                     'jamMulai'  => $s->jamMulai,
                     'jamAkhir'  => $s->jamAkhir,
+                    'mulai'     => substr($s->jamMulai, 0, 5),
+                    'selesai'   => substr($s->jamAkhir, 0, 5),
+                    'tipe'      => 'resmi',
                     'isOwn'     => $assignedScheduleIds->contains($s->id),
                 ];
             });

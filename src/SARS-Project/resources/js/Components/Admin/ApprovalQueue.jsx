@@ -276,6 +276,11 @@ export default function ApprovalQueue({ pending = [], onApprove, onReject }) {
                                                                 }`}>
                                                                 {item.proposedTime}
                                                             </span>
+                                                            {item.durationMins && (
+                                                                <span className="text-xs text-text-muted ml-1">
+                                                                    ({item.durationMins} menit)
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <MapPin size={13} className="text-primary-500/60 shrink-0" />

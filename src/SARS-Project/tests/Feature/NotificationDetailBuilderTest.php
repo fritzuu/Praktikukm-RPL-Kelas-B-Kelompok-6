@@ -71,7 +71,7 @@ function setupNotificationBuilderContext() {
     ]);
 
     $changeRequest = ChangeRequest::create([
-        'request_code' => 'CR-TEST-9999',
+        'request_code' => 'REQ-TEST-9999',
         'requester_id' => $student->id,
         'schedule_id' => $schedule->id,
         'semester_id' => $semester->id,

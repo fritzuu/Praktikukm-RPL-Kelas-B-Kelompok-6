@@ -136,7 +136,7 @@ class DatabaseSeeder extends Seeder
             ['code' => 'B4-10',        'name' => 'Ruang B4-10',              'capacity' => 40, 'building' => 'B4', 'floor' => 1, 'type' => 'KELAS'],
             ['code' => 'B4-11',        'name' => 'Ruang B4-11',              'capacity' => 40, 'building' => 'B4', 'floor' => 1, 'type' => 'KELAS'],
             ['code' => 'B4.06',        'name' => 'Ruang B4.06',              'capacity' => 40, 'building' => 'B4', 'floor' => 0, 'type' => 'KELAS'],
-            ['code' => 'LAB4-TIK',     'name' => 'Lab .4 TIK Lt.4',          'capacity' => 30, 'building' => 'TIK', 'floor' => 4, 'type' => 'LABORATORIUM'],
+            ['code' => 'LAB4-TIK',     'name' => 'Lab 4 TIK Lt.4',          'capacity' => 30, 'building' => 'TIK', 'floor' => 4, 'type' => 'LABORATORIUM'],
             ['code' => 'LAB3-TIK',     'name' => 'Lab 3 TIK Lt.3',           'capacity' => 30, 'building' => 'TIK', 'floor' => 3, 'type' => 'LABORATORIUM'],
             ['code' => 'LAB-B4.04',    'name' => 'Lab B4.04',                'capacity' => 30, 'building' => 'B4', 'floor' => 0, 'type' => 'LABORATORIUM'],
             ['code' => 'LAB-B4.05',    'name' => 'Lab B4.05',                'capacity' => 30, 'building' => 'B4', 'floor' => 0, 'type' => 'LABORATORIUM'],

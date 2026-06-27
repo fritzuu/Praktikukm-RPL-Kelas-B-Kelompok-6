@@ -7,6 +7,9 @@ use App\Models\Approval;
 use App\Models\ChangeRequest;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
+use App\Models\Semester;
+use App\Traits\ChecksConflicts;
+use App\Traits\CalculatesSessionRange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,6 +17,7 @@ use Inertia\Response;
 
 class AslabValidationController extends Controller
 {
+    use ChecksConflicts, CalculatesSessionRange;
     /**
      * Display the validation queue for aslab.
      */
@@ -80,11 +84,41 @@ class AslabValidationController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $cr = ChangeRequest::findOrFail($id);
+        $cr = ChangeRequest::with(['schedule'])->findOrFail($id);
 
         if ($cr->status !== 'PENDING_ASLAB') {
             return redirect()->back()->with('error', 'Request ini sudah tidak dalam status PENDING_ASLAB.');
         }
+
+        // Perform conflict detection before forwarding
+        $hasConflict = false;
+        $conflictReason = null;
+
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $semester = Semester::active();
+            if ($semester) {
+                $targetRoomId = $cr->proposed_room_id ?? $cr->schedule->room_id;
+                $conflictReason = $this->checkSlotConflict(
+                    $cr->schedule_id,
+                    $semester->id,
+                    $cr->proposed_day,
+                    $cr->proposed_start_time,
+                    $cr->proposed_end_time,
+                    $targetRoomId,
+                    $cr->target_date ?? null
+                );
+
+                if ($conflictReason) {
+                    $hasConflict = true;
+                }
+            }
+        }
+
+        // Update has_conflict flag on change request
+        $cr->update([
+            'conflict_checked' => true,
+            'has_conflict' => $hasConflict,
+        ]);
 
         // Create/update approval record (idempotent per unique(request_id, stage))
         Approval::updateOrCreate(
@@ -117,6 +151,16 @@ class AslabValidationController extends Controller
                 : 'Sesi ' . $schedule->session_start;
         }
 
+        // Calculate new session
+        $newSessionFwd = null;
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $newSessionFwd = $this->calculateSessionLabel(
+                $cr->proposed_day,
+                $cr->proposed_start_time,
+                $cr->proposed_end_time
+            );
+        }
+
         $notifPayload = [
             'request_code'   => $cr->request_code,
             'course_name'    => $schedule?->course?->name,
@@ -136,6 +180,7 @@ class AslabValidationController extends Controller
                                     : null,
             'new_room'       => $proposedRoom?->code ?? $schedule?->room?->code,
             'new_room_name'  => $proposedRoom?->name ?? $schedule?->room?->name,
+            'new_session'    => $newSessionFwd,
         ];
 
         // Notify mahasiswa
@@ -235,6 +280,16 @@ class AslabValidationController extends Controller
                 : 'Sesi ' . $scheduleForReject->session_start;
         }
 
+        // Calculate new session
+        $newSessionRej = null;
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $newSessionRej = $this->calculateSessionLabel(
+                $cr->proposed_day,
+                $cr->proposed_start_time,
+                $cr->proposed_end_time
+            );
+        }
+
         $rejectPayload = [
             'request_code'   => $cr->request_code,
             'course_name'    => $scheduleForReject?->course?->name,
@@ -254,6 +309,7 @@ class AslabValidationController extends Controller
                                     : null,
             'new_room'       => $proposedRoomForReject?->code ?? $scheduleForReject?->room?->code,
             'new_room_name'  => $proposedRoomForReject?->name ?? $scheduleForReject?->room?->name,
+            'new_session'    => $newSessionRej,
         ];
 
         $notif = \App\Models\Notification::create([

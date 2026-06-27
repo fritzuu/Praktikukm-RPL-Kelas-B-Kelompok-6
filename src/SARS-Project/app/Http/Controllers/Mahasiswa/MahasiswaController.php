@@ -12,6 +12,7 @@ use App\Models\Room;
 use App\Models\Schedule;
 use App\Models\ScheduleOverride;
 use App\Models\Semester;
+use App\Traits\CalculatesSessionRange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ use Inertia\Inertia;
 
 class MahasiswaController extends Controller
 {
+    use CalculatesSessionRange;
     private const SESSION_TIMES_NORMAL = [
         1 => ['07:30', '08:20'],
         2 => ['08:25', '09:15'],
@@ -130,7 +132,7 @@ class MahasiswaController extends Controller
     }
 
     /**
-     * Helper to get formatted schedules.
+     * Helper to get formatted schedules including overrides.
      */
     private function getSchedulesData($semester)
     {
@@ -138,10 +140,10 @@ class MahasiswaController extends Controller
             return collect();
         }
 
-        return Schedule::with([
+        // Get baseline schedules using Eloquent (maintains original logic)
+        $schedules = Schedule::with([
             'course', 
             'room', 
-            'overrides' => fn ($q) => $q->where('is_active', true)->with(['room', 'changeRequest']), 
             'teachingAssignments.user'
         ])
         ->where('semester_id', $semester->id)
@@ -157,21 +159,80 @@ class MahasiswaController extends Controller
             'hari'       => strtolower($s->day_of_week),
             'sesiMulai'  => $s->session_start,
             'durasi'     => $s->session_duration,
-            'dosen'      => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->map(fn ($ta) => $ta->user->name)->join(' & ') ?: '-',
+            'dosen'      => $s->teachingAssignments->where('role_in_class', 'PENGAJAR')->map(fn ($ta) => $ta->user->name)->join(' & ') ?: 'Belum Ditentukan',
             'mulai'      => substr($s->start_time, 0, 5),
             'selesai'    => substr($s->end_time, 0, 5),
             'tipe'       => 'resmi',
-            'overrides'  => $s->overrides->map(fn ($o) => [
-                'id'          => $o->id,
-                'tanggal'     => $o->override_date->format('Y-m-d'),
-                'hari_baru'   => $o->new_day_of_week ? strtolower($o->new_day_of_week) : null,
-                'mulai_baru'  => substr($o->new_start_time, 0, 5),
-                'selesai_baru' => substr($o->new_end_time, 0, 5),
-                'ruangan_baru' => $o->room->code ?? null,
-                'tipe'        => $o->changeRequest?->request_type === 'TEMPORARY' ? 'temp' : 'permanent',
-            ]),
-        ])
-        ->values();
+        ]);
+
+        // Collect schedule IDs that have active overrides for today or later
+        $today = Carbon::now()->toDateString();
+        $schedulesWithOverrides = DB::table('schedule_overrides')
+            ->where('is_active', true)
+            ->where('override_date', '>=', $today)
+            ->pluck('schedule_id')
+            ->unique();
+
+        // Filter out baseline schedules that have active overrides
+        $schedules = $schedules->filter(fn ($s) => !$schedulesWithOverrides->contains((int) $s['id']));
+
+        // Get active override items as separate schedule entries
+        $overrideItems = DB::table('schedule_overrides')
+            ->join('schedules', 'schedule_overrides.schedule_id', '=', 'schedules.id')
+            ->join('courses', 'schedules.course_id', '=', 'courses.id')
+            ->join('rooms', 'schedule_overrides.room_id', '=', 'rooms.id')
+            ->leftJoin('teaching_assignments', function($join) {
+                $join->on('schedules.id', '=', 'teaching_assignments.schedule_id')
+                     ->where('teaching_assignments.role_in_class', '=', 'PENGAJAR');
+            })
+            ->leftJoin('users', 'teaching_assignments.user_id', '=', 'users.id')
+            ->where('schedule_overrides.is_active', true)
+            ->where('schedule_overrides.override_date', '>=', $today)
+            ->where('courses.semester_id', $semester->id)
+            ->select(
+                'schedules.id as schedule_id',
+                DB::raw("'override_' || schedule_overrides.id as id"),
+                'courses.code as kode',
+                'courses.name as nama',
+                'courses.class_name as kelas',
+                DB::raw("REGEXP_REPLACE(courses.description, '[^0-9]', '', 'g') as \"semesterNum\""),
+                'rooms.code as ruangan',
+                'schedule_overrides.new_day_of_week as hari',
+                'schedules.session_start as sesiMulai',
+                'schedules.session_duration as durasi',
+                DB::raw("STRING_AGG(DISTINCT users.name, ' & ' ORDER BY users.name) as dosen"),
+                'schedule_overrides.new_start_time as jamMulai',
+                'schedule_overrides.new_end_time as jamAkhir',
+                'schedule_overrides.override_date as tanggal'
+            )
+            ->groupBy(
+                'schedules.id', 'schedule_overrides.id', 'courses.code', 'courses.name', 'courses.class_name',
+                'courses.description', 'rooms.code', 'schedule_overrides.new_day_of_week',
+                'schedule_overrides.new_start_time', 'schedule_overrides.new_end_time', 
+                'schedule_overrides.override_date'
+            )
+            ->get()
+            ->map(fn ($o) => [
+                'id'         => (string) $o->id,
+                'schedule_id' => (int) $o->schedule_id,
+                'kode'       => $o->kode,
+                'nama'       => $o->nama,
+                'kelas'      => $o->kelas,
+                'semesterNum'=> (string) ($o->semesterNum ?? ''),
+                'ruangan'    => $o->ruangan,
+                'hari'       => strtolower($o->hari ?? 'senin'),
+                'sesiMulai'  => (int) ($o->sesiMulai ?? 0),
+                'durasi'     => (int) ($o->durasi ?? 0),
+                'dosen'      => (string) ($o->dosen ?? 'Belum Ditentukan'),
+                'mulai'      => substr($o->jamMulai, 0, 5),
+                'selesai'    => substr($o->jamAkhir, 0, 5),
+                'tipe'       => 'override',
+                'label'      => 'Jadwal Sementara',
+                'tanggal'    => $o->tanggal,
+            ]);
+
+        // Merge baseline + override items
+        return $schedules->concat($overrideItems)->values();
     }
 
     /**
@@ -359,6 +420,16 @@ class MahasiswaController extends Controller
                 : 'Sesi ' . $schedule->session_start;
         }
 
+        // Calculate new session if proposed time is given
+        $newSession = null;
+        if ($changeRequest->proposed_day && $changeRequest->proposed_start_time && $changeRequest->proposed_end_time) {
+            $newSession = $this->calculateSessionLabel(
+                $changeRequest->proposed_day,
+                $changeRequest->proposed_start_time,
+                $changeRequest->proposed_end_time
+            );
+        }
+
         $notifPayload = [
             'request_code'   => $changeRequest->request_code,
             'course_name'    => $schedule?->course?->name,
@@ -378,6 +449,7 @@ class MahasiswaController extends Controller
                                     : null,
             'new_room'       => $proposedRoom?->code ?? $schedule?->room?->code,
             'new_room_name'  => $proposedRoom?->name ?? $schedule?->room?->name,
+            'new_session'    => $newSession,
         ];
 
         // Send notifications to all Aslab users

@@ -8,6 +8,9 @@ use App\Models\ChangeRequest;
 use App\Models\Notification;
 use App\Models\NotificationRecipient;
 use App\Models\ScheduleOverride;
+use App\Models\Semester;
+use App\Traits\ChecksConflicts;
+use App\Traits\CalculatesSessionRange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +18,7 @@ use Inertia\Inertia;
 
 class AdminPersetujuanController extends Controller
 {
+    use ChecksConflicts, CalculatesSessionRange;
     /**
      * Display the admin approval/persetujuan page.
      *
@@ -58,6 +62,9 @@ class AdminPersetujuanController extends Controller
                     'proposedDay'   => $cr->proposed_day,
                     'proposedTime'  => $cr->proposed_start_time
                         ? substr($cr->proposed_start_time, 0, 5) . ' - ' . substr($cr->proposed_end_time, 0, 5)
+                        : null,
+                    'durationMins'  => $cr->proposed_start_time && $cr->proposed_end_time
+                        ? (int) (\Carbon\Carbon::parse($cr->proposed_end_time)->diffInMinutes(\Carbon\Carbon::parse($cr->proposed_start_time)))
                         : null,
                     'proposedRoom'  => $cr->proposedRoom->code ?? null,
                     'targetDate'    => $cr->target_date?->toDateString(),
@@ -117,6 +124,8 @@ class AdminPersetujuanController extends Controller
     /**
      * Approve a change request.
      *
+     * - Runs conflict detection BEFORE approval
+     * - If conflict detected, blocks approval with error message
      * - Creates ADMIN_DECISION / APPROVED approval record.
      * - TEMPORARY → inserts ScheduleOverride row.
      * - PERMANENT → updates Schedule fields + snapshots to schedule_history.
@@ -132,6 +141,35 @@ class AdminPersetujuanController extends Controller
 
         if ($cr->status !== 'PENDING_ADMIN') {
             return back()->with('error', 'Request ini sudah tidak dalam status PENDING_ADMIN.');
+        }
+
+        // Perform conflict detection before approval
+        $hasConflict = false;
+        $conflictReason = null;
+
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $semester = Semester::active();
+            if ($semester) {
+                $targetRoomId = $cr->proposed_room_id ?? $cr->schedule->room_id;
+                $conflictReason = $this->checkSlotConflict(
+                    $cr->schedule_id,
+                    $semester->id,
+                    $cr->proposed_day,
+                    $cr->proposed_start_time,
+                    $cr->proposed_end_time,
+                    $targetRoomId,
+                    $cr->target_date ?? null
+                );
+
+                if ($conflictReason) {
+                    $hasConflict = true;
+                }
+            }
+        }
+
+        // Block approval if conflict detected
+        if ($hasConflict) {
+            return back()->with('error', "Tidak dapat menyetujui request: {$conflictReason}");
         }
 
         DB::transaction(function () use ($cr, $request) {
@@ -216,6 +254,16 @@ class AdminPersetujuanController extends Controller
                 : 'Sesi ' . $approvedSchedule->session_start;
         }
 
+        // Calculate new session
+        $newSessionApprove = null;
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $newSessionApprove = $this->calculateSessionLabel(
+                $cr->proposed_day,
+                $cr->proposed_start_time,
+                $cr->proposed_end_time
+            );
+        }
+
         $approvePayload = [
             'request_code'   => $cr->request_code,
             'course_name'    => $approvedSchedule?->course?->name,
@@ -235,6 +283,7 @@ class AdminPersetujuanController extends Controller
                                     : null,
             'new_room'       => $approvedProposedRoom?->code ?? $approvedSchedule?->room?->code,
             'new_room_name'  => $approvedProposedRoom?->name ?? $approvedSchedule?->room?->name,
+            'new_session'    => $newSessionApprove,
         ];
 
         $notifMahasiswa = \App\Models\Notification::create([
@@ -332,6 +381,16 @@ class AdminPersetujuanController extends Controller
                 : 'Sesi ' . $rejectedSchedule->session_start;
         }
 
+        // Calculate new session
+        $newSessionReject = null;
+        if ($cr->proposed_day && $cr->proposed_start_time && $cr->proposed_end_time) {
+            $newSessionReject = $this->calculateSessionLabel(
+                $cr->proposed_day,
+                $cr->proposed_start_time,
+                $cr->proposed_end_time
+            );
+        }
+
         $rejectAdminPayload = [
             'request_code'   => $cr->request_code,
             'course_name'    => $rejectedSchedule?->course?->name,
@@ -351,6 +410,7 @@ class AdminPersetujuanController extends Controller
                                     : null,
             'new_room'       => $rejectedProposedRoom?->code ?? $rejectedSchedule?->room?->code,
             'new_room_name'  => $rejectedProposedRoom?->name ?? $rejectedSchedule?->room?->name,
+            'new_session'    => $newSessionReject,
         ];
 
         $notifMahasiswa = \App\Models\Notification::create([

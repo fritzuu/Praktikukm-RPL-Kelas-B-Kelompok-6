@@ -140,14 +140,14 @@ class NotificationDetailBuilder
             ])->find($notification->request_id);
         }
 
-        // 2. Parse CR code from text (legacy recovery)
+        // 2. Parse REQ code from text (legacy recovery)
         $text = implode(' ', array_filter([
             $notification->title,
             $notification->message,
             $notification->body,
         ]));
 
-        if (preg_match('/CR-\d{8}-[A-Z0-9]{4}/', $text, $matches)) {
+        if (preg_match('/REQ-\d{8}-[A-Z0-9]{4}/', $text, $matches)) {
             return ChangeRequest::with([
                 'schedule.course',
                 'schedule.room',

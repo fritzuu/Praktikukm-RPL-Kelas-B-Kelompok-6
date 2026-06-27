@@ -351,7 +351,7 @@ it('allows mahasiswa to delete their own request history', function () {
     $context = setupMahasiswaTestContext();
 
     $cr = ChangeRequest::create([
-        'request_code' => 'CR-TEST-1234',
+        'request_code' => 'REQ-TEST-1234',
         'requester_id' => $context['student']->id,
         'schedule_id' => $context['schedule']->id,
         'semester_id' => $context['semester']->id,
@@ -385,7 +385,7 @@ it('prevents mahasiswa from deleting another student\'s request history', functi
     $otherStudent->roles()->attach($mahasiswaRole->id, ['assigned_at' => now(), 'assigned_by' => 1]);
 
     $cr = ChangeRequest::create([
-        'request_code' => 'CR-TEST-5678',
+        'request_code' => 'REQ-TEST-5678',
         'requester_id' => $otherStudent->id,
         'schedule_id' => $context['schedule']->id,
         'semester_id' => $context['semester']->id,
@@ -410,7 +410,7 @@ it('returns request list as JSON for live-reload', function () {
     $context = setupMahasiswaTestContext();
 
     $cr = ChangeRequest::create([
-        'request_code' => 'CR-TEST-9999',
+        'request_code' => 'REQ-TEST-9999',
         'requester_id' => $context['student']->id,
         'schedule_id' => $context['schedule']->id,
         'semester_id' => $context['semester']->id,
