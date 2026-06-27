@@ -1197,10 +1197,18 @@ class MahasiswaController extends Controller
                 $targetCarbon->copy()->startOfWeek()->addWeek(), // next week
             ];
 
+            $dayOffsets = [
+                'SENIN'  => 2,
+                'SELASA' => 3,
+                'RABU'   => 4,
+                'KAMIS'  => 5,
+                'JUMAT'  => 6,
+            ];
+
             foreach ($weeksToScan as $weekStart) {
                 foreach ($days as $day) {
-                    $dayIndex = array_search($day, $days);
-                    $dayDate = $weekStart->copy()->addDays($dayIndex)->format('Y-m-d');
+                    $offsetDays = $dayOffsets[$day] ?? 0;
+                    $dayDate = $weekStart->copy()->addDays($offsetDays)->format('Y-m-d');
 
                     // Skip only dates that are truly in the past (before today),
                     // not dates before the target date — those are still valid
