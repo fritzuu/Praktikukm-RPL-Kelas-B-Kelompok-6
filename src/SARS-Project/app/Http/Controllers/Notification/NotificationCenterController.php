@@ -7,6 +7,7 @@ use App\Models\ChangeRequest;
 use App\Models\NotificationRecipient;
 use App\Services\Notifications\NotificationDetailBuilder;
 use App\Services\Notifications\NotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,6 +35,27 @@ class NotificationCenterController extends Controller
         $ok = $service->markAsRead($request->user(), $notificationId, 'IN_APP');
 
         return response()->json(['success' => $ok]);
+    }
+
+    public function markAllAsRead(Request $request)
+    {
+        $updated = NotificationRecipient::where('recipient_id', $request->user()->id)
+            ->where('channel', 'IN_APP')
+            ->whereNull('deleted_at')
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => Carbon::now('Asia/Jakarta'),
+            ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'count'   => $updated,
+            ]);
+        }
+
+        return back();
     }
 
     public function delete(Request $request, NotificationService $service, int $notificationId): JsonResponse
