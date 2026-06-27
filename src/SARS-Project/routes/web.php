@@ -16,7 +16,6 @@ use App\Http\Controllers\Admin\AdminJadwalController;
 use App\Http\Controllers\Admin\AdminPersetujuanController;
 use App\Http\Controllers\Admin\AdminStatistikController;
 use App\Http\Controllers\Admin\AdminSettingController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Mahasiswa\MahasiswaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -60,7 +59,7 @@ Route::middleware('auth')->group(function () {
         ->name('notifications.detail');
 
     // Compatibility route (existing mark-all read)
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'markAllAsRead'])->name('notifications.readAll');
 
     // ── Lightweight polling endpoint ─────────────────────────────────────────
     Route::get('/api/poll', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'poll'])
@@ -167,7 +166,7 @@ Route::middleware('auth')->group(function () {
             ->name('mahasiswa.notifications.detail');
         Route::post('/notifications/{id}/read', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'markAsRead'])
             ->name('mahasiswa.notifications.read');
-        Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        Route::post('/notifications/read-all', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'markAllAsRead'])
             ->name('mahasiswa.notifications.readAll');
         Route::delete('/notifications/{id}', [\App\Http\Controllers\Notification\NotificationCenterController::class, 'delete'])
             ->name('mahasiswa.notifications.destroy');
