@@ -7,7 +7,7 @@ import {
     Calendar,
 } from 'lucide-react';
 import { router, usePage } from '@inertiajs/react';
-import MahasiswaNotificationDropdown from './NotificationDropdown';
+import NotificationDropdown from '../Shared/NotificationDropdown';
 import HelpModal from '../Shared/HelpModal';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 
@@ -206,9 +206,8 @@ export default function MahasiswaTopBar({ user, sidebarCollapsed, unreadCount: u
                         </button>
                         <AnimatePresence>
                             {notifOpen && (
-                                <MahasiswaNotificationDropdown
-                                    notifikasi={notifikasi}
-                                    unreadCount={unreadCount}
+                                <NotificationDropdown
+                                    notifications={notifikasi}
                                     onClose={() => setNotifOpen(false)}
                                 />
                             )}
