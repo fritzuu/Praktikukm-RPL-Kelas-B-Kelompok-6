@@ -50,28 +50,6 @@ export function getJakartaTimeParts(date) {
     }
 }
 
-export function getJakartaDayKey(date) {
-    try {
-        const dayName = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Asia/Jakarta',
-            weekday: 'long'
-        }).format(date).toLowerCase();
-        
-        const dayMap = {
-            monday: 'senin',
-            tuesday: 'selasa',
-            wednesday: 'rabu',
-            thursday: 'kamis',
-            friday: 'jumat',
-            saturday: 'sabtu',
-            sunday: 'senin'
-        };
-        return dayMap[dayName] || 'senin';
-    } catch (e) {
-        const days = ['senin', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'senin'];
-        return days[date.getDay()];
-    }
-}
 
 export function formatJakartaDate(date) {
     try {
