@@ -174,11 +174,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings',      [MahasiswaController::class, 'updateSettings'])->name('mahasiswa.settings.update');
 
         // API-style endpoints (JSON)
-        Route::post('/cek-slot',              [MahasiswaController::class, 'cekSlot'])->name('mahasiswa.cekSlot');
         Route::get('/dashboard-widgets',      [MahasiswaController::class, 'dashboardWidgets'])->name('mahasiswa.dashboardWidgets');
         Route::post('/ai-query',              [MahasiswaController::class, 'aiQuery'])->name('mahasiswa.aiQuery');
         Route::post('/recommend-schedule',    [MahasiswaController::class, 'recommendSchedules'])->name('mahasiswa.recommendSchedules');
-        Route::post('/cek-sesi-availabilitas', [MahasiswaController::class, 'cekSesiAvailabilitas'])->name('mahasiswa.cekSesiAvailabilitas');
         Route::post('/meeting-dates',          [MahasiswaController::class, 'meetingDates'])->name('mahasiswa.meetingDates');
         Route::post('/available-rooms',        [MahasiswaController::class, 'availableRoomsForSlot'])->name('mahasiswa.availableRooms');
         Route::post('/matrix-availability',    [MahasiswaController::class, 'matrixAvailabilityBulk'])->name('mahasiswa.matrixAvailability');
