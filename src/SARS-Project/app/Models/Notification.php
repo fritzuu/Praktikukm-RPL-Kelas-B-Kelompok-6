@@ -67,28 +67,5 @@ class Notification extends Model
         return $this->hasMany(NotificationRecipient::class);
     }
 
-    /**
-     * Scope untuk notifikasi belum dibaca
-     */
-    public function scopeUnread($query)
-    {
-        return $query->whereNull('read_at');
-    }
-
-    /**
-     * Scope untuk notifikasi berdasarkan tipe
-     */
-    public function scopeByType($query, $type)
-    {
-        return $query->where('type', $type);
-    }
-
-    /**
-     * Scope untuk user tertentu
-     */
-    public function scopeForUser($query, $userId)
-    {
-        return $query->where('user_id', $userId);
-    }
 }
 
