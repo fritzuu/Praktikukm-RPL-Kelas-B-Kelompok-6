@@ -317,39 +317,6 @@ class DosenJadwalController extends Controller
     }
 
     /**
-     * Store a new schedule change request.
-     */
-    public function storeRequest(Request $request)
-    {
-        $request->validate([
-            'schedule_id'         => 'required|exists:schedules,id',
-            'request_type'        => 'required|in:RESCHEDULE,EXCHANGE,MAKEUP',
-            'proposed_day'        => 'required|string',
-            'proposed_start_time' => 'required',
-            'proposed_end_time'   => 'required',
-            'reason'              => 'required|string|min:10',
-        ]);
-
-        $user = $request->user();
-        $semester = Semester::active();
-
-        \App\Models\ChangeRequest::create([
-            'request_code'        => 'REQ-' . strtoupper(bin2hex(random_bytes(4))),
-            'requester_id'        => $user->id,
-            'schedule_id'         => $request->schedule_id,
-            'semester_id'         => $semester->id,
-            'request_type'        => $request->request_type,
-            'proposed_day'        => strtoupper($request->proposed_day),
-            'proposed_start_time' => $request->proposed_start_time,
-            'proposed_end_time'   => $request->proposed_end_time,
-            'reason'              => $request->reason,
-            'status'              => 'PENDING',
-        ]);
-
-        return redirect()->back()->with('success', 'Pengajuan perubahan jadwal berhasil dikirim.');
-    }
-
-    /**
      * Empty stats fallback.
      */
     private function emptyStats(): array

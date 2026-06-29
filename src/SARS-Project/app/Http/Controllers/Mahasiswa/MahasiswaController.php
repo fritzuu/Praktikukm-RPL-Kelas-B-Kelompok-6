@@ -832,10 +832,7 @@ class MahasiswaController extends Controller
             ->where('room_id', $roomId)
             ->where('day_of_week', $day)
             ->where('id', '!=', $scheduleId)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
-            });
+            ->overlappingTime($startTime, $endTime);
 
         // Skip baselines that are overridden out on this date
         if (!empty($outgoingOverrideIds)) {
@@ -874,10 +871,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('teachingAssignments', function ($q) use ($lecturerIds) {
                     $q->whereIn('user_id', $lecturerIds);
                 });
@@ -963,10 +957,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('course', function ($q) use ($course) {
                     $q->where('description', $course->description)
                       ->where('class_name', $course->class_name);
@@ -1714,10 +1705,7 @@ class MahasiswaController extends Controller
             ->where('is_active', true)
             ->where('day_of_week', $day)
             ->where('id', '!=', $scheduleId)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
-            })
+            ->overlappingTime($startTime, $endTime)
             ->pluck('room_id')
             ->unique();
 
@@ -1749,10 +1737,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('teachingAssignments', function ($q) use ($lecturerIds) {
                     $q->whereIn('user_id', $lecturerIds);
                 })
@@ -1818,10 +1803,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('course', function ($q) use ($course) {
                     $q->where('description', $course->description)
                       ->where('class_name', $course->class_name);
