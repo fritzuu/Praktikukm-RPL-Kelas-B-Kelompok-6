@@ -72,12 +72,14 @@ class Schedule extends Model
         return $this->hasMany(ScheduleOverride::class);
     }
 
-    public function scopeEffectiveOnDate($query, string $date)
+    public function scopeEffectiveOnDate($query, $date)
     {
-        return $query->where('effective_from', '<=', $date)
-            ->where(function ($q) use ($date) {
+        $dateStr = \Carbon\Carbon::parse($date)->toDateString();
+        
+        return $query->whereDate('effective_from', '<=', $dateStr)
+            ->where(function ($q) use ($dateStr) {
                 $q->whereNull('effective_until')
-                    ->orWhere('effective_until', '>=', $date);
+                    ->orWhereDate('effective_until', '>=', $dateStr);
             });
     }
 
