@@ -81,4 +81,9 @@ class Schedule extends Model
             });
     }
 
+    public function scopeOverlappingTime($query, string $startTime, string $endTime)
+    {
+        return $query->where('start_time', '<', $endTime)
+                     ->where('end_time', '>', $startTime);
+    }
 }
