@@ -3,6 +3,11 @@
 namespace Tests\Unit;
 
 use App\Models\ChangeRequest;
+use App\Models\Semester;
+use App\Models\User;
+use App\Models\Room;
+use App\Models\Course;
+use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -67,14 +72,59 @@ class ChangeRequestTest extends TestCase
     public function test_prevents_duplicate_codes(): void
     {
         // ARRANGE
+        $semester = Semester::create([
+            'name' => '2025/2026-I',
+            'academic_year' => '2025/2026',
+            'term' => 'GANJIL',
+            'start_date' => '2025-09-01',
+            'end_date' => '2025-12-31',
+        ]);
+
+        $user = User::create([
+            'name' => 'Test User',
+            'email' => 'testuser@example.com',
+            'password' => bcrypt('password'),
+            'nim_nip' => '1234567890',
+        ]);
+
+        $room = Room::create([
+            'name' => 'A1.01',
+            'code' => 'A1.01',
+            'capacity' => 40,
+            'building' => 'Gedung A',
+            'type' => 'KELAS',
+        ]);
+
+        $course = Course::create([
+            'semester_id' => $semester->id,
+            'code' => 'CS101',
+            'name' => 'Introduction to Programming',
+            'credits' => 3,
+            'class_name' => 'A',
+        ]);
+
+        $schedule = Schedule::create([
+            'course_id' => $course->id,
+            'room_id' => $room->id,
+            'semester_id' => $semester->id,
+            'day_of_week' => 'SENIN',
+            'start_time' => '09:00',
+            'end_time' => '11:00',
+            'session_start' => 1,
+            'session_duration' => 2,
+            'effective_from' => '2025-09-01',
+            'is_active' => true,
+        ]);
+
         $existingCode = 'REQ-20260616-AAAA';
         ChangeRequest::create([
             'request_code' => $existingCode,
-            'requester_id' => 1,
-            'schedule_id' => 1,
-            'semester_id' => 1,
-            'request_type' => 'reschedule',
-            'status' => 'pending',
+            'requester_id' => $user->id,
+            'schedule_id' => $schedule->id,
+            'semester_id' => $semester->id,
+            'request_type' => 'TEMPORARY',
+            'status' => 'PENDING_ASLAB',
+            'reason' => 'Pertemuan pengganti karena hari libur nasional.',
         ]);
 
         // ACT

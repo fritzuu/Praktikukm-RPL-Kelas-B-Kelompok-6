@@ -27,6 +27,8 @@ class ScheduleOverlappingTimeTest extends TestCase
         // Create semester
         $this->semester = Semester::create([
             'name' => '2025/2026-I',
+            'academic_year' => '2025/2026',
+            'term' => 'GANJIL',
             'start_date' => '2025-09-01',
             'end_date' => '2025-12-31',
         ]);
@@ -34,14 +36,19 @@ class ScheduleOverlappingTimeTest extends TestCase
         // Create room
         $this->room = Room::create([
             'name' => 'A1.01',
+            'code' => 'A1.01',
             'capacity' => 40,
+            'building' => 'Gedung A',
+            'type' => 'KELAS',
         ]);
 
         // Create course
         $this->course = Course::create([
+            'semester_id' => $this->semester->id,
             'code' => 'CS101',
             'name' => 'Introduction to Programming',
             'credits' => 3,
+            'class_name' => 'A',
         ]);
     }
 
