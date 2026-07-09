@@ -8,7 +8,7 @@
  */
 import NotificationListPage from '../../Components/Shared/NotificationListPage';
 
-export default function NotificationPage({ notifications = [], unreadCount = 0 }) {
+export default function NotificationPage({ notifications = [] }) {
     const notifData = Array.isArray(notifications?.data) ? notifications.data : notifications;
 
     return (

@@ -275,68 +275,6 @@ class MahasiswaController extends Controller
         ]);
     }
 
-    /**
-     * Check available room slots for a given day and time range.
-     */
-    public function cekSlot(Request $request)
-    {
-        $request->validate([
-            'hari'       => 'required|in:SENIN,SELASA,RABU,KAMIS,JUMAT,SABTU',
-            'mulai'      => 'required|date_format:H:i',
-            'selesai'    => 'required|date_format:H:i|after:mulai',
-            'tanggal'    => 'nullable|date',
-        ]);
-
-        $semester = Semester::active();
-        if (!$semester) {
-            return response()->json(['slots' => [], 'message' => 'Tidak ada semester aktif.']);
-        }
-
-        $day      = $request->hari;
-        $start    = $request->mulai;
-        $end      = $request->selesai;
-        $date     = $request->tanggal;
-
-        $allRooms = Room::where('is_active', true)->get();
-
-        // Get occupied rooms on this day/time from baseline schedules
-        $occupiedRoomIds = Schedule::where('semester_id', $semester->id)
-            ->where('is_active', true)
-            ->where('day_of_week', $day)
-            ->where(function ($q) use ($start, $end) {
-                $q->where(function ($inner) use ($start, $end) {
-                    $inner->where('start_time', '<', $end)
-                          ->where('end_time', '>', $start);
-                });
-            })
-            ->pluck('room_id');
-
-        // If a specific date is given, also check overrides
-        $overrideOccupied = collect();
-        if ($date) {
-            $overrideOccupied = ScheduleOverride::where('is_active', true)
-                ->where('override_date', $date)
-                ->where(function ($q) use ($start, $end) {
-                    $q->where('new_start_time', '<', $end)
-                      ->where('new_end_time', '>', $start);
-                })
-                ->pluck('room_id');
-        }
-
-        $busyIds = $occupiedRoomIds->merge($overrideOccupied)->unique();
-
-        $available = $allRooms->filter(fn ($room) => !$busyIds->contains($room->id))
-            ->values()
-            ->map(fn ($r) => [
-                'id'       => $r->id,
-                'code'     => $r->code,
-                'name'     => $r->name,
-                'capacity' => $r->capacity,
-                'building' => $r->building,
-            ]);
-
-        return response()->json(['slots' => $available]);
-    }
 
     /**
      * Submit a schedule change request (Temporary or Permanent).
@@ -733,22 +671,6 @@ class MahasiswaController extends Controller
         return redirect()->back()->with('success', 'Profil berhasil diperbarui.');
     }
 
-    /**
-     * Update password.
-     */
-    public function updatePassword(Request $request)
-    {
-        $validated = $request->validate([
-            'current_password' => 'required|current_password',
-            'password'         => 'required|string|min:8|confirmed',
-        ]);
-
-        $request->user()->update([
-            'password' => bcrypt($validated['password']),
-        ]);
-
-        return back()->with('success', 'Password berhasil diubah.');
-    }
 
     /**
      * Dashboard widgets data — empty rooms + live campus stats (JSON refresh).
@@ -832,10 +754,7 @@ class MahasiswaController extends Controller
             ->where('room_id', $roomId)
             ->where('day_of_week', $day)
             ->where('id', '!=', $scheduleId)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
-            });
+            ->overlappingTime($startTime, $endTime);
 
         // Skip baselines that are overridden out on this date
         if (!empty($outgoingOverrideIds)) {
@@ -874,10 +793,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('teachingAssignments', function ($q) use ($lecturerIds) {
                     $q->whereIn('user_id', $lecturerIds);
                 });
@@ -963,10 +879,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('course', function ($q) use ($course) {
                     $q->where('description', $course->description)
                       ->where('class_name', $course->class_name);
@@ -1022,48 +935,6 @@ class MahasiswaController extends Controller
             return $time . ':00';
         }
         return $time;
-    }
-
-    /**
-     * Endpoint to check session availability (1 to 11) for a given day, date, and room.
-     */
-    public function cekSesiAvailabilitas(Request $request)
-    {
-        $request->validate([
-            'schedule_id'      => 'required|exists:schedules,id',
-            'proposed_day'     => 'required|in:SENIN,SELASA,RABU,KAMIS,JUMAT',
-            'target_date'      => 'nullable|date',
-            'proposed_room_id' => 'required|exists:rooms,id',
-        ]);
-
-        $semester = Semester::active();
-        if (!$semester) {
-            return response()->json(['error' => 'Tidak ada semester aktif.'], 400);
-        }
-
-        $scheduleId = $request->schedule_id;
-        $day = $request->proposed_day;
-        $date = $request->target_date;
-        $roomId = $request->proposed_room_id;
-
-        $originalSchedule = Schedule::findOrFail($scheduleId);
-        $duration = $originalSchedule->session_duration;
-
-        $results = [];
-
-        for ($s = 1; $s <= 11; $s++) {
-            list($start, $end) = $this->getSessionTimes($day, $s, 1);
-            $conflict = $this->checkSlotConflict($scheduleId, $semester->id, $day, $start, $end, $roomId, $date);
-
-            $results[] = [
-                'session' => $s,
-                'is_occupied' => !is_null($conflict),
-                'reason' => $conflict,
-                'time_range' => "{$start} - {$end}",
-            ];
-        }
-
-        return response()->json(['sessions' => $results]);
     }
 
     /**
@@ -1714,10 +1585,7 @@ class MahasiswaController extends Controller
             ->where('is_active', true)
             ->where('day_of_week', $day)
             ->where('id', '!=', $scheduleId)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
-            })
+            ->overlappingTime($startTime, $endTime)
             ->pluck('room_id')
             ->unique();
 
@@ -1749,10 +1617,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('teachingAssignments', function ($q) use ($lecturerIds) {
                     $q->whereIn('user_id', $lecturerIds);
                 })
@@ -1818,10 +1683,7 @@ class MahasiswaController extends Controller
                 ->where('is_active', true)
                 ->where('day_of_week', $day)
                 ->where('id', '!=', $scheduleId)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
-                })
+                ->overlappingTime($startTime, $endTime)
                 ->whereHas('course', function ($q) use ($course) {
                     $q->where('description', $course->description)
                       ->where('class_name', $course->class_name);
